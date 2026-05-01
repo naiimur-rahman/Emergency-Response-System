@@ -8,20 +8,23 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/api/dashboard');
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        console.error('Failed to load dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/dashboard');
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      console.error('Failed to load dashboard:', err);
+    } finally {
+      setLoading(false);
     }
-    fetchData();
   }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const handleDispatch = async (requestId) => {
     setDispatching(requestId);
@@ -32,16 +35,21 @@ export default function DashboardPage() {
         body: JSON.stringify({ request_id: requestId }),
       });
       const result = await res.json();
-      alert(result.message);
+      
+      if (result.success) {
+        alert('SUCCESS: ' + result.message);
+      } else {
+        alert('DISPATCH FAILED: ' + result.message + '\n\nTIP: Ensure at least one driver is marked as "On_Duty" in the Driver Portal.');
+      }
       fetchData();
     } catch (err) {
-      alert('Dispatch failed: ' + err.message);
+      alert('Network error during dispatch.');
     } finally {
       setDispatching(null);
     }
   };
 
-  if (loading) {
+  if (loading && !data) {
     return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
   }
 
@@ -90,7 +98,13 @@ export default function DashboardPage() {
             <span className="stat-card-label">On-Duty Drivers</span>
           </div>
           <div className="stat-card-value">{s.onDutyDrivers || 0}</div>
-          <div className="stat-card-sub">Ready for dispatch</div>
+          <div className="stat-card-sub">
+            {s.maintenanceAlerts > 0 ? (
+              <span style={{ color: 'var(--red)', fontWeight: 700 }}>⚠️ {s.maintenanceAlerts} maintenance alerts</span>
+            ) : (
+              'Ready for dispatch'
+            )}
+          </div>
         </div>
       </div>
 
@@ -112,12 +126,24 @@ export default function DashboardPage() {
                   <td style={{ fontWeight: 600 }}>#{row.request_id}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{row.patient_name}</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                      {row.conditions.map((c, i) => (
-                        <span key={i} style={{ fontSize: 9, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                          {c}
-                        </span>
-                      ))}
+                    <div style={{ marginTop: 6 }}>
+                      <select 
+                        className="form-input btn-sm" 
+                        style={{ fontSize: 10, padding: '2px 8px', width: 'auto', background: 'rgba(255,255,255,0.05)' }}
+                        value={row.primary_specialization || ''}
+                        onChange={async (e) => {
+                          const val = e.target.value;
+                          await fetch('/api/patients', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patient_id: row.patient_id, primary_specialization: val }) });
+                          fetchData();
+                        }}
+                      >
+                        <option value="">General Care</option>
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="Neurology">Neurology</option>
+                        <option value="Trauma Surgery">Trauma</option>
+                        <option value="Burn Unit">Burn Unit</option>
+                        <option value="Pediatrics">Pediatrics</option>
+                      </select>
                     </div>
                   </td>
                   <td><span className="badge badge-critical" style={{ fontSize: 11 }}>{row.blood_type}</span></td>
@@ -144,7 +170,7 @@ export default function DashboardPage() {
                       )}
                       <button className="btn btn-ghost btn-sm" onClick={() => {
                         const contact = row.emergency_contact;
-                        alert(`MEDICAL PROFILE: ${row.patient_name}\n\nConditions: ${row.conditions.join(', ') || 'None reported'}\n\nEmergency Contact: ${contact?.name || 'Unknown'} (${contact?.relationship || 'N/A'})\nPhone: ${contact?.phone || 'N/A'}`);
+                        alert(`MEDICAL PROFILE: ${row.patient_name}\n\nBlood Type: ${row.blood_type}\nConditions: ${(row.conditions || []).join(', ') || 'None reported'}\n\nSpecial Notes: ${row.special_notes || 'No special requirements'}\n\nEmergency Contact: ${contact?.name || 'Unknown'} (${contact?.relationship || 'N/A'})\nPhone: ${contact?.phone || 'N/A'}`);
                       }}>
                         Profile
                       </button>

@@ -67,8 +67,31 @@ export default function DriverDutyPage() {
           <h2>Active Duty</h2>
           <p className="page-header-sub">Live navigation and dispatch assignments</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span className="badge badge-active" style={{ fontSize: 13 }}><Truck size={14} /> Unit {trip?.license_plate || 'Online'}</span>
+          <button 
+            onClick={async () => {
+              setActionLoading(true);
+              const newStatus = activeDriver?.status === 'On_Duty' ? 'Off_Duty' : 'On_Duty';
+              try {
+                await fetch('/api/drivers', { 
+                  method: 'PATCH', 
+                  headers: { 'Content-Type': 'application/json' }, 
+                  body: JSON.stringify({ driver_id: activeDriver.id, shift_status: newStatus }) 
+                });
+                window.location.reload();
+              } catch (e) {
+                alert('Failed to update status');
+              } finally {
+                setActionLoading(false);
+              }
+            }}
+            disabled={actionLoading}
+            className={`btn btn-sm ${activeDriver?.status === 'On_Duty' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ borderRadius: 20, fontSize: 11, padding: '4px 12px', minWidth: 100 }}
+          >
+            {actionLoading ? 'Updating...' : (activeDriver?.status === 'On_Duty' ? '🟢 ON DUTY' : '⚪ OFF DUTY')}
+          </button>
         </div>
       </div>
 

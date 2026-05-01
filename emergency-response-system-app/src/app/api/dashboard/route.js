@@ -3,12 +3,13 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const [activeRequests, fleetStatus, bedStatus, driverStatus, dashboardView, recentTrips] = await Promise.all([
+    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips] = await Promise.all([
       query(`SELECT COUNT(*) as total, 
              COUNT(*) FILTER (WHERE status = 'Pending') as pending,
              COUNT(*) FILTER (WHERE status = 'Active') as active
              FROM emergency_requests WHERE status IN ('Pending', 'Active')`),
       query(`SELECT current_status, COUNT(*) as count FROM ambulances GROUP BY current_status`),
+      query(`SELECT COUNT(*) as count FROM ambulances WHERE current_status = 'Maintenance_Required'`),
       query(`SELECT SUM(general_beds) as total_general, SUM(icu_beds) as total_icu FROM hospitals`),
       query(`SELECT shift_status, COUNT(*) as count FROM drivers GROUP BY shift_status`),
       query(`
@@ -54,6 +55,7 @@ export async function GET() {
         totalGeneralBeds: parseInt(bedStatus.rows[0].total_general),
         totalIcuBeds: parseInt(bedStatus.rows[0].total_icu),
         onDutyDrivers: drivers['On_Duty'] || 0,
+        maintenanceAlerts: parseInt(maintenanceStatus.rows[0].count),
       },
       activeView: dashboardView.rows,
       recentTrips: recentTrips.rows,

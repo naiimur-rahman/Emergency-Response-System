@@ -3,53 +3,57 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const UserContext = createContext();
 
-const fallbackDriver = { id: 1, name: 'Senior Paramedic', role: 'Paramedic', license: 'DHA-11-9922', vehicle: 'DHA-11-9922' };
-
 export function UserProvider({ children }) {
-  const [availableDrivers, setAvailableDrivers] = useState([fallbackDriver]);
-  const [activeDriver, setActiveDriver] = useState(fallbackDriver);
+  const [availableDrivers, setAvailableDrivers] = useState([]);
+  const [activeDriver, setActiveDriver] = useState(null);
+  const [activePatient, setActivePatient] = useState({ id: 1, name: 'Abdur Rahman' });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadDrivers() {
+    async function loadData() {
       try {
-        const res = await fetch('/api/drivers');
-        if (!res.ok) throw new Error('Failed to fetch drivers');
-        const dbDrivers = await res.json();
+        const [drvRes, patRes] = await Promise.all([
+          fetch('/api/drivers'),
+          fetch('/api/patients')
+        ]);
+        
+        const dbDrivers = await drvRes.json();
+        const dbPatients = await patRes.json();
         
         if (!isMounted) return;
 
-        const formattedDrivers = dbDrivers.map((d, index) => ({
-           id: d.driver_id,
-           name: d.name,
-           license: d.license_no,
-           role: index === 0 ? 'Senior Paramedic' : 'Emergency Driver',
-           vehicle: 'DHA-11-9922'
-        }));
-
-        if (formattedDrivers.length > 0) {
+        if (Array.isArray(dbDrivers) && dbDrivers.length > 0) {
+           const formattedDrivers = dbDrivers.map((d, index) => ({
+              id: d.driver_id,
+              name: d.name,
+              license: d.license_no,
+              status: d.shift_status,
+              role: d.shift_status === 'On_Duty' ? 'Active Paramedic' : 'On-Call Driver'
+           }));
            setAvailableDrivers(formattedDrivers);
+           
            const saved = localStorage.getItem('emergency_active_driver');
+           let current;
            if (saved) {
-             const d = formattedDrivers.find(x => x.id === parseInt(saved));
-             if (d) setActiveDriver(d);
-             else setActiveDriver(formattedDrivers[0]);
-           } else {
-             setActiveDriver(formattedDrivers[0]);
+             current = formattedDrivers.find(x => x.id === parseInt(saved));
            }
+           setActiveDriver(current || formattedDrivers[0]);
+        }
+
+        if (Array.isArray(dbPatients) && dbPatients.length > 0) {
+           setActivePatient({ id: dbPatients[0].patient_id, name: dbPatients[0].name });
         }
       } catch (err) {
-        console.error('Failed to load drivers', err);
+        console.error('Failed to load portal data', err);
+      } finally {
+        setLoading(false);
       }
     }
     
-    loadDrivers();
-    const interval = setInterval(loadDrivers, 10000); // 10s is plenty for demo
-    
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    loadData();
+    const interval = setInterval(loadData, 15000);
+    return () => { isMounted = false; clearInterval(interval); };
   }, []);
 
   const setDriver = (driverId) => {
@@ -61,7 +65,7 @@ export function UserProvider({ children }) {
   };
 
   return (
-    <UserContext.Provider value={{ activeDriver, setDriver, availableDrivers }}>
+    <UserContext.Provider value={{ activeDriver, setDriver, availableDrivers, activePatient, loading }}>
       {children}
     </UserContext.Provider>
   );

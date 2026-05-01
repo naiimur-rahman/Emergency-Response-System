@@ -6,7 +6,23 @@ import { useUser } from '@/lib/UserContext';
 
 export default function PortalSidebar({ portalName, portalColor, portalIcon: PortalIcon, navItems }) {
   const pathname = usePathname();
-  const { activeDriver, setDriver, availableDrivers } = useUser();
+  const { activeDriver, setDriver, availableDrivers, activePatient } = useUser();
+
+  const getDisplayName = () => {
+    if (portalName === 'Driver Portal') return activeDriver?.name || 'Loading...';
+    if (portalName === 'Patient Portal') return activePatient?.name || 'Guest Patient';
+    if (portalName === 'Dispatcher Portal') return 'Lead Dispatcher';
+    if (portalName === 'Admin Portal') return 'Chief Administrator';
+    return 'User';
+  };
+
+  const getDisplayRole = () => {
+    if (portalName === 'Driver Portal') return activeDriver?.role || 'Paramedic';
+    if (portalName === 'Patient Portal') return 'Registered Patient';
+    if (portalName === 'Dispatcher Portal') return 'Emergency Command';
+    if (portalName === 'Admin Portal') return 'System Control';
+    return 'Portal Access';
+  };
 
   return (
     <>
@@ -38,12 +54,12 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
               <User size={18} style={{ color: portalColor }} />
             </div>
             <div style={{ overflow: 'hidden', flex: 1 }}>
-              {portalName === 'Driver Portal' ? (
+              {portalName === 'Driver Portal' && availableDrivers.length > 0 ? (
                 <div style={{ position: 'relative' }}>
                   <select 
-                    value={activeDriver.id} 
+                    value={activeDriver?.id} 
                     onChange={(e) => setDriver(e.target.value)}
-                    style={{ width: '100%', appearance: 'none', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, padding: 0, margin: 0, outline: 'none', cursor: 'pointer', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+                    style={{ width: '100%', appearance: 'none', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, padding: 0, margin: 0, outline: 'none', cursor: 'pointer' }}
                   >
                     {availableDrivers.map(d => <option key={d.id} value={d.id} style={{ color: 'black' }}>{d.name}</option>)}
                   </select>
@@ -51,17 +67,15 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
                 </div>
               ) : (
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                  {activeDriver.name}
+                  {getDisplayName()}
                 </div>
               )}
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                {portalName === 'Admin Portal' ? 'System Administrator' : 
-                 portalName === 'Driver Portal' ? activeDriver.role : 
-                 portalName === 'Dispatcher Portal' ? 'Lead Dispatcher' : 'Registered Patient'}
+                {getDisplayRole()}
               </div>
             </div>
           </div>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, textDecoration: 'none', transition: 'border-color 0.2s' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
              <ArrowLeftRight size={14} /> Switch Portal
           </Link>
         </div>
