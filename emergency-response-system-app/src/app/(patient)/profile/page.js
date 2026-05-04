@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react';
 import { User, Phone, Droplet, Activity, Save, Plus, Trash2 } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
-export default function ProfilePage() {
+export default function PatientProfile() {
   const { activePatient } = useUser();
-  if (!activePatient) return null;
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -20,6 +19,8 @@ export default function ProfilePage() {
         });
     }
   }, [activePatient]);
+
+  if (!activePatient) return null;
 
   const handleSave = async () => {
     setSaving(true);

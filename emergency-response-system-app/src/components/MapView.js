@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-export default function MapView({ hospitals = [], pickupCoords = null, requestStatus = 'Pending' }) {
+export default function MapView({ hospitals = [], pickupCoords = null, requestStatus = 'Pending', realtimeMarker = null }) {
   const [MapComponents, setMapComponents] = useState(null);
   const [ambulancePos, setAmbulancePos] = useState(null);
 
@@ -60,10 +60,10 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
     });
   }, []);
 
-  // Simulation Logic
+  // Simulation Logic (Only run if no realtimeMarker)
   useEffect(() => {
-    if (!pickupCoords || !hospitals.length || !['En Route', 'Picked Up'].includes(requestStatus)) {
-      setAmbulancePos(null);
+    if (realtimeMarker || !pickupCoords || !hospitals.length || !['En Route', 'Picked Up'].includes(requestStatus)) {
+      if (!realtimeMarker) setAmbulancePos(null);
       return;
     }
 
@@ -82,19 +82,21 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
     }, 100);
 
     return () => clearInterval(interval);
-  }, [pickupCoords, hospitals, requestStatus]);
+  }, [pickupCoords, hospitals, requestStatus, realtimeMarker]);
 
   if (!MapComponents) {
     return <div className="map-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)' }}><div className="spinner" /></div>;
   }
 
   const { RL, govtIcon, privateIcon, emergencyIcon, ambulanceIcon } = MapComponents;
-  const { MapContainer, TileLayer, Marker, Popup } = RL;
+  const { MapContainer, TileLayer, Marker, Popup, Circle } = RL;
   const center = [23.7750, 90.4100]; // Dhaka center
+
+  const currentAmbulancePos = realtimeMarker ? [realtimeMarker.lat, realtimeMarker.lng] : ambulancePos;
 
   return (
     <div className="map-container">
-      <MapContainer center={center} zoom={12} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
+      <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
@@ -113,12 +115,25 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
             <Popup><strong>Emergency Pickup</strong></Popup>
           </Marker>
         )}
-        {ambulancePos && (
-          <Marker position={ambulancePos} icon={ambulanceIcon}>
-            <Popup><strong>Ambulance Unit</strong></Popup>
-          </Marker>
+        {currentAmbulancePos && (
+          <>
+            <Marker position={currentAmbulancePos} icon={ambulanceIcon}>
+              <Popup>
+                <strong>Ambulance Unit</strong>
+                {realtimeMarker && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Speed: {realtimeMarker.speed} km/h</div>}
+              </Popup>
+            </Marker>
+            {realtimeMarker && realtimeMarker.acc > 10 && (
+              <Circle 
+                center={currentAmbulancePos} 
+                radius={realtimeMarker.acc} 
+                pathOptions={{ color: 'transparent', fillColor: 'var(--blue)', fillOpacity: 0.1 }} 
+              />
+            )}
+          </>
         )}
       </MapContainer>
     </div>
   );
 }
+

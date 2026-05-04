@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import { Receipt, CreditCard, Download, ShieldCheck } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
-export default function PatientBillingPage() {
+export default function PatientBills() {
   const { activePatient } = useUser();
-  if (!activePatient) return null;
   const [bills, setBills] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(null);
+
+  if (!activePatient) return null;
 
   useEffect(() => {
     if (!activePatient?.id) return;

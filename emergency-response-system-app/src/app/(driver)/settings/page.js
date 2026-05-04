@@ -1,9 +1,12 @@
 'use client';
+import { useState } from 'react';
 import { User, Truck, ShieldCheck, MapPin, Settings as SettingsIcon } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
-export default function Profile() {
+export default function DriverSettings() {
   const { activeDriver } = useUser();
+  const [loading, setLoading] = useState(false);
+
   if (!activeDriver) return null;
   return (
     <div className="page-container">

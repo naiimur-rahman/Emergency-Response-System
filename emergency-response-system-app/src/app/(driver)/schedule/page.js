@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Calendar as CalendarIcon, Clock, AlertCircle } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
-export default function Schedule() {
+export default function DriverSchedule() {
   const { activeDriver } = useUser();
-  if (!activeDriver) return null;
+  const [schedule, setSchedule] = useState([]);
   const [data, setData] = useState({ hours: '0 hrs', nextShift: '-', shifts: [] });
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +33,8 @@ export default function Schedule() {
     };
     init();
   }, [fetchData]);
+
+  if (!activeDriver) return null;
 
 
   return (
