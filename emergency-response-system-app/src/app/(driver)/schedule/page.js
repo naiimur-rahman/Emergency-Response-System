@@ -5,6 +5,7 @@ import { useUser } from '@/lib/UserContext';
 
 export default function Schedule() {
   const { activeDriver } = useUser();
+  if (!activeDriver) return null;
   const [data, setData] = useState({ hours: '0 hrs', nextShift: '-', shifts: [] });
   const [loading, setLoading] = useState(true);
 

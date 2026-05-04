@@ -5,6 +5,7 @@ import { useUser } from '@/lib/UserContext';
 
 export default function ProfilePage() {
   const { activePatient } = useUser();
+  if (!activePatient) return null;
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

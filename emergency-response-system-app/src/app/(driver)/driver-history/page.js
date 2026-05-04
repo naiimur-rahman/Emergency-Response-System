@@ -7,6 +7,7 @@ import { useUser } from '@/lib/UserContext';
 
 export default function DriverHistory() {
   const { activeDriver } = useUser();
+  if (!activeDriver) return null;
   const [data, setData] = useState({ earnings: '৳0', rating: 0, trips: [] });
   const [loading, setLoading] = useState(true);
 

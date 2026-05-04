@@ -8,6 +8,7 @@ import { useUser } from '@/lib/UserContext';
 
 export default function DriverDutyPage() {
   const { activeDriver } = useUser();
+  if (!activeDriver) return null;
   const [trip, setTrip] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');

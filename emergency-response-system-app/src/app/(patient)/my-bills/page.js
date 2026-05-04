@@ -5,6 +5,7 @@ import { useUser } from '@/lib/UserContext';
 
 export default function PatientBillingPage() {
   const { activePatient } = useUser();
+  if (!activePatient) return null;
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(null);
