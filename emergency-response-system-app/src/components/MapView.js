@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-export default function MapView({ hospitals = [], pickupCoords = null }) {
+export default function MapView({ hospitals = [], pickupCoords = null, requestStatus = 'Pending' }) {
   const [MapComponents, setMapComponents] = useState(null);
+  const [ambulancePos, setAmbulancePos] = useState(null);
 
   useEffect(() => {
     // Dynamic import to avoid SSR issues with Leaflet
@@ -46,15 +47,48 @@ export default function MapView({ hospitals = [], pickupCoords = null }) {
         shadowSize: [41, 41],
       });
 
-      setMapComponents({ L, RL, govtIcon, privateIcon, emergencyIcon });
+      const ambulanceIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+      });
+
+      setMapComponents({ L, RL, govtIcon, privateIcon, emergencyIcon, ambulanceIcon });
     });
   }, []);
+
+  // Simulation Logic
+  useEffect(() => {
+    if (!pickupCoords || !hospitals.length || !['En Route', 'Picked Up'].includes(requestStatus)) {
+      setAmbulancePos(null);
+      return;
+    }
+
+    const station = [23.7750, 90.4100]; // Fixed station pos
+    const destination = requestStatus === 'En Route' ? [pickupCoords.lat, pickupCoords.lon] : [hospitals[0].lat, hospitals[0].lon];
+    const start = requestStatus === 'En Route' ? station : [pickupCoords.lat, pickupCoords.lon];
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 0.01;
+      if (progress >= 1) progress = 0; // Loop for demo
+
+      const lat = start[0] + (destination[0] - start[0]) * progress;
+      const lon = start[1] + (destination[1] - start[1]) * progress;
+      setAmbulancePos([lat, lon]);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [pickupCoords, hospitals, requestStatus]);
 
   if (!MapComponents) {
     return <div className="map-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)' }}><div className="spinner" /></div>;
   }
 
-  const { RL, govtIcon, privateIcon, emergencyIcon } = MapComponents;
+  const { RL, govtIcon, privateIcon, emergencyIcon, ambulanceIcon } = MapComponents;
   const { MapContainer, TileLayer, Marker, Popup } = RL;
   const center = [23.7750, 90.4100]; // Dhaka center
 
@@ -77,6 +111,11 @@ export default function MapView({ hospitals = [], pickupCoords = null }) {
         {pickupCoords && (
           <Marker position={[pickupCoords.lat, pickupCoords.lon]} icon={emergencyIcon}>
             <Popup><strong>Emergency Pickup</strong></Popup>
+          </Marker>
+        )}
+        {ambulancePos && (
+          <Marker position={ambulancePos} icon={ambulanceIcon}>
+            <Popup><strong>Ambulance Unit</strong></Popup>
           </Marker>
         )}
       </MapContainer>

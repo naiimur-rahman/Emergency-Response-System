@@ -4,13 +4,13 @@ import { NextResponse } from 'next/server';
 export async function POST(request) {
   try {
     const { request_id, dispatcher_id = 1 } = await request.json();
-    console.log(`Dispatching request ${request_id}...`);
+    console.error(`Dispatching request ${request_id}...`);
     
     // Call the automated dispatch function
     const result = await query('SELECT fn_automated_dispatch($1, $2) as result', [request_id, dispatcher_id]);
     const message = result.rows[0].result;
     
-    console.log(`Dispatch result: ${message}`);
+    console.error(`Dispatch result: ${message}`);
     
     // Check for success - the SQL returns "SUCCESS: ..."
     const isSuccess = message.toLowerCase().includes('success');

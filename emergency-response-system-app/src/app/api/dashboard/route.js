@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips] = await Promise.all([
+    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips, chatMessages] = await Promise.all([
       query(`SELECT COUNT(*) as total, 
              COUNT(*) FILTER (WHERE status = 'Pending') as pending,
              COUNT(*) FILTER (WHERE status = 'Active') as active
@@ -37,6 +37,7 @@ export async function GET() {
              JOIN hospitals h ON tl.hospital_id = h.hospital_id
              JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
              ORDER BY tl.time_dispatched DESC LIMIT 5`),
+      query(`SELECT * FROM chat_messages ORDER BY timestamp ASC`),
     ]);
 
     const fleet = {};
@@ -59,6 +60,7 @@ export async function GET() {
       },
       activeView: dashboardView.rows,
       recentTrips: recentTrips.rows,
+      chatMessages: chatMessages.rows,
     });
   } catch (error) {
     console.error('Dashboard API error:', error);

@@ -9,6 +9,7 @@ const navItems = [
   { href: '/maintenance', label: 'Maintenance', icon: Wrench },
 ];
 
+
 export default function AdminLayout({ children }) {
   return (
     <div className="app-layout">

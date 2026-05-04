@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Wrench, CheckCircle, Plus, Truck, History, AlertTriangle, X, RefreshCw } from 'lucide-react';
 import { StatusBadge } from '@/components/Badges';
 
@@ -18,11 +18,7 @@ export default function MaintenanceHub() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const res = await fetch('/api/maintenance');
       const json = await res.json();
@@ -32,7 +28,16 @@ export default function MaintenanceHub() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [fetchData]);
+
+
 
   const handleComplete = async (log_id) => {
     const finalCost = prompt("Enter final repair cost (optional):", "0");
@@ -105,7 +110,7 @@ export default function MaintenanceHub() {
             <h3><Wrench size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8, color: 'var(--yellow)' }} /> Active Repairs (In Shop)</h3>
           </div>
           <div className="table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
-            {data.active.length > 0 ? (
+            {data?.active?.length > 0 ? (
               <table>
                 <thead>
                   <tr>
@@ -153,7 +158,7 @@ export default function MaintenanceHub() {
             <h3><History size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8, color: 'var(--blue)' }} /> Service History</h3>
           </div>
           <div className="table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
-            {data.history.length > 0 ? (
+            {data?.history?.length > 0 ? (
               <table>
                 <thead>
                   <tr>
@@ -215,7 +220,7 @@ export default function MaintenanceHub() {
                     onChange={e => setFormData({...formData, vehicle_id: e.target.value})}
                   >
                     <option value="">-- Select an Ambulance --</option>
-                    {data.available_ambulances.map(a => (
+                    {data?.available_ambulances?.map(a => (
                       <option key={a.vehicle_id} value={a.vehicle_id}>{a.license_plate}</option>
                     ))}
                   </select>

@@ -3,12 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H localhost",
+    "dev:webpack": "next dev -H localhost --webpack",
+    "dev:3001": "next dev -H localhost -p 3001",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check": "npm run lint && npm run build"
+  },
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
     "next": "16.2.4",

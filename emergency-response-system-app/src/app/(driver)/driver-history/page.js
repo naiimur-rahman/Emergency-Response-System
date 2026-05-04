@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
 import { History, Star, Clock, MapPin, Banknote } from 'lucide-react';
 import { SeverityBadge } from '@/components/Badges';
 import { useUser } from '@/lib/UserContext';
@@ -9,17 +10,28 @@ export default function DriverHistory() {
   const [data, setData] = useState({ earnings: '৳0', rating: 0, trips: [] });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (activeDriver?.id) {
+  const fetchData = useCallback(async () => {
+    if (!activeDriver?.id) return;
+    try {
       setLoading(true);
-      fetch(`/api/driver/history?driver_id=${activeDriver.id}`)
-        .then(res => res.json())
-        .then(resData => {
-          setData(resData);
-          setLoading(false);
-        });
+      const res = await fetch(`/api/driver/history?driver_id=${activeDriver.id}`);
+      const resData = await res.json();
+      setData(resData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   }, [activeDriver]);
+
+  useEffect(() => {
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [fetchData]);
+
+
   return (
     <div className="page-container">
       <div className="page-header">

@@ -1,12 +1,14 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Truck, BedDouble, Users, Zap, RefreshCw, Clock } from 'lucide-react';
+import { AlertTriangle, Truck, BedDouble, Users, Zap, RefreshCw, Clock, MessageCircle, Send, X } from 'lucide-react';
 import { SeverityBadge, StatusBadge } from '@/components/Badges';
 
 export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(null);
+  const [activeChatTrip, setActiveChatTrip] = useState(null);
+  const [chatMessage, setChatMessage] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
@@ -20,11 +22,32 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+    
+    try {
+      await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_id: activeChatTrip.trip_id, text: chatMessage, sender: 'Dispatcher' })
+      });
+      setChatMessage('');
+      fetchData();
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  };
+
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+    const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
 
   const handleDispatch = async (requestId) => {
     setDispatching(requestId);
@@ -110,7 +133,7 @@ export default function DashboardPage() {
 
       <div className="table-wrapper" style={{ marginBottom: 20 }}>
         <div className="table-header">
-          <h3>🔴 Live Emergency Feed</h3>
+          <h3><span className="pulse-dot"></span> Live Emergency Feed</h3>
         </div>
         {data?.activeView?.length > 0 ? (
           <table>
@@ -126,7 +149,7 @@ export default function DashboardPage() {
                   <td style={{ fontWeight: 600 }}>#{row.request_id}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{row.patient_name}</div>
-                    <div style={{ marginTop: 6 }}>
+                    <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       <select 
                         className="form-input btn-sm" 
                         style={{ fontSize: 10, padding: '2px 8px', width: 'auto', background: 'rgba(255,255,255,0.05)' }}
@@ -144,6 +167,11 @@ export default function DashboardPage() {
                         <option value="Burn Unit">Burn Unit</option>
                         <option value="Pediatrics">Pediatrics</option>
                       </select>
+                      {!row.primary_specialization && row.suggested_spec && (
+                        <span className="badge" style={{ fontSize: 9, background: 'rgba(10,132,255,0.1)', color: 'var(--blue)', cursor: 'help' }} title="AI Suggestion based on patient profile">
+                          💡 Suggest: {row.suggested_spec}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td><span className="badge badge-critical" style={{ fontSize: 11 }}>{row.blood_type}</span></td>
@@ -174,6 +202,11 @@ export default function DashboardPage() {
                       }}>
                         Profile
                       </button>
+                      {row.trip_id && (
+                        <button className="btn btn-secondary btn-sm" onClick={() => setActiveChatTrip(row)}>
+                          <MessageCircle size={14} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -185,27 +218,84 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {data?.recentTrips?.length > 0 && (
-        <div className="table-wrapper">
-          <div className="table-header">
-            <h3><Clock size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Recent Dispatches</h3>
-          </div>
-          <table>
-            <thead>
-              <tr><th>Trip</th><th>Patient</th><th>Ambulance</th><th>Hospital</th><th>Dispatched At</th></tr>
-            </thead>
-            <tbody>
-              {data.recentTrips.map((t) => (
-                <tr key={t.trip_id}>
-                  <td style={{ fontWeight: 600 }}>#{t.trip_id}</td>
-                  <td>{t.patient_name}</td>
-                  <td>{t.license_plate}</td>
-                  <td>{t.hospital_name}</td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{new Date(t.time_dispatched).toLocaleString()}</td>
-                </tr>
+      {activeChatTrip && (
+        <div className="modal-overlay" onClick={() => setActiveChatTrip(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3>Chat with Driver (Trip #{activeChatTrip.trip_id})</h3>
+              <button className="btn-ghost" onClick={() => setActiveChatTrip(null)}><X size={18}/></button>
+            </div>
+            <div style={{ height: 300, overflowY: 'auto', padding: '10px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(data.chatMessages || []).filter(m => m.trip_id === activeChatTrip.trip_id).map((m, i) => (
+                <div key={i} style={{ alignSelf: m.sender === 'Dispatcher' ? 'flex-end' : 'flex-start', background: m.sender === 'Dispatcher' ? 'var(--blue)' : 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 12, maxWidth: '80%' }}>
+                  <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>{m.sender}</div>
+                  <div style={{ fontSize: 13 }}>{m.text}</div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Type a message..." 
+                value={chatMessage}
+                onChange={e => setChatMessage(e.target.value)}
+              />
+              <button type="submit" className="btn btn-primary"><Send size={18}/></button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {data?.recentTrips?.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+          <div className="table-wrapper">
+            <div className="table-header">
+              <h3><Clock size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Recent Dispatches</h3>
+            </div>
+            <table>
+              <thead>
+                <tr><th>Trip</th><th>Patient</th><th>Ambulance</th><th>Hospital</th><th>Time</th></tr>
+              </thead>
+              <tbody>
+                {data.recentTrips.map((t) => (
+                  <tr key={t.trip_id}>
+                    <td style={{ fontWeight: 600 }}>#{t.trip_id}</td>
+                    <td>{t.patient_name}</td>
+                    <td>{t.license_plate}</td>
+                    <td>{t.hospital_name}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{new Date(t.time_dispatched).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="table-wrapper">
+            <div className="table-header">
+              <h3><Zap size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Fleet Insights</h3>
+            </div>
+            <div style={{ padding: 16 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Response Time (Avg)</label>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--green)' }}>8.4 min</div>
+                <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: 8 }}>
+                   <div style={{ width: '84%', height: '100%', background: 'var(--green)', borderRadius: 2 }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Fleet Utilization</label>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--blue)' }}>{Math.round((s.dispatchedAmbulances / (s.availableAmbulances + s.dispatchedAmbulances)) * 100) || 0}%</div>
+                <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: 8 }}>
+                   <div style={{ width: `${(s.dispatchedAmbulances / (s.availableAmbulances + s.dispatchedAmbulances)) * 100 || 0}%`, height: '100%', background: 'var(--blue)', borderRadius: 2 }} />
+                </div>
+              </div>
+              <div style={{ marginTop: 20, padding: 12, background: 'rgba(255,159,10,0.05)', borderRadius: 8, border: '1px dashed rgba(255,159,10,0.3)' }}>
+                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--yellow)' }}>🔥 Area Hotspot</div>
+                 <div style={{ fontSize: 14, marginTop: 4 }}>Dhanmondi / Panthapath</div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

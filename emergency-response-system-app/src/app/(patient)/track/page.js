@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Navigation, PhoneCall, Truck, AlertTriangle, Building2, ShieldAlert } from 'lucide-react';
 import MapView from '@/components/MapView';
 import { SeverityBadge } from '@/components/Badges';
@@ -8,13 +8,7 @@ export default function PatientTrackPage() {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTrip();
-    const interval = setInterval(fetchTrip, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchTrip = async () => {
+  const fetchTrip = useCallback(async () => {
     try {
       // For the demo, we fetch the most recent active dispatch
       const res = await fetch('/api/patient/track');
@@ -25,7 +19,18 @@ export default function PatientTrackPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      await fetchTrip();
+    };
+    init();
+    const interval = setInterval(fetchTrip, 5000);
+    return () => clearInterval(interval);
+  }, [fetchTrip]);
+
+
 
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
 

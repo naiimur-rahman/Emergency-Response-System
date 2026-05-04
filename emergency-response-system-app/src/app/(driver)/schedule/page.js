@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar as CalendarIcon, Clock, AlertCircle } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
@@ -8,22 +8,32 @@ export default function Schedule() {
   const [data, setData] = useState({ hours: '0 hrs', nextShift: '-', shifts: [] });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (activeDriver?.id) {
+  const fetchData = useCallback(async () => {
+    if (!activeDriver?.id) return;
+    try {
       setLoading(true);
-      fetch(`/api/driver/schedule?driver_id=${activeDriver.id}`)
-        .then(res => res.json())
-        .then(resData => {
-          // Calculate mock hours and next shift based on shifts length
-          setData({
-             hours: (resData.shifts.length * 8) + ' hrs',
-             nextShift: resData.shifts.length > 0 ? 'Upcoming' : '-',
-             shifts: resData.shifts
-          });
-          setLoading(false);
-        });
+      const res = await fetch(`/api/driver/schedule?driver_id=${activeDriver.id}`);
+      const resData = await res.json();
+      setData({
+         hours: (resData.shifts.length * 8) + ' hrs',
+         nextShift: resData.shifts.length > 0 ? 'Upcoming' : '-',
+         shifts: resData.shifts
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   }, [activeDriver]);
+
+  useEffect(() => {
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [fetchData]);
+
+
   return (
     <div className="page-container">
       <div className="page-header">

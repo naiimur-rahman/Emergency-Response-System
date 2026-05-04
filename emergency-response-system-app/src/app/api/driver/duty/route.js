@@ -34,7 +34,17 @@ export async function GET(request) {
       LIMIT 1
     `, [driver_id || 1]);
 
-    return NextResponse.json({ active_trip: res.rows[0] || null });
+    const trip = res.rows[0] || null;
+    let chatMessages = [];
+    if (trip) {
+      const chatRes = await query('SELECT * FROM chat_messages WHERE trip_id = $1 ORDER BY timestamp ASC', [trip.trip_id]);
+      chatMessages = chatRes.rows;
+    }
+
+    return NextResponse.json({ 
+      active_trip: trip,
+      chat_messages: chatMessages
+    });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -27,7 +27,13 @@ export default function RequestsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [fetchData]);
+
 
   const handleCreate = async () => {
     try {

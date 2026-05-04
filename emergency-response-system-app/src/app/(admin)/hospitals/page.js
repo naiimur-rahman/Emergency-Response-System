@@ -28,7 +28,13 @@ export default function HospitalsPage() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [fetchData]);
+
 
   const addHospital = async () => {
     await fetch('/api/hospitals', {
@@ -64,7 +70,7 @@ export default function HospitalsPage() {
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
 
   const filteredHospitals = selectedSpec 
-    ? hospitals.filter(h => h.specializations.includes(selectedSpec))
+    ? hospitals.filter(h => h.specializations?.includes(selectedSpec))
     : hospitals;
 
   return (
@@ -128,7 +134,7 @@ export default function HospitalsPage() {
                 </div>
                 <div className="card-body">
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
-                    {h.specializations.map((s, i) => (
+                    {(h.specializations || []).map((s, i) => (
                       <span key={i} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Stethoscope size={10} /> {s}
                       </span>

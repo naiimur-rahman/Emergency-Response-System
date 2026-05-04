@@ -1,13 +1,23 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
+import mockData from './mockData';
+
 
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-  const [availableDrivers, setAvailableDrivers] = useState([]);
-  const [activeDriver, setActiveDriver] = useState(null);
-  const [activePatient, setActivePatient] = useState({ id: 1, name: 'Abdur Rahman' });
+  const [availableDrivers, setAvailableDrivers] = useState(mockData.drivers.map(d => ({
+    id: d.id,
+    name: d.name,
+    license: d.license,
+    status: d.status,
+    role: d.status === 'On_Duty' ? 'Active Paramedic' : 'On-Call Driver',
+    vehicle: 'DHA-11-9922'
+  })));
+  const [activeDriver, setActiveDriver] = useState(availableDrivers[0] || null);
+  const [activePatient, setActivePatient] = useState(mockData.patients[0] || { id: 1, name: 'Abdur Rahman' });
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     let isMounted = true;
