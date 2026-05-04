@@ -6,18 +6,11 @@ import mockData from './mockData';
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-  const [availableDrivers, setAvailableDrivers] = useState(mockData.drivers.map(d => ({
-    id: d.id,
-    name: d.name,
-    license: d.license,
-    status: d.status,
-    role: d.status === 'On_Duty' ? 'Active Paramedic' : 'On-Call Driver',
-    vehicle: 'DHA-11-9922'
-  })));
-  const [activeDriver, setActiveDriver] = useState(availableDrivers[0] || null);
-  const [activePatient, setActivePatient] = useState(mockData.patients[0] || { id: 1, name: 'Abdur Rahman' });
+  const [availableDrivers, setAvailableDrivers] = useState([]);
+  const [availablePatients, setAvailablePatients] = useState([]);
+  const [activeDriver, setActiveDriver] = useState(null);
+  const [activePatient, setActivePatient] = useState(null);
   const [loading, setLoading] = useState(true);
-
 
   useEffect(() => {
     let isMounted = true;
@@ -34,7 +27,7 @@ export function UserProvider({ children }) {
         if (!isMounted) return;
 
         if (Array.isArray(dbDrivers) && dbDrivers.length > 0) {
-           const formattedDrivers = dbDrivers.map((d, index) => ({
+           const formattedDrivers = dbDrivers.map(d => ({
               id: d.driver_id,
               name: d.name,
               license: d.license_no,
@@ -52,7 +45,19 @@ export function UserProvider({ children }) {
         }
 
         if (Array.isArray(dbPatients) && dbPatients.length > 0) {
-           setActivePatient({ id: dbPatients[0].patient_id, name: dbPatients[0].name });
+           const formattedPatients = dbPatients.map(p => ({
+              id: p.patient_id,
+              name: p.name,
+              blood_type: p.blood_type
+           }));
+           setAvailablePatients(formattedPatients);
+           
+           const saved = localStorage.getItem('emergency_active_patient');
+           let current;
+           if (saved) {
+             current = formattedPatients.find(x => x.id === parseInt(saved));
+           }
+           setActivePatient(current || formattedPatients[0]);
         }
       } catch (err) {
         console.error('Failed to load portal data', err);
@@ -74,8 +79,20 @@ export function UserProvider({ children }) {
     }
   };
 
+  const setPatient = (patientId) => {
+    const p = availablePatients.find(x => x.id === parseInt(patientId));
+    if (p) {
+      setActivePatient(p);
+      localStorage.setItem('emergency_active_patient', p.id.toString());
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ activeDriver, setDriver, availableDrivers, activePatient, loading }}>
+    <UserContext.Provider value={{ 
+      activeDriver, setDriver, availableDrivers, 
+      activePatient, setPatient, availablePatients, 
+      loading 
+    }}>
       {children}
     </UserContext.Provider>
   );
