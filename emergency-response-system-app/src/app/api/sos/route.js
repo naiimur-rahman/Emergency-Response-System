@@ -3,19 +3,25 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { lat, lon, name, phone, blood_type, severity = 'Critical' } = await request.json();
+    const { lat, lon, name, phone, blood_type, severity = 'Critical', patient_id } = await request.json();
 
-    // Step 1: Find or create patient
+    // Step 1: Resolve patient — use patient_id if logged in, else phone lookup
     let patientId;
-    const existing = await query('SELECT patient_id FROM patients WHERE phone = $1 LIMIT 1', [phone]);
-    if (existing.rows.length > 0) {
-      patientId = existing.rows[0].patient_id;
+    if (patient_id) {
+      patientId = patient_id;
+    } else if (phone) {
+      const existing = await query('SELECT patient_id FROM patients WHERE phone = $1 LIMIT 1', [phone]);
+      if (existing.rows.length > 0) {
+        patientId = existing.rows[0].patient_id;
+      } else {
+        const newPatient = await query(
+          'INSERT INTO patients (name, phone, blood_type) VALUES ($1, $2, $3) RETURNING patient_id',
+          [name, phone, blood_type || null]
+        );
+        patientId = newPatient.rows[0].patient_id;
+      }
     } else {
-      const newPatient = await query(
-        'INSERT INTO patients (name, phone, blood_type) VALUES ($1, $2, $3) RETURNING patient_id',
-        [name, phone, blood_type || null]
-      );
-      patientId = newPatient.rows[0].patient_id;
+      return NextResponse.json({ error: 'No patient identity provided' }, { status: 400 });
     }
 
     // Step 2: Create emergency request
