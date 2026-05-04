@@ -1,4 +1,58 @@
 -- ==========================================
+-- EMERGENCY RESPONSE SYSTEM: SUPABASE RESET
+-- Run this only when you want a clean setup.
+-- ==========================================
+
+DROP MATERIALIZED VIEW IF EXISTS emergency_analytics_mv CASCADE;
+DROP VIEW IF EXISTS Active_Dashboard_View CASCADE;
+
+DO $$ BEGIN
+    IF to_regclass('trip_logs') IS NOT NULL THEN
+        DROP TRIGGER IF EXISTS After_Trip_Log_Insert ON Trip_Logs;
+    END IF;
+END $$;
+
+DO $$ BEGIN
+    IF to_regclass('emergency_requests') IS NOT NULL THEN
+        DROP TRIGGER IF EXISTS After_Request_Resolved ON Emergency_Requests;
+    END IF;
+END $$;
+
+DROP FUNCTION IF EXISTS trg_reserve_resources() CASCADE;
+DROP FUNCTION IF EXISTS trg_release_resources() CASCADE;
+DROP FUNCTION IF EXISTS fn_Automated_Dispatch(INT, INT) CASCADE;
+
+DROP TABLE IF EXISTS Trip_Feedback CASCADE;
+DROP TABLE IF EXISTS Billing CASCADE;
+DROP TABLE IF EXISTS Vehicle_Inventory CASCADE;
+DROP TABLE IF EXISTS Driver_Certifications CASCADE;
+DROP TABLE IF EXISTS Maintenance_Logs CASCADE;
+DROP TABLE IF EXISTS Shift_Schedules CASCADE;
+DROP TABLE IF EXISTS Patient_Emergency_Contacts CASCADE;
+DROP TABLE IF EXISTS Hospital_Specializations CASCADE;
+DROP TABLE IF EXISTS Specializations CASCADE;
+DROP TABLE IF EXISTS Emergency_Types CASCADE;
+DROP TABLE IF EXISTS Dispatch_Zones CASCADE;
+DROP TABLE IF EXISTS Audit_Log CASCADE;
+
+DROP TABLE IF EXISTS Trip_Logs CASCADE;
+DROP TABLE IF EXISTS Emergency_Requests CASCADE;
+DROP TABLE IF EXISTS Dispatchers CASCADE;
+DROP TABLE IF EXISTS Drivers CASCADE;
+DROP TABLE IF EXISTS Ambulances CASCADE;
+DROP TABLE IF EXISTS Hospitals CASCADE;
+DROP TABLE IF EXISTS Patient_Conditions CASCADE;
+DROP TABLE IF EXISTS Patients CASCADE;
+
+DROP TYPE IF EXISTS equipment_lvl CASCADE;
+DROP TYPE IF EXISTS vehicle_status CASCADE;
+DROP TYPE IF EXISTS shift_status CASCADE;
+DROP TYPE IF EXISTS severity_lvl CASCADE;
+DROP TYPE IF EXISTS req_status CASCADE;
+DROP TYPE IF EXISTS hospital_type CASCADE;
+-- ==========================================
+-- EMERGENCY RESPONSE SYSTEM: CORE SCHEMA (DDL)
+-- ==========================================
 
 -- Enable Spatial Features
 CREATE EXTENSION IF NOT EXISTS postgis;
@@ -112,31 +166,6 @@ LEFT JOIN Ambulances a ON tl.Vehicle_ID = a.Vehicle_ID
 LEFT JOIN Hospitals h ON tl.Hospital_ID = h.Hospital_ID
 WHERE er.Status IN ('Pending', 'Active', 'En Route', 'Picked Up', 'Arrived');
 
--- AI Severity Predictor (Database side)
-CREATE OR REPLACE FUNCTION trg_predict_severity() RETURNS TRIGGER AS $$
-DECLARE
-    v_Condition VARCHAR;
-BEGIN
-    -- Only evaluate if severity isn't already Critical
-    IF NEW.Severity_Level != 'Critical' THEN
-        -- Get patient's primary condition
-        SELECT Condition_Name INTO v_Condition FROM Patient_Conditions WHERE Patient_ID = NEW.Patient_ID LIMIT 1;
-        
-        -- Override severity based on high-risk keywords
-        IF v_Condition ILIKE '%Heart%' OR v_Condition ILIKE '%Stroke%' OR v_Condition ILIKE '%Asthma%' THEN
-            NEW.Severity_Level := 'Critical';
-        ELSIF v_Condition ILIKE '%Diabetes%' OR v_Condition ILIKE '%Hypertension%' THEN
-            NEW.Severity_Level := 'High';
-        END IF;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS Before_Request_Insert ON Emergency_Requests;
-CREATE TRIGGER Before_Request_Insert
-BEFORE INSERT ON Emergency_Requests FOR EACH ROW EXECUTE FUNCTION trg_predict_severity();
-
 -- Triggers for Auto-Dispatch Logic
 CREATE OR REPLACE FUNCTION trg_reserve_resources() RETURNS TRIGGER AS $$
 BEGIN
@@ -155,51 +184,15 @@ CREATE TRIGGER After_Trip_Log_Insert
 AFTER INSERT ON Trip_Logs FOR EACH ROW EXECUTE FUNCTION trg_reserve_resources();
 
 CREATE OR REPLACE FUNCTION trg_release_resources() RETURNS TRIGGER AS $$
-DECLARE
-    v_Vehicle_ID INT;
-    v_Hospital_ID INT;
-    v_Trip_ID INT;
-    v_Distance_KM NUMERIC;
-    v_Base_Fee DECIMAL := 50.00;
-    v_Per_KM_Fee DECIMAL := 5.00;
-    v_Equipment_Fee DECIMAL := 0.00;
-    v_Equipment_Level equipment_lvl;
-    v_Hospital_Coords GEOMETRY;
 BEGIN
     IF NEW.Status = 'Resolved' THEN
-        -- Get Trip Details
-        SELECT Trip_ID, Vehicle_ID, Hospital_ID INTO v_Trip_ID, v_Vehicle_ID, v_Hospital_ID
-        FROM Trip_Logs WHERE Request_ID = NEW.Request_ID LIMIT 1;
-
-        -- 1. Automated Predictive Maintenance Flagging
+        -- Automated Predictive Maintenance Flagging
         UPDATE Ambulances 
         SET Current_Status = CASE 
                                 WHEN Trips_Since_Maintenance >= 50 THEN 'Maintenance_Required'::vehicle_status 
                                 ELSE 'Available'::vehicle_status 
                              END
-        WHERE Vehicle_ID = v_Vehicle_ID
-        RETURNING Equipment_Level INTO v_Equipment_Level;
-
-        -- 2. Automated Billing Generation
-        IF v_Trip_ID IS NOT NULL THEN
-            -- Calculate Distance
-            SELECT Location_Coords INTO v_Hospital_Coords FROM Hospitals WHERE Hospital_ID = v_Hospital_ID;
-            v_Distance_KM := COALESCE(ROUND(ST_Distance(v_Hospital_Coords::geography, NEW.Pickup_Coords::geography)::numeric / 1000, 2), 5.00); -- Default to 5km if error
-            
-            -- Determine Equipment Fee
-            IF v_Equipment_Level = 'Advanced' THEN
-                v_Equipment_Fee := 100.00;
-            END IF;
-
-            -- Generate Bill
-            INSERT INTO Billing (Trip_ID, Patient_ID, Amount, Tax)
-            VALUES (
-                v_Trip_ID, 
-                NEW.Patient_ID, 
-                v_Base_Fee + (v_Distance_KM * v_Per_KM_Fee) + v_Equipment_Fee,
-                (v_Base_Fee + (v_Distance_KM * v_Per_KM_Fee) + v_Equipment_Fee) * 0.15 -- 15% Tax
-            );
-        END IF;
+        WHERE Vehicle_ID = (SELECT Vehicle_ID FROM Trip_Logs WHERE Request_ID = NEW.Request_ID);
     END IF;
     RETURN NEW;
 END;

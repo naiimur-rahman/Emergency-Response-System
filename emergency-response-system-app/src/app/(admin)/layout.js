@@ -1,12 +1,13 @@
 'use client';
 import PortalSidebar from '@/components/PortalSidebar';
-import { Activity, Building2, ClipboardList, ShieldCheck, Wrench } from 'lucide-react';
+import { Activity, Building2, ClipboardList, ShieldCheck, Wrench, Database } from 'lucide-react';
 
 const navItems = [
   { href: '/analytics', label: 'Analytics', icon: Activity },
   { href: '/hospitals', label: 'Hospitals', icon: Building2 },
   { href: '/billing', label: 'Billing', icon: ClipboardList },
   { href: '/maintenance', label: 'Maintenance', icon: Wrench },
+  { href: '/queries', label: 'Live Queries', icon: Database },
 ];
 
 
