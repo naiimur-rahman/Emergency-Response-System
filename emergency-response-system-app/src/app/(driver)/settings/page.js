@@ -4,6 +4,7 @@ import { useUser } from '@/lib/UserContext';
 
 export default function Profile() {
   const { activeDriver } = useUser();
+  if (!activeDriver) return null;
   return (
     <div className="page-container">
       <div className="page-header">
