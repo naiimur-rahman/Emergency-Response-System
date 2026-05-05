@@ -229,7 +229,7 @@ export default function DashboardPage() {
               {(data.chatMessages || []).filter(m => m.trip_id === activeChatTrip.trip_id).map((m, i) => (
                 <div key={i} style={{ alignSelf: m.sender === 'Dispatcher' ? 'flex-end' : 'flex-start', background: m.sender === 'Dispatcher' ? 'var(--blue)' : 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 12, maxWidth: '80%' }}>
                   <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>{m.sender}</div>
-                  <div style={{ fontSize: 13 }}>{m.text}</div>
+                  <div style={{ fontSize: 13 }}>{m.message_text}</div>
                 </div>
               ))}
             </div>

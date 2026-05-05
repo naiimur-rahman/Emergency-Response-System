@@ -326,7 +326,7 @@ export default function DriverDutyPage() {
                 {chatMessages.map((m, i) => (
                   <div key={i} style={{ alignSelf: m.sender.includes('Driver') ? 'flex-end' : 'flex-start', background: m.sender.includes('Driver') ? 'rgba(10,132,255,0.2)' : 'rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 16, maxWidth: '85%', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ fontSize: 9, fontWeight: 800, opacity: 0.5, marginBottom: 4 }}>{m.sender.toUpperCase()}</div>
-                    <div style={{ fontSize: 13, lineHeight: 1.4 }}>{m.text}</div>
+                    <div style={{ fontSize: 13, lineHeight: 1.4 }}>{m.message_text}</div>
                   </div>
                 ))}
               </div>
