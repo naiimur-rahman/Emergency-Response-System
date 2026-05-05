@@ -16,7 +16,10 @@ class MqttService {
   }
 
   connect(clientId = `nexus-${Math.random().toString(16).substr(2, 8)}`) {
-    if (this.client) return;
+    if (this.client || !CONFIG.host) {
+      if (!CONFIG.host) console.warn('MQTT Connection skipped: NEXT_PUBLIC_MQTT_HOST is missing.');
+      return;
+    }
 
     const url = `wss://${CONFIG.host}:${CONFIG.port}/mqtt`;
     const client = mqtt.connect(url, {

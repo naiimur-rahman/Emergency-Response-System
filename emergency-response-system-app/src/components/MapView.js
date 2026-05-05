@@ -60,29 +60,13 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
     });
   }, []);
 
-  // Simulation Logic (Only run if no realtimeMarker)
+  // No simulation anymore - only real MQTT data
   useEffect(() => {
-    if (realtimeMarker || !pickupCoords || !hospitals.length || !['En Route', 'Picked Up'].includes(requestStatus)) {
-      if (!realtimeMarker) setAmbulancePos(null);
-      return;
+    if (!realtimeMarker) {
+      setAmbulancePos(null);
     }
+  }, [realtimeMarker]);
 
-    const station = [23.7750, 90.4100]; // Fixed station pos
-    const destination = requestStatus === 'En Route' ? [pickupCoords.lat, pickupCoords.lon] : [hospitals[0].lat, hospitals[0].lon];
-    const start = requestStatus === 'En Route' ? station : [pickupCoords.lat, pickupCoords.lon];
-
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 0.01;
-      if (progress >= 1) progress = 0; // Loop for demo
-
-      const lat = start[0] + (destination[0] - start[0]) * progress;
-      const lon = start[1] + (destination[1] - start[1]) * progress;
-      setAmbulancePos([lat, lon]);
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [pickupCoords, hospitals, requestStatus, realtimeMarker]);
 
   if (!MapComponents) {
     return <div className="map-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)' }}><div className="spinner" /></div>;
