@@ -56,7 +56,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO hospitals (name, location_coords, general_beds, icu_beds, type) VALUES
 ('United Hospital Gulshan', ST_SetSRID(ST_MakePoint(90.4194, 23.8055), 4326), 500, 80, 'Private'),
 ('LabAid Dhanmondi', ST_SetSRID(ST_MakePoint(90.3822, 23.7431), 4326), 300, 50, 'Private'),
-('Ibne Sina Kalyanpur', ST_SetSRID(ST_MakePoint(90.3475, 23.7845), 4326), 250, 30, 'Private'),
+('Ibne Sina Kalyanpur', ST_SetSRID(ST_MakePoint(90.3533, 23.7844), 4326), 250, 30, 'Private'),
 ('BRB Hospital Panthapath', ST_SetSRID(ST_MakePoint(90.3885, 23.7511), 4326), 400, 45, 'Private'),
 ('Popular Diagnostic Centre', ST_SetSRID(ST_MakePoint(90.3811, 23.7410), 4326), 100, 10, 'Private'),
 ('Asgar Ali Hospital', ST_SetSRID(ST_MakePoint(90.4185, 23.7015), 4326), 250, 40, 'Private'),
