@@ -95,13 +95,19 @@ ON CONFLICT DO NOTHING;
 INSERT INTO Ambulances (License_Plate, Equipment_Level, Current_Status) VALUES 
 ('DHA-11-9922', 'Advanced', 'Available'),
 ('DHA-11-8833', 'Basic', 'Available'),
-('DHA-12-4455', 'Advanced', 'Available')
+('DHA-12-4455', 'Advanced', 'Available'),
+('DHA-14-1122', 'Basic', 'Available'),
+('DHA-15-3344', 'Advanced', 'Available'),
+('DHA-16-5566', 'Basic', 'Available')
 ON CONFLICT DO NOTHING;
 
 -- 7. Drivers
 INSERT INTO Drivers (Name, License_No, Shift_Status) VALUES 
 ('Rahim Uddin', 'BD-DL-99384', 'On_Duty'),
-('Karim Mia', 'BD-DL-22839', 'On_Duty')
+('Karim Mia', 'BD-DL-22839', 'On_Duty'),
+('Selim Ahmed', 'BD-DL-44556', 'Off_Duty'),
+('Tanvir Hossain', 'BD-DL-77889', 'On_Duty'),
+('Jasim Uddin', 'BD-DL-11223', 'Off_Duty')
 ON CONFLICT DO NOTHING;
 
 -- 8. Dispatchers
@@ -211,7 +217,7 @@ WITH Target_Patient AS (
     FROM Patients p
     JOIN Patient_Conditions pc ON p.Patient_ID = pc.Patient_ID
     JOIN Emergency_Requests er ON p.Patient_ID = er.Patient_ID
-    WHERE er.Request_ID = 1 -- Example: Abdur Rahman (Hypertension)
+    WHERE er.Request_ID = (SELECT Request_ID FROM Emergency_Requests LIMIT 1) -- Dynamic ID lookup
 )
 SELECT 
     h.Name AS Hospital_Name,
@@ -270,7 +276,7 @@ ORDER BY Danger_Rank ASC;
 -- Q4: WINDOW FUNCTIONS — Hospital Distance Ranking
 -- ============================================================
 WITH Patient_Location AS (
-    SELECT Pickup_Coords FROM Emergency_Requests WHERE Request_ID = 1
+    SELECT Pickup_Coords FROM Emergency_Requests WHERE Request_ID = (SELECT Request_ID FROM Emergency_Requests LIMIT 1)
 )
 SELECT 
     h.Name,
