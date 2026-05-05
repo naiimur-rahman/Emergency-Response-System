@@ -82,8 +82,8 @@ export async function POST(request) {
             FROM trip_logs tl
             JOIN hospitals h ON tl.hospital_id = h.hospital_id
             JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
-            JOIN emergency_requests er ON tl.request_id = er.request_id
-            WHERE tl.request_id = $1
+            JOIN emergency_requests er ON tl.trip_id = er.request_id
+            WHERE tl.trip_id = $1
           `, [requestId]);
           
           if (actualTrip.rows.length > 0) {

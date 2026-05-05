@@ -32,7 +32,7 @@ export async function GET() {
       `),
       query(`SELECT tl.trip_id, tl.time_dispatched, p.name as patient_name, h.name as hospital_name, a.license_plate
              FROM trip_logs tl
-             JOIN emergency_requests er ON tl.request_id = er.request_id
+             JOIN emergency_requests er ON tl.trip_id = er.request_id
              JOIN patients p ON er.patient_id = p.patient_id
              JOIN hospitals h ON tl.hospital_id = h.hospital_id
              JOIN ambulances a ON tl.vehicle_id = a.vehicle_id

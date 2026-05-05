@@ -1,8 +1,14 @@
 -- ==========================================
 
--- Enable Spatial & Unique Features
+-- Enable Spatial Features
 CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Custom Short Unique ID Generator (e.g., NX-A1B2C3D4)
+CREATE OR REPLACE FUNCTION generate_emergency_id() RETURNS TEXT AS $$
+BEGIN
+    RETURN 'NX-' || UPPER(SUBSTR(MD5(RANDOM()::TEXT), 1, 8));
+END;
+$$ LANGUAGE plpgsql;
 
 -- Create Custom Enum Types
 DO $$ BEGIN
@@ -82,7 +88,7 @@ CREATE TABLE IF NOT EXISTS Dispatchers (
 );
 
 CREATE TABLE IF NOT EXISTS Emergency_Requests (
-    Request_ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    Request_ID VARCHAR(20) PRIMARY KEY DEFAULT generate_emergency_id(),
     Patient_ID INT NOT NULL REFERENCES Patients(Patient_ID),
     Pickup_Coords GEOMETRY(Point, 4326) NOT NULL,
     Severity_Level severity_lvl NOT NULL,
@@ -91,7 +97,7 @@ CREATE TABLE IF NOT EXISTS Emergency_Requests (
 );
 
 CREATE TABLE IF NOT EXISTS Trip_Logs (
-    Trip_ID UUID PRIMARY KEY REFERENCES Emergency_Requests(Request_ID) ON DELETE CASCADE,
+    Trip_ID VARCHAR(20) PRIMARY KEY REFERENCES Emergency_Requests(Request_ID) ON DELETE CASCADE,
     Vehicle_ID INT NOT NULL REFERENCES Ambulances(Vehicle_ID),
     Driver_ID INT NOT NULL REFERENCES Drivers(Driver_ID),
     Hospital_ID INT NOT NULL REFERENCES Hospitals(Hospital_ID),
@@ -160,7 +166,7 @@ CREATE OR REPLACE FUNCTION trg_release_resources() RETURNS TRIGGER AS $$
 DECLARE
     v_Vehicle_ID INT;
     v_Hospital_ID INT;
-    v_Trip_ID UUID;
+    v_Trip_ID VARCHAR(20);
     v_Distance_KM NUMERIC;
     v_Base_Fee DECIMAL := 50.00;
     v_Per_KM_Fee DECIMAL := 5.00;
@@ -212,7 +218,7 @@ CREATE TRIGGER After_Request_Resolved
 AFTER UPDATE ON Emergency_Requests FOR EACH ROW EXECUTE FUNCTION trg_release_resources();
 
 -- Automated Dispatch Algorithm (Champion Version)
-CREATE OR REPLACE FUNCTION fn_Automated_Dispatch(p_Request_ID UUID, p_Dispatcher_ID INT) RETURNS TEXT AS $$
+CREATE OR REPLACE FUNCTION fn_Automated_Dispatch(p_Request_ID VARCHAR(20), p_Dispatcher_ID INT) RETURNS TEXT AS $$
 DECLARE
     v_Patient_Coords GEOMETRY; v_Severity severity_lvl; v_Patient_ID INT; 
     v_Ambulance INT; v_Hospital INT; v_Driver INT; v_Condition VARCHAR;
@@ -322,7 +328,7 @@ CREATE TABLE IF NOT EXISTS Vehicle_Inventory (
 
 CREATE TABLE IF NOT EXISTS Billing (
     Bill_ID SERIAL PRIMARY KEY,
-    Trip_ID UUID NOT NULL REFERENCES Trip_Logs(Trip_ID) ON DELETE CASCADE,
+    Trip_ID VARCHAR(20) NOT NULL REFERENCES Trip_Logs(Trip_ID) ON DELETE CASCADE,
     Patient_ID INT NOT NULL REFERENCES Patients(Patient_ID),
     Amount DECIMAL(10,2) NOT NULL,
     Tax DECIMAL(10,2) DEFAULT 0.00,
@@ -344,7 +350,7 @@ CREATE TABLE IF NOT EXISTS Driver_Certifications (
 
 CREATE TABLE IF NOT EXISTS Trip_Feedback (
     Feedback_ID SERIAL PRIMARY KEY,
-    Trip_ID UUID NOT NULL UNIQUE REFERENCES Trip_Logs(Trip_ID) ON DELETE CASCADE,
+    Trip_ID VARCHAR(20) NOT NULL UNIQUE REFERENCES Trip_Logs(Trip_ID) ON DELETE CASCADE,
     Rating INT NOT NULL CHECK (Rating BETWEEN 1 AND 5),
     Comments TEXT,
     Response_Time_Rating INT CHECK (Response_Time_Rating BETWEEN 1 AND 5),
@@ -407,7 +413,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_analytics_mv_date ON emergency_analytics_m
 -- Includes relational integrity via Foreign Key to trip_logs.
 CREATE TABLE IF NOT EXISTS chat_messages (
     message_id SERIAL PRIMARY KEY,
-    trip_id UUID REFERENCES trip_logs(trip_id) ON DELETE CASCADE,
+    trip_id VARCHAR(20) REFERENCES trip_logs(trip_id) ON DELETE CASCADE,
     sender VARCHAR(50) NOT NULL,
     message_text TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -416,7 +422,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 -- 2. ENHANCED AUTOMATED DISPATCH PROCEDURE
 -- This function intelligently matches patients to the best possible resources.
 -- Fixed: "FOR UPDATE cannot be applied to the nullable side of an outer join" error.
-CREATE OR REPLACE FUNCTION public.fn_automated_dispatch(p_request_id uuid, p_dispatcher_id integer)
+CREATE OR REPLACE FUNCTION public.fn_automated_dispatch(p_request_id varchar(20), p_dispatcher_id integer)
  RETURNS text
  LANGUAGE plpgsql
 AS $function$
