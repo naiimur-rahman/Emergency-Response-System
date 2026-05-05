@@ -1,7 +1,8 @@
 -- ==========================================
 
--- Enable Spatial Features
+-- Enable Spatial & Unique Features
 CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create Custom Enum Types
 DO $$ BEGIN
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS Dispatchers (
 );
 
 CREATE TABLE IF NOT EXISTS Emergency_Requests (
-    Request_ID SERIAL PRIMARY KEY,
+    Request_ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     Patient_ID INT NOT NULL REFERENCES Patients(Patient_ID),
     Pickup_Coords GEOMETRY(Point, 4326) NOT NULL,
     Severity_Level severity_lvl NOT NULL,
@@ -90,8 +91,7 @@ CREATE TABLE IF NOT EXISTS Emergency_Requests (
 );
 
 CREATE TABLE IF NOT EXISTS Trip_Logs (
-    Trip_ID SERIAL PRIMARY KEY,
-    Request_ID INT NOT NULL UNIQUE REFERENCES Emergency_Requests(Request_ID),
+    Trip_ID UUID PRIMARY KEY REFERENCES Emergency_Requests(Request_ID) ON DELETE CASCADE,
     Vehicle_ID INT NOT NULL REFERENCES Ambulances(Vehicle_ID),
     Driver_ID INT NOT NULL REFERENCES Drivers(Driver_ID),
     Hospital_ID INT NOT NULL REFERENCES Hospitals(Hospital_ID),
@@ -109,7 +109,7 @@ SELECT
     h.Name AS Destination_Hospital, h.Type AS Hospital_Type
 FROM Emergency_Requests er
 JOIN Patients p ON er.Patient_ID = p.Patient_ID
-LEFT JOIN Trip_Logs tl ON er.Request_ID = tl.Request_ID
+LEFT JOIN Trip_Logs tl ON er.Request_ID = tl.Trip_ID
 LEFT JOIN Ambulances a ON tl.Vehicle_ID = a.Vehicle_ID
 LEFT JOIN Hospitals h ON tl.Hospital_ID = h.Hospital_ID
 WHERE er.Status IN ('Pending', 'Active', 'En Route', 'Picked Up', 'Arrived');
@@ -160,7 +160,7 @@ CREATE OR REPLACE FUNCTION trg_release_resources() RETURNS TRIGGER AS $$
 DECLARE
     v_Vehicle_ID INT;
     v_Hospital_ID INT;
-    v_Trip_ID INT;
+    v_Trip_ID UUID;
     v_Distance_KM NUMERIC;
     v_Base_Fee DECIMAL := 50.00;
     v_Per_KM_Fee DECIMAL := 5.00;
@@ -171,7 +171,7 @@ BEGIN
     IF NEW.Status = 'Resolved' THEN
         -- Get Trip Details
         SELECT Trip_ID, Vehicle_ID, Hospital_ID INTO v_Trip_ID, v_Vehicle_ID, v_Hospital_ID
-        FROM Trip_Logs WHERE Request_ID = NEW.Request_ID LIMIT 1;
+        FROM Trip_Logs WHERE Trip_ID = NEW.Request_ID LIMIT 1;
 
         -- 1. Automated Predictive Maintenance Flagging
         UPDATE Ambulances 
@@ -212,7 +212,7 @@ CREATE TRIGGER After_Request_Resolved
 AFTER UPDATE ON Emergency_Requests FOR EACH ROW EXECUTE FUNCTION trg_release_resources();
 
 -- Automated Dispatch Algorithm (Champion Version)
-CREATE OR REPLACE FUNCTION fn_Automated_Dispatch(p_Request_ID INT, p_Dispatcher_ID INT) RETURNS TEXT AS $$
+CREATE OR REPLACE FUNCTION fn_Automated_Dispatch(p_Request_ID UUID, p_Dispatcher_ID INT) RETURNS TEXT AS $$
 DECLARE
     v_Patient_Coords GEOMETRY; v_Severity severity_lvl; v_Patient_ID INT; 
     v_Ambulance INT; v_Hospital INT; v_Driver INT; v_Condition VARCHAR;
@@ -247,7 +247,7 @@ BEGIN
         RETURN 'DISPATCH FAILED: Insufficient resources.';
     END IF;
 
-    INSERT INTO Trip_Logs (Request_ID, Vehicle_ID, Driver_ID, Hospital_ID, Dispatcher_ID)
+    INSERT INTO Trip_Logs (Trip_ID, Vehicle_ID, Driver_ID, Hospital_ID, Dispatcher_ID)
     VALUES (p_Request_ID, v_Ambulance, v_Driver, v_Hospital, p_Dispatcher_ID);
 
     UPDATE Emergency_Requests SET Status = 'Active' WHERE Request_ID = p_Request_ID;
@@ -322,7 +322,7 @@ CREATE TABLE IF NOT EXISTS Vehicle_Inventory (
 
 CREATE TABLE IF NOT EXISTS Billing (
     Bill_ID SERIAL PRIMARY KEY,
-    Trip_ID INT NOT NULL REFERENCES Trip_Logs(Trip_ID) ON DELETE CASCADE,
+    Trip_ID UUID NOT NULL REFERENCES Trip_Logs(Trip_ID) ON DELETE CASCADE,
     Patient_ID INT NOT NULL REFERENCES Patients(Patient_ID),
     Amount DECIMAL(10,2) NOT NULL,
     Tax DECIMAL(10,2) DEFAULT 0.00,
@@ -344,7 +344,7 @@ CREATE TABLE IF NOT EXISTS Driver_Certifications (
 
 CREATE TABLE IF NOT EXISTS Trip_Feedback (
     Feedback_ID SERIAL PRIMARY KEY,
-    Trip_ID INT NOT NULL UNIQUE REFERENCES Trip_Logs(Trip_ID) ON DELETE CASCADE,
+    Trip_ID UUID NOT NULL UNIQUE REFERENCES Trip_Logs(Trip_ID) ON DELETE CASCADE,
     Rating INT NOT NULL CHECK (Rating BETWEEN 1 AND 5),
     Comments TEXT,
     Response_Time_Rating INT CHECK (Response_Time_Rating BETWEEN 1 AND 5),
@@ -407,7 +407,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_analytics_mv_date ON emergency_analytics_m
 -- Includes relational integrity via Foreign Key to trip_logs.
 CREATE TABLE IF NOT EXISTS chat_messages (
     message_id SERIAL PRIMARY KEY,
-    trip_id INTEGER REFERENCES trip_logs(trip_id) ON DELETE CASCADE,
+    trip_id UUID REFERENCES trip_logs(trip_id) ON DELETE CASCADE,
     sender VARCHAR(50) NOT NULL,
     message_text TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -416,7 +416,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 -- 2. ENHANCED AUTOMATED DISPATCH PROCEDURE
 -- This function intelligently matches patients to the best possible resources.
 -- Fixed: "FOR UPDATE cannot be applied to the nullable side of an outer join" error.
-CREATE OR REPLACE FUNCTION public.fn_automated_dispatch(p_request_id integer, p_dispatcher_id integer)
+CREATE OR REPLACE FUNCTION public.fn_automated_dispatch(p_request_id uuid, p_dispatcher_id integer)
  RETURNS text
  LANGUAGE plpgsql
 AS $function$
@@ -474,8 +474,8 @@ BEGIN
     END IF;
 
     -- STEP 5: Transactional Fulfillment
-    -- Create the trip log
-    INSERT INTO Trip_Logs (Request_ID, Vehicle_ID, Driver_ID, Hospital_ID, Dispatcher_ID)
+    -- Create the trip log (Using Request_ID as the Trip_ID)
+    INSERT INTO Trip_Logs (Trip_ID, Vehicle_ID, Driver_ID, Hospital_ID, Dispatcher_ID)
     VALUES (p_Request_ID, v_Ambulance, v_Driver, v_Hospital, p_Dispatcher_ID);
 
     -- Update resource statuses
@@ -485,7 +485,7 @@ BEGIN
     -- STEP 6: Initialize Communication
     INSERT INTO chat_messages (trip_id, sender, message_text)
     VALUES (
-        (SELECT trip_id FROM trip_logs WHERE request_id = p_request_id),
+        p_request_id,
         'System',
         'Mission Initialized. Unit ' || v_Ambulance_Plate || ' assigned to ' || v_Hospital_Name
     );

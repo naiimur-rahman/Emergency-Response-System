@@ -64,11 +64,34 @@ export async function POST(request) {
     // Step 5: Auto-dispatch if resources available
     let dispatched = false;
     let dispatchMessage = 'Waiting for dispatcher...';
+    let finalHospital = hospital ? hospital.name : 'Searching...';
+    let finalAmbulance = ambulance ? ambulance.license_plate : 'All units busy';
+    let finalDistance = distanceKm;
+
     if (ambulance && hospital) {
       try {
         const dispatchResult = await query('SELECT fn_automated_dispatch($1, $2) as result', [requestId, 1]);
         dispatchMessage = dispatchResult.rows[0].result;
         dispatched = dispatchMessage.startsWith('DISPATCH SUCCESS');
+        
+        if (dispatched) {
+          // Fetch actual assigned resources from the DB to sync UI
+          const actualTrip = await query(`
+            SELECT h.name as hospital_name, a.license_plate,
+              ST_Distance(h.location_coords::geography, er.pickup_coords::geography) as distance_m
+            FROM trip_logs tl
+            JOIN hospitals h ON tl.hospital_id = h.hospital_id
+            JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
+            JOIN emergency_requests er ON tl.request_id = er.request_id
+            WHERE tl.request_id = $1
+          `, [requestId]);
+          
+          if (actualTrip.rows.length > 0) {
+            finalHospital = actualTrip.rows[0].hospital_name;
+            finalAmbulance = actualTrip.rows[0].license_plate;
+            finalDistance = parseFloat(actualTrip.rows[0].distance_m) / 1000;
+          }
+        }
       } catch (e) {
         dispatchMessage = 'Auto-dispatch failed: ' + e.message;
       }
@@ -79,11 +102,11 @@ export async function POST(request) {
       request_id: requestId,
       dispatched,
       dispatch_message: dispatchMessage,
-      nearest_hospital: hospital ? hospital.name : 'Searching...',
-      distance_km: distanceKm.toFixed(2),
-      ambulance: ambulance ? ambulance.license_plate : 'All units busy',
-      estimated_fare: estimatedFare,
-      eta_minutes: Math.max(3, Math.round(distanceKm * 3)),
+      nearest_hospital: finalHospital,
+      distance_km: finalDistance.toFixed(2),
+      ambulance: finalAmbulance,
+      estimated_fare: Math.round(baseFare + (finalDistance * perKmRate) + severityCharge),
+      eta_minutes: Math.max(3, Math.round(finalDistance * 3)),
     });
   } catch (error) {
     console.error('SOS API Error:', error);

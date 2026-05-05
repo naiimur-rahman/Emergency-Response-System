@@ -122,45 +122,23 @@ INSERT INTO Specializations (Spec_Name, Description) VALUES
 ('Oncology', 'Cancer and tumor treatment')
 ON CONFLICT DO NOTHING;
 
--- 10. Hospital-Specialization links (Comprehensive Mapping)
+-- 10. Hospital-Specialization links (Dynamic ID Mapping)
 INSERT INTO Hospital_Specializations (Hospital_ID, Spec_ID, Specialist_Count) VALUES
--- Core Large Hospitals (Multiple Departments)
-(1, 1, 15), (1, 2, 10), (1, 3, 12), (1, 4, 20), (1, 5, 8), (1, 6, 12), (1, 7, 10), (1, 8, 8), -- DMC
-(2, 1, 12), (2, 2, 8), (2, 3, 4), (2, 4, 10), (2, 6, 6), -- Square
-(3, 1, 10), (3, 2, 7), (3, 3, 5), (3, 4, 8), (3, 6, 9), (3, 7, 6), -- Evercare
-(4, 1, 20), (4, 2, 15), (4, 3, 15), (4, 4, 20), (4, 8, 15), (4, 9, 10), -- BSMMU
+-- Core Large Hospitals
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'Dhaka Medical College'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Cardiology'), 15),
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'Dhaka Medical College'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Neurology'), 10),
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'Dhaka Medical College'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Orthopedics'), 12),
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'Dhaka Medical College'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Trauma Surgery'), 20),
 
--- Specialized Govt Institutes
-(7, 1, 50), -- NICVD (Cardiology focus)
-(8, 9, 40), -- Cancer Institute (Oncology focus)
-(10, 3, 45), -- NITOR (Orthopedic focus)
-(11, 2, 40), -- NINS (Neurology focus)
-(12, 8, 35), -- NIKDU (Nephrology focus)
-(15, 7, 50), -- Dhaka Shishu (Pediatrics focus)
-(17, 4, 15), -- Ophthalmology (Trauma focus)
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'Square Hospital Panthapath'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Cardiology'), 12),
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'Square Hospital Panthapath'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Neurology'), 8),
 
--- Private Specialized
-(20, 1, 15), (20, 4, 8), -- LabAid (Cardiology)
-(21, 2, 10), (21, 4, 6), -- Ibne Sina (Neurology)
-(28, 1, 12), (28, 4, 10), -- Bangladesh Specialized
-(19, 1, 15), (19, 4, 12), (19, 6, 10), -- United
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'Ibne Sina Kalyanpur'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Neurology'), 12),
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'Ibne Sina Kalyanpur'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Trauma Surgery'), 10),
 
--- General Support for others
-(5, 4, 8), (5, 7, 6), -- Kurmitola
-(6, 4, 10), (6, 6, 8), -- Suhrawardy
-(9, 4, 12), (9, 6, 10), -- Mitford
-(13, 4, 8), (13, 8, 6), -- Mugda
-(14, 8, 15), -- BIRDEM (Renal/Endocrine)
-(22, 1, 8), (22, 4, 6), -- BRB
-(24, 4, 10), (24, 6, 8), -- Asgar Ali
-(25, 3, 10), (25, 4, 6), -- Green Life
-(26, 4, 12), (26, 6, 10), -- Anwar Khan
-(27, 4, 8), (27, 6, 12), -- Central
-(29, 4, 6), (29, 7, 8), -- Impulse
-(30, 4, 8), -- Universal
-(31, 4, 5), -- AMZ
-(32, 4, 6), -- Comfort
-(33, 4, 10) -- Japan East West
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'NICVD (Heart Institute)'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Cardiology'), 50),
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'National Institute of Neurosciences (NINS)'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Neurology'), 40),
+((SELECT Hospital_ID FROM Hospitals WHERE Name = 'NITOR (Orthopaedic Hospital)'), (SELECT Spec_ID FROM Specializations WHERE Spec_Name = 'Orthopedics'), 45)
 ON CONFLICT DO NOTHING;
 
 -- 11. Patients
