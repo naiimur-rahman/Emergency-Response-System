@@ -12,63 +12,60 @@ export function UserProvider({ children }) {
   const [activePatient, setActivePatient] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      try {
-        const [drvRes, patRes] = await Promise.all([
-          fetch('/api/drivers'),
-          fetch('/api/patients')
-        ]);
-        
-        const dbDrivers = await drvRes.json();
-        const dbPatients = await patRes.json();
-        
-        if (!isMounted) return;
-
-        if (Array.isArray(dbDrivers) && dbDrivers.length > 0) {
-           const formattedDrivers = dbDrivers.map(d => ({
-              id: d.driver_id,
-              name: d.name,
-              license: d.license_no,
-              status: d.shift_status,
-              role: d.shift_status === 'On_Duty' ? 'Active Paramedic' : 'On-Call Driver'
-           }));
-           setAvailableDrivers(formattedDrivers);
-           
-           const saved = localStorage.getItem('emergency_active_driver');
-           let current;
-           if (saved) {
-             current = formattedDrivers.find(x => x.id === parseInt(saved));
-           }
-           setActiveDriver(current || formattedDrivers[0]);
-        }
-
-        if (Array.isArray(dbPatients) && dbPatients.length > 0) {
-           const formattedPatients = dbPatients.map(p => ({
-              id: p.patient_id,
-              name: p.name,
-              blood_type: p.blood_type
-           }));
-           setAvailablePatients(formattedPatients);
-           
-           const saved = localStorage.getItem('emergency_active_patient');
-           let current;
-           if (saved) {
-             current = formattedPatients.find(x => x.id === parseInt(saved));
-           }
-           setActivePatient(current || formattedPatients[0]);
-        }
-      } catch (err) {
-        console.error('Failed to load portal data', err);
-      } finally {
-        setLoading(false);
+  async function loadData() {
+    try {
+      const [drvRes, patRes] = await Promise.all([
+        fetch('/api/drivers'),
+        fetch('/api/patients')
+      ]);
+      
+      const dbDrivers = await drvRes.json();
+      const dbPatients = await patRes.json();
+      
+      if (Array.isArray(dbDrivers) && dbDrivers.length > 0) {
+         const formattedDrivers = dbDrivers.map(d => ({
+            id: d.driver_id,
+            name: d.name,
+            license: d.license_no,
+            status: d.shift_status,
+            role: d.shift_status === 'On_Duty' ? 'Active Paramedic' : 'On-Call Driver'
+         }));
+         setAvailableDrivers(formattedDrivers);
+         
+         const saved = localStorage.getItem('emergency_active_driver');
+         let current;
+         if (saved) {
+           current = formattedDrivers.find(x => x.id === parseInt(saved));
+         }
+         setActiveDriver(current || formattedDrivers[0]);
       }
+
+      if (Array.isArray(dbPatients) && dbPatients.length > 0) {
+         const formattedPatients = dbPatients.map(p => ({
+            id: p.patient_id,
+            name: p.name,
+            blood_type: p.blood_type
+         }));
+         setAvailablePatients(formattedPatients);
+         
+         const saved = localStorage.getItem('emergency_active_patient');
+         let current;
+         if (saved) {
+           current = formattedPatients.find(x => x.id === parseInt(saved));
+         }
+         setActivePatient(current || formattedPatients[0]);
+      }
+    } catch (err) {
+      console.error('Failed to load portal data', err);
+    } finally {
+      setLoading(false);
     }
-    
+  }
+
+  useEffect(() => {
     loadData();
     const interval = setInterval(loadData, 15000);
-    return () => { isMounted = false; clearInterval(interval); };
+    return () => clearInterval(interval);
   }, []);
 
   const setDriver = (driverId) => {
@@ -91,7 +88,8 @@ export function UserProvider({ children }) {
     <UserContext.Provider value={{ 
       activeDriver, setDriver, availableDrivers, 
       activePatient, setPatient, availablePatients, 
-      loading 
+      loading,
+      refreshUserContext: loadData
     }}>
       {children}
     </UserContext.Provider>

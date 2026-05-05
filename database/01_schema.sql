@@ -39,7 +39,9 @@ CREATE TABLE IF NOT EXISTS Patients (
     Patient_ID SERIAL PRIMARY KEY,
     Name VARCHAR(100) NOT NULL,
     Phone VARCHAR(20) NOT NULL,
-    Blood_Type VARCHAR(5)
+    Blood_Type VARCHAR(5),
+    Address TEXT,
+    Primary_Specialization VARCHAR(100)
 );
 
 CREATE TABLE IF NOT EXISTS Patient_Conditions (

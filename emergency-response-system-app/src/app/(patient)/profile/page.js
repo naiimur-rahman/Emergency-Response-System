@@ -4,7 +4,7 @@ import { User, Phone, Droplet, Activity, Save, Plus, Trash2 } from 'lucide-react
 import { useUser } from '@/lib/UserContext';
 
 export default function PatientProfile() {
-  const { activePatient } = useUser();
+  const { activePatient, refreshUserContext } = useUser();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,12 +25,17 @@ export default function PatientProfile() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch('/api/patients', {
+      const res = await fetch('/api/patients', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile)
       });
-      alert('Profile updated successfully!');
+      if (res.ok) {
+        await refreshUserContext();
+        alert('Profile updated successfully!');
+      } else {
+        throw new Error('Failed to save');
+      }
     } catch (err) {
       alert('Failed to save profile');
     } finally {
