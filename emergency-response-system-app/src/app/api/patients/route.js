@@ -43,33 +43,37 @@ export async function POST(request) {
 export async function PATCH(request) {
   try {
     const data = await request.json();
-    const { patient_id, name, phone, blood_type, address, primary_specialization, conditions } = data;
+    const targetId = patient_id || data.id;
 
-    if (!patient_id) {
-      return NextResponse.json({ error: 'patient_id is required' }, { status: 400 });
+    if (!targetId) {
+      return NextResponse.json({ error: 'Patient ID is required' }, { status: 400 });
     }
 
     // Update Patients table
-    await query(
+    const updateResult = await query(
       `UPDATE patients 
        SET name = $1, phone = $2, blood_type = $3, address = $4, primary_specialization = $5 
        WHERE patient_id = $6`,
-      [name, phone, blood_type, address, primary_specialization, patient_id]
+      [name, phone, blood_type, address, primary_specialization, targetId]
     );
 
+    if (updateResult.rowCount === 0) {
+      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+    }
+
     // Update conditions
-    await query(`DELETE FROM patient_conditions WHERE patient_id = $1`, [patient_id]);
+    await query(`DELETE FROM patient_conditions WHERE patient_id = $1`, [targetId]);
     
     if (Array.isArray(conditions) && conditions.length > 0) {
       for (const condition of conditions) {
         await query(
           `INSERT INTO patient_conditions (patient_id, condition_name) VALUES ($1, $2)`,
-          [patient_id, condition]
+          [targetId, condition]
         );
       }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, updated_id: targetId });
   } catch (error) {
     console.error("PATCH error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

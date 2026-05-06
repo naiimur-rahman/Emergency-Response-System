@@ -37,7 +37,7 @@ export function UserProvider({ children }) {
          if (saved) {
            current = formattedDrivers.find(x => String(x.id) === String(saved));
          }
-         setActiveDriver(current || formattedDrivers[0]);
+         setActiveDriver(current ? { ...current } : formattedDrivers[0]);
       }
 
       if (Array.isArray(dbPatients) && dbPatients.length > 0) {
@@ -52,7 +52,7 @@ export function UserProvider({ children }) {
          if (saved) {
            current = formattedPatients.find(x => String(x.id) === String(saved));
          }
-         setActivePatient(current || formattedPatients[0]);
+         setActivePatient(current ? { ...current } : formattedPatients[0]);
       }
     } catch (err) {
       console.error('Failed to load portal data', err);
