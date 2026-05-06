@@ -14,7 +14,7 @@ export async function GET(request) {
     const params = [];
 
     if (patientId) {
-      sql += ` WHERE p.patient_id = $1`;
+      sql += ` WHERE p.patient_id = $1::integer`;
       params.push(patientId);
     }
     
@@ -53,7 +53,7 @@ export async function PATCH(request) {
     const updateResult = await query(
       `UPDATE patients 
        SET name = $1, phone = $2, blood_type = $3, address = $4, primary_specialization = $5 
-       WHERE patient_id = $6`,
+       WHERE patient_id = $6::integer`,
       [name, phone, blood_type, address, primary_specialization, targetId]
     );
 
@@ -62,12 +62,12 @@ export async function PATCH(request) {
     }
 
     // Update conditions
-    await query(`DELETE FROM patient_conditions WHERE patient_id = $1`, [targetId]);
+    await query(`DELETE FROM patient_conditions WHERE patient_id = $1::integer`, [targetId]);
     
     if (Array.isArray(conditions) && conditions.length > 0) {
       for (const condition of conditions) {
         await query(
-          `INSERT INTO patient_conditions (patient_id, condition_name) VALUES ($1, $2)`,
+          `INSERT INTO patient_conditions (patient_id, condition_name) VALUES ($1::integer, $2)`,
           [targetId, condition]
         );
       }
