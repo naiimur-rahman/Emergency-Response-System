@@ -7,7 +7,7 @@ export async function GET(request) {
       `SELECT tl.trip_id, er.timestamp_created, er.severity_level, 
               h.name as hospital_name, er.status
        FROM trip_logs tl
-       JOIN emergency_requests er ON tl.request_id = er.request_id
+       JOIN emergency_requests er ON tl.trip_id = er.request_id
        JOIN hospitals h ON tl.hospital_id = h.hospital_id
        ORDER BY er.timestamp_created DESC
        LIMIT 10`

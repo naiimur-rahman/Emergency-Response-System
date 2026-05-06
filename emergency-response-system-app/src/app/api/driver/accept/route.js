@@ -23,7 +23,7 @@ export async function POST(request) {
          await client.query(`
            UPDATE ambulances 
            SET current_status = 'Available' 
-           WHERE vehicle_id = (SELECT vehicle_id FROM trip_logs WHERE request_id = $1 LIMIT 1)
+           WHERE vehicle_id = (SELECT vehicle_id FROM trip_logs WHERE trip_id = $1 LIMIT 1)
          `, [request_id]);
       }
     });

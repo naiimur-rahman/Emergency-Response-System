@@ -43,6 +43,7 @@ export async function POST(request) {
 export async function PATCH(request) {
   try {
     const data = await request.json();
+    const { patient_id, name, phone, blood_type, address, primary_specialization, conditions } = data;
     const targetId = patient_id || data.id;
 
     if (!targetId) {
