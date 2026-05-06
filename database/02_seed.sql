@@ -198,8 +198,23 @@ ON CONFLICT DO NOTHING;
 
 -- 17. Live Emergency Request
 INSERT INTO Emergency_Requests (Patient_ID, Pickup_Coords, Severity_Level, Status) VALUES 
-(1, ST_SetSRID(ST_MakePoint(90.4125, 23.7925), 4326), 'Critical', 'Pending')
+(1, ST_SetSRID(ST_MakePoint(90.4125, 23.7925), 4326), 'Critical', 'Active')
 ON CONFLICT DO NOTHING;
+
+-- 18. Active Trip for Tracking Demo
+INSERT INTO Trip_Logs (Trip_ID, Vehicle_ID, Driver_ID, Hospital_ID, Dispatcher_ID)
+VALUES (
+    (SELECT Request_ID FROM Emergency_Requests WHERE Status = 'Active' LIMIT 1),
+    1, 1, 6, 1
+) ON CONFLICT DO NOTHING;
+
+-- 19. Initial Chat for Tracking Demo
+INSERT INTO chat_messages (trip_id, sender, message_text)
+VALUES (
+    (SELECT Trip_ID FROM Trip_Logs LIMIT 1),
+    'System',
+    'Emergency unit is en route. Please stay calm.'
+) ON CONFLICT DO NOTHING;
 
 REFRESH MATERIALIZED VIEW emergency_analytics_mv;
 -- ==========================================

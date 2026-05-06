@@ -35,23 +35,22 @@ export function UserProvider({ children }) {
          const saved = localStorage.getItem('emergency_active_driver');
          let current;
          if (saved) {
-           current = formattedDrivers.find(x => x.id === parseInt(saved));
+           current = formattedDrivers.find(x => String(x.id) === String(saved));
          }
          setActiveDriver(current || formattedDrivers[0]);
       }
 
       if (Array.isArray(dbPatients) && dbPatients.length > 0) {
          const formattedPatients = dbPatients.map(p => ({
-            id: p.patient_id,
-            name: p.name,
-            blood_type: p.blood_type
+            ...p,
+            id: p.patient_id
          }));
          setAvailablePatients(formattedPatients);
          
          const saved = localStorage.getItem('emergency_active_patient');
          let current;
          if (saved) {
-           current = formattedPatients.find(x => x.id === parseInt(saved));
+           current = formattedPatients.find(x => String(x.id) === String(saved));
          }
          setActivePatient(current || formattedPatients[0]);
       }
@@ -69,7 +68,7 @@ export function UserProvider({ children }) {
   }, []);
 
   const setDriver = (driverId) => {
-    const d = availableDrivers.find(x => x.id === parseInt(driverId));
+    const d = availableDrivers.find(x => String(x.id) === String(driverId));
     if (d) {
       setActiveDriver(d);
       localStorage.setItem('emergency_active_driver', d.id.toString());
@@ -77,7 +76,7 @@ export function UserProvider({ children }) {
   };
 
   const setPatient = (patientId) => {
-    const p = availablePatients.find(x => x.id === parseInt(patientId));
+    const p = availablePatients.find(x => String(x.id) === String(patientId));
     if (p) {
       setActivePatient(p);
       localStorage.setItem('emergency_active_patient', p.id.toString());
