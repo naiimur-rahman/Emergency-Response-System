@@ -32,6 +32,8 @@ export default function RequestsPage() {
       await fetchData();
     };
     init();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
 
@@ -93,7 +95,7 @@ export default function RequestsPage() {
 
       <div style={{ marginBottom: 20 }}>
         <div className="tabs">
-          {['all', 'Pending', 'Active', 'Resolved', 'Cancelled'].map(t => (
+          {['all', 'Pending', 'Active', 'En Route', 'Picked Up', 'Resolved', 'Cancelled'].map(t => (
             <button key={t} className={`tab-btn ${filter === t ? 'active' : ''}`} onClick={() => setFilter(t)}>
               {t === 'all' ? 'All' : t}
             </button>

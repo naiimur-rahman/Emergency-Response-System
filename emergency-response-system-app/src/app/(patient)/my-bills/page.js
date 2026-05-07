@@ -1,25 +1,34 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Receipt, CreditCard, Download, ShieldCheck } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
+import { useToast } from '@/components/Toast';
 
 export default function PatientBills() {
   const { activePatient } = useUser();
+  const toast = useToast();
   const [bills, setBills] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(null);
 
-  if (!activePatient) return null;
+  const fetchBills = useCallback(async () => {
+    if (!activePatient?.id) return;
+    try {
+      const r = await fetch(`/api/patient/bills?patientId=${activePatient.id}`);
+      const data = await r.json();
+      setBills(data);
+    } catch (err) {
+      console.error('Failed to load bills:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activePatient]);
 
   useEffect(() => {
-    if (!activePatient?.id) return;
-    setLoading(true);
-    fetch(`/api/patient/bills?patientId=${activePatient.id}`)
-      .then(r => r.json())
-      .then(setBills)
-      .finally(() => setLoading(false));
-  }, [activePatient]);
+    fetchBills();
+    const interval = setInterval(fetchBills, 10000);
+    return () => clearInterval(interval);
+  }, [fetchBills]);
 
   const handlePay = (billId) => {
     setPaying(billId);
@@ -27,9 +36,11 @@ export default function PatientBills() {
     setTimeout(() => {
       setBills(bills.map(b => b.bill_id === billId ? { ...b, payment_status: 'Paid' } : b));
       setPaying(null);
+      toast('Payment processed successfully!', 'success', { title: 'Payment Complete' });
     }, 1500);
   };
 
+  if (!activePatient) return null;
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
 
   return (
@@ -39,6 +50,7 @@ export default function PatientBills() {
           <h2>My Invoices</h2>
           <p className="page-header-sub">View and pay your automated emergency trip bills</p>
         </div>
+        <div className="live-indicator"><div className="live-dot" /> LIVE</div>
       </div>
 
       <div className="section-card">
@@ -73,7 +85,7 @@ export default function PatientBills() {
                     <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--blue)', marginBottom: '12px' }}>
                       ৳{parseFloat(bill.total_amount).toLocaleString()}
                     </div>
-                    {bill.payment_status === 'Unpaid' ? (
+                    {(bill.payment_status === 'Unpaid' || bill.payment_status === 'Pending') ? (
                       <button 
                         onClick={() => handlePay(bill.bill_id)}
                         disabled={paying === bill.bill_id}

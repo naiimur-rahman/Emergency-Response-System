@@ -1,10 +1,30 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { User, Phone, Droplet, Activity, Save, Plus, Trash2 } from 'lucide-react';
+import { User, Phone, Droplet, Activity, Save, CheckCircle } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
+import { useToast } from '@/components/Toast';
+
+const CONDITION_GROUPS = [
+  {
+    label: '🔴 CRITICAL (Major)',
+    severity: 'critical',
+    conditions: ['Heart Failure', 'Stroke', 'Severe Trauma', 'Major Burn'],
+  },
+  {
+    label: '🟠 CHRONIC (Continuous)',
+    severity: 'chronic',
+    conditions: ['Type 2 Diabetes', 'Hypertension', 'Asthma', 'Kidney Disease', 'Epilepsy'],
+  },
+  {
+    label: '🔵 MINOR (Small)',
+    severity: 'minor',
+    conditions: ['Food Allergy', 'Minor Burn', 'Fever', 'General Pain', 'Pregnancy'],
+  },
+];
 
 export default function PatientProfile() {
   const { activePatient, refreshUserContext } = useUser();
+  const toast = useToast();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,14 +52,23 @@ export default function PatientProfile() {
       });
       if (res.ok) {
         await refreshUserContext();
-        alert('Profile updated successfully!');
+        toast('Your medical profile has been saved successfully.', 'success', { title: 'Profile Updated' });
       } else {
         throw new Error('Failed to save');
       }
     } catch (err) {
-      alert('Failed to save profile');
+      toast('Failed to save profile. Please try again.', 'error', { title: 'Save Error' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const toggleCondition = (conditionName) => {
+    const current = profile.conditions || [];
+    if (current.includes(conditionName)) {
+      setProfile({ ...profile, conditions: current.filter(c => c !== conditionName) });
+    } else {
+      setProfile({ ...profile, conditions: [...current, conditionName] });
     }
   };
 
@@ -92,51 +121,41 @@ export default function PatientProfile() {
                 <option value="O+">O+</option><option value="O-">O-</option>
               </select>
             </div>
+
             <div className="form-group">
               <label className="form-label">Pre-existing Conditions</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                {(profile.conditions || []).map((c, i) => (
-                  <span key={i} className="badge badge-critical" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {c} <Trash2 size={10} style={{ cursor: 'pointer' }} onClick={() => {
-                      const newC = [...profile.conditions];
-                      newC.splice(i, 1);
-                      setProfile({...profile, conditions: newC});
-                    }} />
-                  </span>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <select className="form-input form-select" id="new-condition" defaultValue="">
-                  <option value="" disabled>Select a condition...</option>
-                  <optgroup label="🔴 CRITICAL (Major)">
-                    <option value="Heart Failure">Heart Failure (Major)</option>
-                    <option value="Stroke">Stroke (Brain Major)</option>
-                    <option value="Severe Trauma">Severe Trauma / Accident</option>
-                    <option value="Major Burn">Major Burn (3rd Degree)</option>
-                  </optgroup>
-                  <optgroup label="🟠 CHRONIC (Continuous)">
-                    <option value="Type 2 Diabetes">Type 2 Diabetes</option>
-                    <option value="Hypertension">Hypertension (High BP)</option>
-                    <option value="Asthma">Chronic Asthma</option>
-                    <option value="Kidney Disease">Kidney Disease (Dialysis)</option>
-                  </optgroup>
-                  <optgroup label="🔵 MINOR (Small)">
-                    <option value="Food Allergy">Food Allergy (Minor)</option>
-                    <option value="Minor Burn">Minor Burn (1st Degree)</option>
-                    <option value="Fever">High Fever</option>
-                    <option value="General Pain">General Body Pain</option>
-                  </optgroup>
-                </select>
-                <button className="btn btn-ghost" onClick={() => {
-                  const select = document.getElementById('new-condition');
-                  const val = select.value;
-                  if (val && !(profile.conditions || []).includes(val)) {
-                    setProfile({...profile, conditions: [...(profile.conditions || []), val]});
-                    select.value = '';
-                  }
-                }}>Add</button>
-              </div>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
+                Click to toggle conditions on/off. Select all that apply.
+              </p>
+              
+              {CONDITION_GROUPS.map((group) => (
+                <div key={group.label}>
+                  <div className="condition-group-label">{group.label}</div>
+                  <div className="condition-grid">
+                    {group.conditions.map((condition) => {
+                      const isSelected = (profile.conditions || []).includes(condition);
+                      return (
+                        <div
+                          key={condition}
+                          className={`condition-chip ${isSelected ? `selected ${group.severity}` : ''}`}
+                          onClick={() => toggleCondition(condition)}
+                        >
+                          {isSelected && <CheckCircle size={12} />}
+                          {condition}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {(profile.conditions || []).length > 0 && (
+                <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,45,85,0.06)', border: '1px solid rgba(255,45,85,0.15)', fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--red)' }}>{(profile.conditions || []).length}</strong> condition{(profile.conditions || []).length > 1 ? 's' : ''} selected: {(profile.conditions || []).join(', ')}
+                </div>
+              )}
             </div>
+
             <div className="form-group" style={{ marginTop: 20 }}>
               <label className="form-label">Primary Medical Requirement (For Auto-Dispatch)</label>
               <select 

@@ -1,12 +1,16 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, User, ArrowLeftRight, ChevronDown } from 'lucide-react';
+import { Home, User, ArrowLeftRight, ChevronDown, UserPlus } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
+import CreateUserModal from './CreateUserModal';
 
 export default function PortalSidebar({ portalName, portalColor, portalIcon: PortalIcon, navItems }) {
   const pathname = usePathname();
-    const { activeDriver, setDriver, availableDrivers, activePatient, setPatient, availablePatients } = useUser();
+    const { activeDriver, setDriver, availableDrivers, activePatient, setPatient, availablePatients, refreshUserContext } = useUser();
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createType, setCreateType] = useState(null);
   
     const getDisplayName = () => {
       if (portalName === 'Driver Portal') return activeDriver?.name || 'Loading...';
@@ -22,6 +26,23 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
       if (portalName === 'Dispatcher Portal') return 'Emergency Command';
       if (portalName === 'Admin Portal') return 'System Control';
       return 'Portal Access';
+    };
+
+    const handleUserSelect = (e, type) => {
+      const val = e.target.value;
+      if (val === '__create_new__') {
+        setCreateType(type);
+        setShowCreateModal(true);
+        // Reset select to current value
+        e.target.value = type === 'patient' ? activePatient?.id : activeDriver?.id;
+        return;
+      }
+      if (type === 'patient') setPatient(val);
+      else setDriver(val);
+    };
+
+    const handleUserCreated = async () => {
+      await refreshUserContext();
     };
   
     return (
@@ -58,10 +79,11 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
                   <div style={{ position: 'relative' }}>
                     <select 
                       value={activeDriver?.id} 
-                      onChange={(e) => setDriver(e.target.value)}
+                      onChange={(e) => handleUserSelect(e, 'driver')}
                       style={{ width: '100%', appearance: 'none', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, padding: 0, margin: 0, outline: 'none', cursor: 'pointer' }}
                     >
                       {availableDrivers.map(d => <option key={d.id} value={d.id} style={{ color: 'black' }}>{d.name}</option>)}
+                      <option value="__create_new__" style={{ color: 'black', fontWeight: 'bold' }}>＋ Register New Driver</option>
                     </select>
                     <ChevronDown size={14} style={{ position: 'absolute', right: 0, top: 2, pointerEvents: 'none', color: 'var(--text-muted)' }} />
                   </div>
@@ -69,13 +91,28 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
                   <div style={{ position: 'relative' }}>
                     <select 
                       value={activePatient?.id} 
-                      onChange={(e) => setPatient(e.target.value)}
+                      onChange={(e) => handleUserSelect(e, 'patient')}
                       style={{ width: '100%', appearance: 'none', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, padding: 0, margin: 0, outline: 'none', cursor: 'pointer' }}
                     >
                       {availablePatients.map(p => <option key={p.id} value={p.id} style={{ color: 'black' }}>{p.name}</option>)}
+                      <option value="__create_new__" style={{ color: 'black', fontWeight: 'bold' }}>＋ Register New Patient</option>
                     </select>
                     <ChevronDown size={14} style={{ position: 'absolute', right: 0, top: 2, pointerEvents: 'none', color: 'var(--text-muted)' }} />
                   </div>
+                ) : portalName === 'Patient Portal' && availablePatients.length === 0 ? (
+                  <button
+                    onClick={() => { setCreateType('patient'); setShowCreateModal(true); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: portalColor, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    <UserPlus size={14} /> Register as Patient
+                  </button>
+                ) : portalName === 'Driver Portal' && availableDrivers.length === 0 ? (
+                  <button
+                    onClick={() => { setCreateType('driver'); setShowCreateModal(true); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: portalColor, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    <UserPlus size={14} /> Register as Driver
+                  </button>
                 ) : (
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                     {getDisplayName()}
@@ -102,6 +139,14 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
           ))}
         </div>
       </nav>
+
+      {showCreateModal && (
+        <CreateUserModal
+          type={createType}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={handleUserCreated}
+        />
+      )}
     </>
   );
 }

@@ -1,20 +1,35 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FileText, MapPin, Download, CheckCircle, Clock } from 'lucide-react';
 import { SeverityBadge } from '@/components/Badges';
+import { useUser } from '@/lib/UserContext';
 
 export default function PatientHistoryPage() {
+  const { activePatient } = useUser();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchHistory = useCallback(async () => {
+    try {
+      const url = activePatient?.id 
+        ? `/api/patient/history?patient_id=${activePatient.id}` 
+        : '/api/patient/history';
+      const res = await fetch(url);
+      const data = await res.json();
+      setHistory(data);
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activePatient]);
+
   useEffect(() => {
-    fetch('/api/patient/history')
-      .then(res => res.json())
-      .then(data => {
-        setHistory(data);
-        setLoading(false);
-      });
-  }, []);
+    fetchHistory();
+    const interval = setInterval(fetchHistory, 10000);
+    return () => clearInterval(interval);
+  }, [fetchHistory]);
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -22,10 +37,11 @@ export default function PatientHistoryPage() {
           <h2>Emergency History</h2>
           <p className="page-header-sub">Review your past ambulance requests and invoices</p>
         </div>
+        <div className="live-indicator"><div className="live-dot" /> LIVE</div>
       </div>
 
       <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
-        {loading ? <div className="loading-container" style={{ minHeight: 200 }}><div className="spinner" /></div> : history.map((trip) => (
+        {loading ? <div className="loading-container" style={{ minHeight: 200 }}><div className="spinner" /></div> : history.length > 0 ? history.map((trip) => (
           <div key={trip.id} className="section-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'transform 0.2s' }}>
             
             <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
@@ -55,7 +71,13 @@ export default function PatientHistoryPage() {
             </div>
 
           </div>
-        ))}
+        )) : (
+          <div className="section-card">
+            <div className="empty-state">
+              <p>No emergency history found for this patient.</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

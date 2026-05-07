@@ -29,6 +29,8 @@ export default function DriverHistory() {
       await fetchData();
     };
     init();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
   if (!activeDriver) return null;

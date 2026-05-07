@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, Truck, BedDouble, Users, Zap, RefreshCw, Clock, MessageCircle, Send, X } from 'lucide-react';
 import { SeverityBadge, StatusBadge } from '@/components/Badges';
+import { useToast } from '@/components/Toast';
 
 export default function DashboardPage() {
   const [data, setData] = useState(null);
@@ -9,6 +10,7 @@ export default function DashboardPage() {
   const [dispatching, setDispatching] = useState(null);
   const [activeChatTrip, setActiveChatTrip] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
+  const toast = useToast();
 
   const fetchData = useCallback(async () => {
     try {
@@ -60,13 +62,13 @@ export default function DashboardPage() {
       const result = await res.json();
       
       if (result.success) {
-        alert('SUCCESS: ' + result.message);
+        toast(result.message, 'success', { title: 'Dispatch Success' });
       } else {
-        alert('DISPATCH FAILED: ' + result.message + '\n\nTIP: Ensure at least one driver is marked as "On_Duty" in the Driver Portal.');
+        toast(result.message + ' — Ensure at least one driver is "On_Duty".', 'error', { title: 'Dispatch Failed' });
       }
       fetchData();
     } catch (err) {
-      alert('Network error during dispatch.');
+      toast('Network error during dispatch.', 'error');
     } finally {
       setDispatching(null);
     }

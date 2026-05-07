@@ -35,6 +35,8 @@ export default function MaintenanceHub() {
       await fetchData();
     };
     init();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
 

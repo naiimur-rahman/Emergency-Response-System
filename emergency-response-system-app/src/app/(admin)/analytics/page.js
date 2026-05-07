@@ -7,7 +7,12 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/analytics').then(r => r.json()).then(setData).finally(() => setLoading(false));
+    const fetchAnalytics = () => {
+      fetch('/api/analytics').then(r => r.json()).then(setData).finally(() => setLoading(false));
+    };
+    fetchAnalytics();
+    const interval = setInterval(fetchAnalytics, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;

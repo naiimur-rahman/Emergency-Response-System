@@ -7,7 +7,12 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/billing').then(r => r.json()).then(setBills).finally(() => setLoading(false));
+    const fetchBills = () => {
+      fetch('/api/billing').then(r => r.json()).then(setBills).finally(() => setLoading(false));
+    };
+    fetchBills();
+    const interval = setInterval(fetchBills, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;

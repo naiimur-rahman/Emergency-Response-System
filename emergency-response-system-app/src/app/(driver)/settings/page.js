@@ -58,7 +58,7 @@ export default function DriverSettings() {
             <div className="section-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div>
                 <label style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Current Ambulance</label>
-                <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{activeDriver.vehicle}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{activeDriver.vehicle || 'Assigned Per Trip'}</div>
               </div>
               <div>
                 <label style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Equipment Level</label>

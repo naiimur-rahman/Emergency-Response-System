@@ -37,7 +37,14 @@ export function UserProvider({ children }) {
          if (saved) {
            current = formattedDrivers.find(x => String(x.id) === String(saved));
          }
-         setActiveDriver(current ? { ...current } : formattedDrivers[0]);
+         // Only set if no active driver yet, or active driver not in new list
+         if (!activeDriver || !formattedDrivers.find(x => String(x.id) === String(activeDriver.id))) {
+           setActiveDriver(current ? { ...current } : formattedDrivers[0]);
+         } else {
+           // Update in-place to keep the same identity but fresh data
+           const updated = formattedDrivers.find(x => String(x.id) === String(activeDriver.id));
+           if (updated) setActiveDriver({ ...updated });
+         }
       }
 
       if (Array.isArray(dbPatients) && dbPatients.length > 0) {
@@ -52,7 +59,13 @@ export function UserProvider({ children }) {
          if (saved) {
            current = formattedPatients.find(x => String(x.id) === String(saved));
          }
-         setActivePatient(current ? { ...current } : formattedPatients[0]);
+         // Only set if no active patient yet, or active patient not in new list
+         if (!activePatient || !formattedPatients.find(x => String(x.id) === String(activePatient.id))) {
+           setActivePatient(current ? { ...current } : formattedPatients[0]);
+         } else {
+           const updated = formattedPatients.find(x => String(x.id) === String(activePatient.id));
+           if (updated) setActivePatient({ ...updated });
+         }
       }
     } catch (err) {
       console.error('Failed to load portal data', err);
@@ -63,7 +76,8 @@ export function UserProvider({ children }) {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 15000);
+    // Poll every 5s for near-real-time updates
+    const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -83,12 +97,49 @@ export function UserProvider({ children }) {
     }
   };
 
+  // Convenience method to add a new patient and auto-select them
+  const addPatient = async (patientData) => {
+    const res = await fetch('/api/patients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patientData),
+    });
+    const newPatient = await res.json();
+    await loadData();
+    // Auto-select the new patient
+    const newId = newPatient.patient_id || newPatient.id;
+    if (newId) {
+      localStorage.setItem('emergency_active_patient', String(newId));
+      setActivePatient({ ...newPatient, id: newId });
+    }
+    return newPatient;
+  };
+
+  // Convenience method to add a new driver and auto-select them
+  const addDriver = async (driverData) => {
+    const res = await fetch('/api/drivers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(driverData),
+    });
+    const newDriver = await res.json();
+    await loadData();
+    const newId = newDriver.driver_id || newDriver.id;
+    if (newId) {
+      localStorage.setItem('emergency_active_driver', String(newId));
+      setActiveDriver({ ...newDriver, id: newId, name: newDriver.name, license: newDriver.license_no, status: newDriver.shift_status || 'Off_Duty', role: 'On-Call Driver' });
+    }
+    return newDriver;
+  };
+
   return (
     <UserContext.Provider value={{ 
       activeDriver, setDriver, availableDrivers, 
       activePatient, setPatient, availablePatients, 
       loading,
-      refreshUserContext: loadData
+      refreshUserContext: loadData,
+      addPatient,
+      addDriver,
     }}>
       {children}
     </UserContext.Provider>

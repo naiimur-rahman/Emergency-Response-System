@@ -8,7 +8,12 @@ export default function TripsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/trips').then(r => r.json()).then(setTrips).catch(console.error).finally(() => setLoading(false));
+    const fetchTrips = () => {
+      fetch('/api/trips').then(r => r.json()).then(setTrips).catch(console.error).finally(() => setLoading(false));
+    };
+    fetchTrips();
+    const interval = setInterval(fetchTrips, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const formatTime = (ts) => ts ? new Date(ts).toLocaleString() : '—';

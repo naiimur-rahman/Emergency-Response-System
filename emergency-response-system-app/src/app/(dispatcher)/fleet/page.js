@@ -42,6 +42,8 @@ export default function FleetPage() {
       await fetchData();
     };
     init();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
 
