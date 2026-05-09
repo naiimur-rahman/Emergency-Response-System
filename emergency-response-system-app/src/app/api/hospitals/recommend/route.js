@@ -100,6 +100,7 @@ export async function POST(request) {
     if (primarySpecialization) {
       hospitalQuery = `
         SELECT DISTINCT h.hospital_id, h.name,
+          ST_Y(h.location_coords::geometry) AS lat, ST_X(h.location_coords::geometry) AS lon,
           ROUND(ST_Distance(h.location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
           CASE WHEN s.spec_name = $3 THEN 1 ELSE 0 END AS spec_match
         FROM hospitals h
@@ -113,6 +114,7 @@ export async function POST(request) {
     } else {
       hospitalQuery = `
         SELECT hospital_id, name,
+          ST_Y(location_coords::geometry) AS lat, ST_X(location_coords::geometry) AS lon,
           ROUND(ST_Distance(location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
           0 AS spec_match
         FROM hospitals
@@ -130,13 +132,37 @@ export async function POST(request) {
     const perKmRate = 25;
     const severityCharge = severity === 'Critical' ? 500 : severity === 'High' ? 300 : 0;
 
-    const recommendations = hospitals.rows.map(h => {
-      const distanceKm = parseFloat(h.distance_m) / 1000;
+    // Fetch real road distances from OSRM
+    const coordsString = `${lon},${lat};` + hospitals.rows.map(h => `${h.lon},${h.lat}`).join(';');
+    const osrmUrl = `http://router.project-osrm.org/table/v1/driving/${coordsString}?sources=0`;
+    let realDistances = [];
+    try {
+      const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(3000) });
+      const osrmData = await osrmRes.json();
+      if (osrmData.code === 'Ok' && osrmData.distances && osrmData.distances[0]) {
+        realDistances = osrmData.distances[0].slice(1);
+      }
+    } catch (e) {
+      console.warn("OSRM fallback to straight-line", e);
+    }
+
+    const recommendations = hospitals.rows.map((h, index) => {
+      let distanceMeters = parseFloat(h.distance_m);
+      if (realDistances[index] !== undefined && realDistances[index] !== null) {
+        distanceMeters = realDistances[index];
+      } else {
+        // Multiply straight line by 1.3 as an approximation if OSRM fails
+        distanceMeters = distanceMeters * 1.3;
+      }
+      
+      const distanceKm = distanceMeters / 1000;
       return {
         hospital_id: h.hospital_id,
         name: h.name,
+        lat: h.lat,
+        lon: h.lon,
         distance_km: distanceKm.toFixed(2),
-        eta_minutes: Math.max(3, Math.round(distanceKm * 3)),
+        eta_minutes: Math.max(3, Math.round(distanceKm * 4)), // Assuming ~15 km/h in Dhaka traffic
         estimated_fare: Math.round(baseFare + (distanceKm * perKmRate) + severityCharge),
         spec_match: h.spec_match === 1,
       };

@@ -44,6 +44,9 @@ function FollowAmbulance({ position, shouldFollow, useMap }) {
 export default function MapView({ hospitals = [], pickupCoords = null, requestStatus = 'Pending', realtimeMarker = null }) {
   const [MapComponents, setMapComponents] = useState(null);
   const [followAmbulance, setFollowAmbulance] = useState(true);
+  const [patientToHospitalRoute, setPatientToHospitalRoute] = useState(null);
+  const [ambulanceToPatientRoute, setAmbulanceToPatientRoute] = useState(null);
+  const [initialAmbulancePos, setInitialAmbulancePos] = useState(null);
 
   useEffect(() => {
     // Dynamic import to avoid SSR issues with Leaflet
@@ -173,14 +176,52 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
   hospitals.forEach(h => boundsPoints.push([h.lat, h.lon]));
   if (currentAmbulancePos) boundsPoints.push(currentAmbulancePos);
 
-  // Route segments: Ambulance→Patient (orange), Patient→Hospital (blue)
-  const ambulanceToPatient = currentAmbulancePos && pickupCoords
-    ? [currentAmbulancePos, [pickupCoords.lat, pickupCoords.lon]]
-    : null;
+  useEffect(() => {
+    if (currentAmbulancePos && !initialAmbulancePos) {
+      setInitialAmbulancePos(currentAmbulancePos);
+    }
+  }, [currentAmbulancePos, initialAmbulancePos]);
 
-  const patientToHospital = pickupCoords && hospitals.length > 0
+  useEffect(() => {
+    if (pickupCoords && hospitals.length > 0 && hospitals[0].lat && hospitals[0].lon) {
+      const url = `https://router.project-osrm.org/route/v1/driving/${pickupCoords.lon},${pickupCoords.lat};${hospitals[0].lon},${hospitals[0].lat}?overview=full&geometries=geojson`;
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 'Ok' && data.routes.length > 0) {
+            const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            setPatientToHospitalRoute(coords);
+          }
+        }).catch(err => console.error("OSRM Route Error", err));
+    } else {
+      setPatientToHospitalRoute(null);
+    }
+  }, [pickupCoords, hospitals]);
+
+  useEffect(() => {
+    if (initialAmbulancePos && pickupCoords) {
+      const url = `https://router.project-osrm.org/route/v1/driving/${initialAmbulancePos[1]},${initialAmbulancePos[0]};${pickupCoords.lon},${pickupCoords.lat}?overview=full&geometries=geojson`;
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 'Ok' && data.routes.length > 0) {
+            const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            setAmbulanceToPatientRoute(coords);
+          }
+        }).catch(err => console.error("OSRM Route Error", err));
+    } else {
+      setAmbulanceToPatientRoute(null);
+    }
+  }, [initialAmbulancePos, pickupCoords]);
+
+  // Route segments: Ambulance→Patient (orange), Patient→Hospital (blue)
+  const ambulanceToPatient = ambulanceToPatientRoute || (currentAmbulancePos && pickupCoords
+    ? [currentAmbulancePos, [pickupCoords.lat, pickupCoords.lon]]
+    : null);
+
+  const patientToHospital = patientToHospitalRoute || (pickupCoords && hospitals.length > 0 && hospitals[0].lat && hospitals[0].lon
     ? [[pickupCoords.lat, pickupCoords.lon], [hospitals[0].lat, hospitals[0].lon]]
-    : null;
+    : null);
 
   return (
     <div className="map-container" style={{ position: 'relative' }}>
