@@ -132,7 +132,7 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
       `}</style>
 
       <aside className="sidebar">
-        <div className="sidebar-header">
+        <div className="sidebar-header" style={{ position: 'relative' }}>
           <div className="sidebar-logo" style={{ background: `${portalColor}22` }}>
             <PortalIcon size={20} style={{ color: portalColor }} />
           </div>

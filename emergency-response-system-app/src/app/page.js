@@ -1,5 +1,6 @@
 'use client';
-import { Siren, Radio, ShieldCheck, Activity, ArrowRight, Navigation } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Siren, Radio, ShieldCheck, Activity, ArrowRight, Navigation, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 
 const portals = [
@@ -46,16 +47,33 @@ const portals = [
 ];
 
 export default function PortalPage() {
+  const [theme, setTheme] = useState('dark');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  };
+
   return (
     <div className="portal-page">
       <style>{`
         .portal-page {
           height: 100vh; overflow: hidden; display: flex; flex-direction: column;
           align-items: center; justify-content: center; padding: 0 24px;
-          background: #050505;
+          background: var(--bg-primary);
           background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            linear-gradient(var(--border-subtle) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
           background-size: 30px 30px;
           position: relative;
         }
@@ -73,21 +91,21 @@ export default function PortalPage() {
           box-shadow: 0 0 30px rgba(255,45,85,0.15);
         }
         .portal-header h1 {
-          font-size: 42px; font-weight: 900; color: #fff;
+          font-size: 42px; font-weight: 900; color: var(--text-primary);
           letter-spacing: -2px; margin-bottom: 4px;
-          background: linear-gradient(to right, #fff, rgba(255,255,255,0.7));
+          background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .portal-header p { color: #888; font-size: 15px; font-weight: 500; }
+        .portal-header p { color: var(--text-muted); font-size: 15px; font-weight: 500; }
 
         .portal-grid {
           display: grid; grid-template-columns: repeat(2, 1fr);
           gap: 20px; width: 100%; max-width: 900px; z-index: 10;
         }
         .portal-card {
-          background: rgba(20,20,20,0.4); 
+          background: var(--bg-card); 
           backdrop-filter: blur(12px);
-          border: 1px solid rgba(255,255,255,0.05);
+          border: 1px solid var(--border-subtle);
           border-radius: 20px; padding: 24px; cursor: pointer;
           text-decoration: none; color: inherit;
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
@@ -95,10 +113,10 @@ export default function PortalPage() {
           display: flex; flex-direction: column; gap: 16px;
         }
         .portal-card:hover {
-          background: rgba(30,30,30,0.6);
+          background: var(--bg-card-hover);
           transform: translateY(-5px);
-          border-color: rgba(255,255,255,0.15);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+          border-color: var(--border-accent);
+          box-shadow: var(--shadow-card);
         }
         .portal-card-icon {
           width: 48px; height: 48px; border-radius: 12px;
@@ -107,15 +125,15 @@ export default function PortalPage() {
         }
         .portal-card:hover .portal-card-icon { transform: scale(1.1) rotate(-5deg); }
         
-        .portal-card h2 { font-size: 20px; font-weight: 700; color: #fff; margin: 0; }
+        .portal-card h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0; }
         .portal-card .portal-subtitle { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-        .portal-card .portal-desc { font-size: 13px; color: #999; line-height: 1.5; }
+        .portal-card .portal-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 
         .portal-features { display: flex; flex-wrap: wrap; gap: 6px; }
         .portal-feature {
           padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;
-          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-          color: #777;
+          background: var(--bg-glass); border: 1px solid var(--border-subtle);
+          color: var(--text-muted);
         }
 
         .portal-enter {
@@ -126,7 +144,7 @@ export default function PortalPage() {
         .portal-card:hover .portal-enter { opacity: 1; gap: 10px; }
 
         .portal-footer {
-          margin-top: 4vh; text-align: center; color: #444; font-size: 12px;
+          margin-top: 4vh; text-align: center; color: var(--text-muted); font-size: 12px;
           letter-spacing: 1px; z-index: 10; font-weight: 600;
         }
         .portal-footer span { color: var(--red); opacity: 0.8; }
@@ -137,6 +155,21 @@ export default function PortalPage() {
           .portal-desc { display: none; }
         }
       `}</style>
+
+      <button
+        onClick={toggleTheme}
+        style={{
+          position: 'absolute', top: 24, right: 24,
+          background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)',
+          color: 'var(--text-primary)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          width: 44, height: 44, borderRadius: 12, zIndex: 100,
+          backdropFilter: 'blur(10px)', transition: 'all 0.2s'
+        }}
+        title="Toggle Theme"
+      >
+        {mounted ? (theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />) : <Sun size={20} />}
+      </button>
 
       <div className="portal-header">
         <div className="portal-logo">
