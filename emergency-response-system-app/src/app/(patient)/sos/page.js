@@ -1,18 +1,87 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Phone, MapPin, Navigation, Siren, Clock, Building2, Truck, Banknote, ShieldAlert, CheckCircle, Loader2, AlertTriangle, Radio, User, Droplet, Activity } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
+
+// High-accuracy GPS helper with retry and IP fallback
+function getAccuratePosition(timeoutMs = 15000) {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({ lat: null, lon: null, accuracy: null, source: 'unavailable' });
+      return;
+    }
+
+    let resolved = false;
+    let bestResult = null;
+
+    // Attempt 1: High accuracy (GPS hardware)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (resolved) return;
+        resolved = true;
+        resolve({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          accuracy: Math.round(pos.coords.accuracy),
+          source: 'gps',
+        });
+      },
+      () => {
+        // Attempt 2: Lower accuracy (network/WiFi) as backup
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (resolved) return;
+            resolved = true;
+            resolve({
+              lat: pos.coords.latitude,
+              lon: pos.coords.longitude,
+              accuracy: Math.round(pos.coords.accuracy),
+              source: 'network',
+            });
+          },
+          async () => {
+            if (resolved) return;
+            // Attempt 3: IP geolocation API as last resort
+            try {
+              const ipRes = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
+              const ipData = await ipRes.json();
+              if (ipData.latitude && ipData.longitude) {
+                resolved = true;
+                resolve({
+                  lat: ipData.latitude,
+                  lon: ipData.longitude,
+                  accuracy: 5000, // IP-based ~5km accuracy
+                  source: 'ip',
+                });
+                return;
+              }
+            } catch {}
+            // Final fallback: fail gracefully
+            resolved = true;
+            resolve({ lat: null, lon: null, accuracy: null, source: 'failed' });
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
+        );
+      },
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 0 }
+    );
+  });
+}
 
 export default function SOSPage() {
   const { activePatient } = useUser();
   const [phase, setPhase] = useState('ready'); // ready | dispatching | result
   const [location, setLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const [locationSource, setLocationSource] = useState(null); // 'gps' | 'network' | 'ip' | 'failed'
+  const [gpsAccuracy, setGpsAccuracy] = useState(null);
+  const [gpsLoading, setGpsLoading] = useState(true);
   const [result, setResult] = useState(null);
   const [severity, setSeverity] = useState('Critical');
   const [dispatchTimer, setDispatchTimer] = useState(0);
   const [profile, setProfile] = useState(null);
   const timerRef = useRef(null);
+  const watchRef = useRef(null);
 
   // Pre-fetch patient profile for instant info display
   useEffect(() => {
@@ -27,20 +96,60 @@ export default function SOSPage() {
     }
   }, [activePatient]);
 
-  // Pre-warm GPS on page load so it's instant when needed
+  // Pre-warm GPS on page load with high accuracy + continuous watching
   useEffect(() => {
+    let cancelled = false;
+    setGpsLoading(true);
+
+    // Initial fetch
+    getAccuratePosition(15000).then((result) => {
+      if (cancelled) return;
+      setGpsLoading(false);
+      if (result.source !== 'failed' && result.source !== 'unavailable') {
+        setLocation({ lat: result.lat, lon: result.lon });
+        setLocationSource(result.source);
+        setGpsAccuracy(result.accuracy);
+        if (result.source === 'ip') {
+          setLocationError('⚠️ Using approximate location (IP-based). Enable GPS for accurate dispatch.');
+        }
+      } else {
+        setLocationError('Could not determine your location. Please enable Location Services.');
+      }
+    });
+
+    // Continuous GPS watch for accuracy improvement
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-        () => setLocation({ lat: 23.7750, lon: 90.4100 }), // Dhaka fallback
-        { enableHighAccuracy: true, timeout: 8000 }
+      watchRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          if (cancelled) return;
+          const { latitude, longitude, accuracy } = pos.coords;
+          // Only update if this is more accurate than what we have
+          if (!gpsAccuracy || accuracy < gpsAccuracy) {
+            setLocation({ lat: latitude, lon: longitude });
+            setLocationSource('gps');
+            setGpsAccuracy(Math.round(accuracy));
+            setGpsLoading(false);
+            setLocationError(null);
+          }
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
       );
     }
+
+    return () => {
+      cancelled = true;
+      if (watchRef.current !== null) {
+        navigator.geolocation.clearWatch(watchRef.current);
+        watchRef.current = null;
+      }
+    };
   }, []);
 
   const triggerSOS = async () => {
     setPhase('dispatching');
     setDispatchTimer(0);
+    setLocationError(null);
 
     // Start live timer
     const start = Date.now();
@@ -48,17 +157,22 @@ export default function SOSPage() {
       setDispatchTimer(((Date.now() - start) / 1000).toFixed(1));
     }, 100);
 
-    // Get fresh GPS if we don't have it
+    // Get fresh GPS — always request a new reading for dispatch
     let coords = location;
-    if (!coords) {
-      coords = await new Promise((resolve) => {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-          () => resolve({ lat: 23.7750, lon: 90.4100 }),
-          { enableHighAccuracy: true, timeout: 5000 }
-        );
-      });
-      setLocation(coords);
+    if (!coords || locationSource === 'ip') {
+      const freshPos = await getAccuratePosition(12000);
+      if (freshPos.source !== 'failed' && freshPos.source !== 'unavailable') {
+        coords = { lat: freshPos.lat, lon: freshPos.lon };
+        setLocation(coords);
+        setLocationSource(freshPos.source);
+        setGpsAccuracy(freshPos.accuracy);
+      } else if (!coords) {
+        // Absolute last resort — cannot dispatch without any location
+        clearInterval(timerRef.current);
+        setLocationError('❌ Cannot acquire your location. Please enable GPS/Location Services and try again.');
+        setPhase('ready');
+        return;
+      }
     }
 
     try {
@@ -159,6 +273,8 @@ export default function SOSPage() {
         }
         .gps-locked { background: rgba(48,209,88,0.1); border: 1px solid rgba(48,209,88,0.3); color: var(--green); }
         .gps-searching { background: rgba(255,159,10,0.1); border: 1px solid rgba(255,159,10,0.3); color: var(--yellow); }
+        .gps-error { background: rgba(255,45,85,0.1); border: 1px solid rgba(255,45,85,0.3); color: var(--red); }
+        .animate-spin { animation: spin 1s linear infinite; }
 
         .dispatch-overlay {
           display: flex; flex-direction: column; align-items: center; gap: 28px;
@@ -229,9 +345,16 @@ export default function SOSPage() {
             )}
 
             {/* GPS Status */}
-            <div className={`gps-badge ${location ? 'gps-locked' : 'gps-searching'}`}>
-              <MapPin size={13} />
-              {location ? `GPS Locked • ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}` : 'Acquiring GPS...'}
+            <div className={`gps-badge ${location ? (locationSource === 'gps' ? 'gps-locked' : 'gps-searching') : (gpsLoading ? 'gps-searching' : 'gps-error')}`}
+              style={!location && !gpsLoading ? { background: 'rgba(255,45,85,0.1)', borderColor: 'rgba(255,45,85,0.3)', color: 'var(--red)' } : {}}
+            >
+              {gpsLoading ? <Loader2 size={13} className="animate-spin" /> : <MapPin size={13} />}
+              {gpsLoading
+                ? 'Acquiring GPS...'
+                : location
+                  ? `${locationSource === 'gps' ? '📡 GPS' : locationSource === 'network' ? '📶 Network' : '🌐 IP'} • ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}${gpsAccuracy ? ` • ±${gpsAccuracy}m` : ''}`
+                  : 'Location Unavailable'
+              }
             </div>
 
             {/* Severity Selector */}
@@ -274,7 +397,7 @@ export default function SOSPage() {
             <h3 style={{ fontSize: 20, fontWeight: 800 }}>Dispatching Emergency...</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, color: 'var(--text-muted)', fontSize: 13 }}>
               <span>✓ Patient identity verified</span>
-              <span>✓ GPS coordinates acquired</span>
+              <span>{locationSource === 'gps' ? '✓ GPS coordinates acquired' : locationSource === 'network' ? '✓ Network location acquired' : locationSource === 'ip' ? '⚠ Using approximate IP location' : '⟳ Acquiring location...'}{gpsAccuracy ? ` (±${gpsAccuracy}m)` : ''}</span>
               <span className="animate-pulse">⟳ Running PostGIS spatial query...</span>
             </div>
           </div>
