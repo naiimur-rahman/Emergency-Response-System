@@ -144,16 +144,9 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
     });
   }, []);
 
-  if (!MapComponents) {
-    return (
-      <div className="map-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)' }}>
-        <div className="spinner" />
-      </div>
-    );
-  }
 
-  const { RL, hospitalIcon, govtHospitalIcon, emergencyIcon, ambulanceIcon } = MapComponents;
-  const { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } = RL;
+
+
 
   // Determine map center: prioritize pickup, then first hospital, then Dhaka
   const center = pickupCoords
@@ -222,6 +215,17 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
   const patientToHospital = patientToHospitalRoute || (pickupCoords && hospitals.length > 0 && hospitals[0].lat && hospitals[0].lon
     ? [[pickupCoords.lat, pickupCoords.lon], [hospitals[0].lat, hospitals[0].lon]]
     : null);
+
+  if (!MapComponents) {
+    return (
+      <div className="map-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)' }}>
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  const { RL, hospitalIcon, govtHospitalIcon, emergencyIcon, ambulanceIcon } = MapComponents;
+  const { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } = RL;
 
   return (
     <div className="map-container" style={{ position: 'relative' }}>
