@@ -6,19 +6,37 @@ import { useToast } from '@/components/Toast';
 
 const CONDITION_GROUPS = [
   {
-    label: '🔴 CRITICAL (Major)',
+    label: '🔴 CRITICAL (Life-Threatening)',
     severity: 'critical',
-    conditions: ['Heart Failure', 'Stroke', 'Severe Trauma', 'Major Burn'],
+    conditions: [
+      'Heart Attack', 'Heart Failure', 'Stroke', 'Severe Trauma',
+      'Major Burn', 'Cardiac Arrest', 'Brain Hemorrhage', 'Spinal Injury',
+    ],
   },
   {
-    label: '🟠 CHRONIC (Continuous)',
+    label: '🟠 CHRONIC (Ongoing)',
     severity: 'chronic',
-    conditions: ['Type 2 Diabetes', 'Hypertension', 'Asthma', 'Kidney Disease', 'Epilepsy'],
+    conditions: [
+      'Type 2 Diabetes', 'Type 1 Diabetes', 'Hypertension', 'Asthma',
+      'Kidney Disease', 'Epilepsy', 'COPD', 'Liver Disease',
+      'Cancer', 'Leukemia', 'Sickle Cell Disease', 'Thyroid Disorder',
+    ],
   },
   {
-    label: '🔵 MINOR (Small)',
+    label: '🟡 MODERATE (Requires Attention)',
+    severity: 'moderate',
+    conditions: [
+      'Pregnancy', 'Bone Fracture', 'Appendicitis', 'Pneumonia',
+      'Dengue Fever', 'Severe Allergy', 'Gallstones', 'Hernia',
+    ],
+  },
+  {
+    label: '🔵 MINOR (General)',
     severity: 'minor',
-    conditions: ['Food Allergy', 'Minor Burn', 'Fever', 'General Pain', 'Pregnancy'],
+    conditions: [
+      'Food Allergy', 'Minor Burn', 'Fever', 'General Pain',
+      'Migraine', 'Skin Infection', 'Acid Reflux', 'Anemia',
+    ],
   },
 ];
 
@@ -30,7 +48,9 @@ export default function PatientProfile() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (activePatient) {
+    // Only fetch if we don't have a profile yet, or if the active patient ID has changed.
+    // This prevents the background polling in UserContext from resetting the local unsaved state.
+    if (activePatient && (!profile || String(profile.patient_id) !== String(activePatient.id))) {
       fetch(`/api/patients?patient_id=${activePatient.id}`)
         .then(res => res.json())
         .then(data => {
@@ -38,11 +58,12 @@ export default function PatientProfile() {
            setLoading(false);
         });
     }
-  }, [activePatient]);
+  }, [activePatient?.id, profile?.patient_id]);
 
   if (!activePatient) return null;
 
   const handleSave = async () => {
+    if (!profile) return;
     setSaving(true);
     try {
       const res = await fetch('/api/patients', {
@@ -64,12 +85,14 @@ export default function PatientProfile() {
   };
 
   const toggleCondition = (conditionName) => {
-    const current = profile.conditions || [];
-    if (current.includes(conditionName)) {
-      setProfile({ ...profile, conditions: current.filter(c => c !== conditionName) });
-    } else {
-      setProfile({ ...profile, conditions: [...current, conditionName] });
-    }
+    setProfile(prev => {
+      if (!prev) return prev;
+      const current = prev.conditions || [];
+      const newConditions = current.includes(conditionName)
+        ? current.filter(c => c !== conditionName)
+        : [...current, conditionName];
+      return { ...prev, conditions: newConditions };
+    });
   };
 
   if (loading || !profile) return <div className="page-container"><div className="spinner" /></div>;

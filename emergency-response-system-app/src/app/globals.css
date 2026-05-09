@@ -898,6 +898,12 @@ tbody tr:last-child td { border-bottom: none; }
   color: var(--orange);
 }
 
+.condition-chip.selected.moderate {
+  border-color: var(--yellow);
+  background: var(--yellow-dim);
+  color: var(--yellow);
+}
+
 .condition-chip.selected.minor {
   border-color: var(--blue);
   background: var(--blue-dim);
