@@ -95,9 +95,22 @@ export default function PatientHistoryPage() {
                  <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Total Fare</div>
                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{trip.fare}</div>
                </div>
-               <button className="btn btn-primary btn-sm" onClick={() => handleOpenRating(trip)} style={{ padding: '8px 16px', background: 'var(--blue)', color: 'white' }} title="Leave Review">
-                 <Star size={16} /> Rate Trip
-               </button>
+                <button 
+                  className={`btn btn-sm ${trip.hasRating ? 'btn-ghost' : 'btn-primary'}`} 
+                  onClick={() => !trip.hasRating && handleOpenRating(trip)} 
+                  disabled={trip.hasRating}
+                  style={{ 
+                    padding: '8px 16px', 
+                    background: trip.hasRating ? 'rgba(255,255,255,0.05)' : 'var(--blue)', 
+                    color: trip.hasRating ? 'var(--text-muted)' : 'white',
+                    opacity: trip.hasRating ? 0.7 : 1,
+                    cursor: trip.hasRating ? 'default' : 'pointer'
+                  }} 
+                  title={trip.hasRating ? 'Feedback submitted' : 'Leave Review'}
+                >
+                  <Star size={16} fill={trip.hasRating ? 'var(--yellow)' : 'none'} stroke={trip.hasRating ? 'var(--yellow)' : 'currentColor'} /> 
+                  {trip.hasRating ? 'Rated' : 'Rate Trip'}
+                </button>
                <button className="btn btn-secondary btn-sm" style={{ padding: '8px 16px' }} title="Download Invoice">
                  <Download size={16} /> Invoice
                </button>
