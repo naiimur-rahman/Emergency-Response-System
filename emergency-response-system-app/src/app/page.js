@@ -93,8 +93,6 @@ export default function PortalPage() {
         .portal-header h1 {
           font-size: 42px; font-weight: 900; color: var(--text-primary);
           letter-spacing: -2px; margin-bottom: 4px;
-          background: var(--text-primary);
-          -webkit-background-clip: unset; -webkit-text-fill-color: unset;
         }
         .portal-header p { color: var(--text-muted); font-size: 15px; font-weight: 500; }
 
