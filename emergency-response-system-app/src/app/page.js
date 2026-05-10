@@ -68,89 +68,129 @@ export default function PortalPage() {
     <div className="portal-page">
       <style>{`
         .portal-page {
-          height: 100vh; overflow: hidden; display: flex; flex-direction: column;
-          align-items: center; justify-content: center; padding: 0 24px;
+          min-height: 100vh; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; padding: 40px 24px;
           background: var(--bg-primary);
           background-image: 
-            linear-gradient(var(--border-subtle) 1px, transparent 1px),
-            linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
-          background-size: 30px 30px;
-          position: relative;
+            radial-gradient(circle at 2px 2px, var(--border-subtle) 1px, transparent 0);
+          background-size: 32px 32px;
+          position: relative; overflow-x: hidden;
         }
         .portal-page::before {
-          content: ''; position: absolute; inset: 0;
-          background: radial-gradient(circle at 50% 50%, rgba(10,132,255,0.05) 0%, transparent 70%);
+          content: ''; position: absolute; top: -10%; left: -10%; width: 40%; height: 40%;
+          background: radial-gradient(circle, rgba(255,45,85,0.05) 0%, transparent 70%);
           pointer-events: none;
         }
-        .portal-header { text-align: center; margin-bottom: 3vh; z-index: 10; }
+        .portal-page::after {
+          content: ''; position: absolute; bottom: -10%; right: -10%; width: 40%; height: 40%;
+          background: radial-gradient(circle, rgba(10,132,255,0.05) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        .portal-header { text-align: center; margin-bottom: 48px; z-index: 10; }
+        .portal-logo-container {
+          position: relative; width: fit-content; margin: 0 auto 24px;
+        }
         .portal-logo {
-          width: 56px; height: 56px; border-radius: 14px; display: flex;
-          align-items: center; justify-content: center; margin: 0 auto 16px;
-          background: rgba(255,45,85,0.1);
-          border: 1px solid rgba(255,45,85,0.2);
-          box-shadow: 0 0 30px rgba(255,45,85,0.15);
+          width: 64px; height: 64px; border-radius: 18px; display: flex;
+          align-items: center; justify-content: center;
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+          position: relative; z-index: 2;
         }
+        .logo-ring {
+          position: absolute; inset: -8px; border-radius: 24px;
+          border: 2px solid var(--red); opacity: 0.1;
+          animation: ringPulse 2s infinite;
+        }
+        @keyframes ringPulse { 0% { transform: scale(1); opacity: 0.2; } 100% { transform: scale(1.3); opacity: 0; } }
+
         .portal-header h1 {
-          font-size: 42px; font-weight: 900; color: var(--text-primary);
-          letter-spacing: -2px; margin-bottom: 4px;
+          font-size: 48px; font-weight: 950; color: var(--text-primary);
+          letter-spacing: -2px; margin-bottom: 8px;
+          background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .portal-header p { color: var(--text-muted); font-size: 15px; font-weight: 500; }
+        .portal-header p { 
+          color: var(--text-muted); font-size: 16px; font-weight: 500; 
+          letter-spacing: 4px; text-transform: uppercase;
+        }
 
         .portal-grid {
           display: grid; grid-template-columns: repeat(2, 1fr);
-          gap: 20px; width: 100%; max-width: 900px; z-index: 10;
+          gap: 16px; width: 100%; max-width: 800px; z-index: 10;
         }
         .portal-card {
           background: var(--bg-card); 
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
           border: 1px solid var(--border-subtle);
-          border-radius: 20px; padding: 24px; cursor: pointer;
+          border-radius: 24px; padding: 20px; cursor: pointer;
           text-decoration: none; color: inherit;
-          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           position: relative; overflow: hidden;
-          display: flex; flex-direction: column; gap: 16px;
+          display: flex; flex-direction: column; gap: 14px;
         }
         .portal-card:hover {
           background: var(--bg-card-hover);
-          transform: translateY(-5px);
+          transform: translateY(-4px) scale(1.01);
           border-color: var(--border-accent);
-          box-shadow: var(--shadow-card);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .card-bg-glow {
+          position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+          background: radial-gradient(circle, var(--glow-color) 0%, transparent 60%);
+          opacity: 0; transition: opacity 0.4s; pointer-events: none;
+        }
+        .portal-card:hover .card-bg-glow { opacity: 0.05; }
+
+        .portal-card-header {
+          display: flex; align-items: center; justify-content: space-between;
         }
         .portal-card-icon {
-          width: 48px; height: 48px; border-radius: 12px;
+          width: 44px; height: 44px; border-radius: 12px;
           display: flex; align-items: center; justify-content: center;
-          transition: transform 0.3s;
+          transition: transform 0.4s;
         }
-        .portal-card:hover .portal-card-icon { transform: scale(1.1) rotate(-5deg); }
+        .portal-card:hover .portal-card-icon { transform: rotate(-8deg) scale(1.1); }
         
-        .portal-card h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0; }
-        .portal-card .portal-subtitle { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-        .portal-card .portal-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+        .portal-card h2 { font-size: 20px; font-weight: 800; color: var(--text-primary); margin: 0; }
+        .portal-card .portal-subtitle { 
+          font-size: 10px; font-weight: 900; text-transform: uppercase; 
+          letter-spacing: 1.5px; opacity: 0.7;
+        }
+        .portal-card .portal-desc { 
+          font-size: 13px; color: var(--text-secondary); line-height: 1.5; 
+          margin-bottom: 4px; height: 40px; overflow: hidden;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
 
         .portal-features { display: flex; flex-wrap: wrap; gap: 6px; }
         .portal-feature {
-          padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;
-          background: var(--bg-glass); border: 1px solid var(--border-subtle);
-          color: var(--text-muted);
+          padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800;
+          background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);
+          color: var(--text-muted); transition: all 0.2s;
         }
+        .portal-card:hover .portal-feature { border-color: rgba(255,255,255,0.1); color: var(--text-secondary); }
 
         .portal-enter {
-          display: flex; align-items: center; gap: 6px; margin-top: auto;
-          font-weight: 800; font-size: 13px; letter-spacing: 0.5px;
-          opacity: 0.8; transition: all 0.2s;
+          display: flex; align-items: center; gap: 8px; margin-top: auto;
+          font-weight: 900; font-size: 12px; letter-spacing: 1px;
+          text-transform: uppercase; opacity: 0.4; transition: all 0.3s;
         }
-        .portal-card:hover .portal-enter { opacity: 1; gap: 10px; }
+        .portal-card:hover .portal-enter { opacity: 1; transform: translateX(4px); }
 
         .portal-footer {
-          margin-top: 4vh; text-align: center; color: var(--text-muted); font-size: 12px;
-          letter-spacing: 1px; z-index: 10; font-weight: 600;
+          margin-top: 60px; text-align: center; color: var(--text-muted); font-size: 11px;
+          letter-spacing: 2px; z-index: 10; font-weight: 700; opacity: 0.5;
         }
-        .portal-footer span { color: var(--red); opacity: 0.8; }
+        .portal-footer b { color: var(--red); }
 
-        @media (max-height: 700px) {
-          .portal-header h1 { font-size: 32px; }
-          .portal-card { padding: 16px; gap: 12px; }
-          .portal-desc { display: none; }
+        @media (max-width: 640px) {
+          .portal-grid { grid-template-columns: 1fr; }
+          .portal-header h1 { font-size: 36px; }
+          .portal-page { padding: 80px 20px 40px; }
         }
       `}</style>
 
@@ -161,47 +201,56 @@ export default function PortalPage() {
           background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)',
           color: 'var(--text-primary)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', 
-          width: 44, height: 44, borderRadius: 12, zIndex: 100,
-          backdropFilter: 'blur(10px)', transition: 'all 0.2s'
+          width: 44, height: 44, borderRadius: 14, zIndex: 100,
+          backdropFilter: 'blur(10px)', transition: 'all 0.3s'
         }}
-        title="Toggle Theme"
       >
-        {mounted ? (theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />) : <Sun size={20} />}
+        {mounted ? (theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />) : <Sun size={18} />}
       </button>
 
       <div className="portal-header">
-        <div className="portal-logo">
-          <Activity size={24} style={{ color: 'var(--red)' }} />
+        <div className="portal-logo-container">
+          <div className="logo-ring" />
+          <div className="portal-logo">
+            <Activity size={28} style={{ color: 'var(--red)' }} />
+          </div>
         </div>
         <h1>Emergency Response</h1>
-        <p>Advanced Emergency Dispatch</p>
+        <p>Command & Dispatch</p>
       </div>
 
       <div className="portal-grid">
         {portals.map((p) => (
-          <Link key={p.href} href={p.href} className="portal-card">
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: p.gradient, opacity: 0.5 }} />
-            <div className="portal-card-icon" style={{ background: `${p.color}15`, border: `1px solid ${p.color}30` }}>
-              <p.icon size={24} style={{ color: p.color }} />
+          <Link key={p.href} href={p.href} className="portal-card" style={{ '--glow-color': p.color }}>
+            <div className="card-bg-glow" />
+            <div className="portal-card-header">
+              <div className="portal-card-icon" style={{ background: `${p.color}15`, border: `1px solid ${p.color}25` }}>
+                <p.icon size={20} style={{ color: p.color }} />
+              </div>
+              <span className="portal-subtitle" style={{ color: p.color }}>{p.subtitle.split(' ')[0]}</span>
             </div>
+            
             <div>
-              <span className="portal-subtitle" style={{ color: p.color }}>{p.subtitle}</span>
               <h2>{p.title}</h2>
+              <p className="portal-desc">{p.description}</p>
             </div>
-            <p className="portal-desc">{p.description}</p>
+
             <div className="portal-features">
               {p.features.map(f => <span key={f} className="portal-feature">{f}</span>)}
             </div>
+
             <div className="portal-enter" style={{ color: p.color }}>
-              Enter Portal <ArrowRight size={14} />
+              Launch <ArrowRight size={14} />
             </div>
           </Link>
         ))}
       </div>
 
       <div className="portal-footer">
-        EMERGENCY <span>V2.0</span> — DHAKA METRO
+        DHAKA METRO • SYSTEM <b>V2.0</b> • 2026
       </div>
     </div>
+  );
+}
   );
 }
