@@ -84,6 +84,10 @@ export const dispatchZones = [
   { zone_name: 'Bashundhara', count: 1 },
 ];
 
+export const tripFeedback = [
+  { feedback_id: 1, trip_id: 1002, rating: 5, comments: 'Great driver, arrived fast!' }
+];
+
 export const mockData = {
   ambulances,
   billing,
@@ -98,6 +102,7 @@ export const mockData = {
   tripLogs,
   vehicleInventory,
   chatMessages: [],
+  tripFeedback,
 };
 
 export default mockData;

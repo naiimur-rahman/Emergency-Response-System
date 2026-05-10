@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { query } from '@/lib/db';
 
 export async function POST(req) {
   try {
@@ -9,15 +9,15 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const query = `
-      INSERT INTO Ratings_Reviews (Trip_ID, Rating, Comments)
+    const sql = `
+      INSERT INTO Trip_Feedback (Trip_ID, Rating, Comments)
       VALUES ($1, $2, $3)
       ON CONFLICT (Trip_ID) DO UPDATE SET Rating = EXCLUDED.Rating, Comments = EXCLUDED.Comments
       RETURNING *
     `;
     const values = [trip_id, rating, comments || null];
     
-    const result = await db.query(query, values);
+    const result = await query(sql, values);
     return NextResponse.json({ success: true, review: result.rows[0] });
   } catch (err) {
     console.error('Error adding rating:', err);

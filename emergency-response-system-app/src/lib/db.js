@@ -337,6 +337,26 @@ function handleMockQuery(text, params = []) {
     return result([log]);
   }
 
+  if (sql.startsWith('insert into trip_feedback')) {
+    const feedback = {
+      feedback_id: Math.max(...mockData.tripFeedback.map((f) => f.feedback_id), 0) + 1,
+      trip_id: params[0],
+      rating: params[1],
+      comments: params[2],
+      submitted_at: new Date().toISOString(),
+    };
+    
+    // Handle ON CONFLICT (Trip_ID) DO UPDATE
+    const existingIndex = mockData.tripFeedback.findIndex(f => String(f.trip_id) === String(params[0]));
+    if (existingIndex >= 0) {
+      mockData.tripFeedback[existingIndex] = { ...mockData.tripFeedback[existingIndex], rating: params[1], comments: params[2] };
+      return result([mockData.tripFeedback[existingIndex]]);
+    }
+    
+    mockData.tripFeedback.push(feedback);
+    return result([feedback]);
+  }
+
   if (sql.startsWith('update emergency_requests')) {
     const request = getRequest(params[1]);
     if (request) request.status = params[0];
