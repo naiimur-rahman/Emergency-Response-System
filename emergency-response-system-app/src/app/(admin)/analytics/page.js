@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Activity, BarChart3, ShieldAlert, Map, TrendingUp } from 'lucide-react';
+import { Activity, BarChart3, ShieldAlert, Map, TrendingUp, Star, MessageSquare } from 'lucide-react';
 
 const CostTrendGraph = ({ data }) => {
   if (!data || data.length === 0) return null;
@@ -195,7 +195,42 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
+        {/* Recent Feedback */}
+        <div className="section-card" style={{ gridColumn: '1 / -1' }}>
+          <div className="section-header">
+            <h3><MessageSquare size={16} /> Recent Patient Feedback</h3>
+          </div>
+          <div className="section-body">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 20, padding: 20 }}>
+              {data.recentReviews.map((r, i) => (
+                <div key={i} className="glass" style={{ padding: 20, borderRadius: 16, border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 800 }}>{r.patient_name}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: 2 }}>Trip #{r.trip_id}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      {[...Array(5)].map((_, idx) => (
+                        <Star key={idx} size={14} fill={idx < r.rating ? 'var(--yellow)' : 'none'} stroke={idx < r.rating ? 'var(--yellow)' : 'var(--text-muted)'} />
+                      ))}
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>"{r.comments || 'No comments left.'}"</p>
+                  <div style={{ marginTop: 12, fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>
+                    {new Date(r.submitted_at).toLocaleDateString()} {new Date(r.submitted_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </div>
+                </div>
+              ))}
+              {data.recentReviews.length === 0 && (
+                <div style={{ textAlign: 'center', gridColumn: '1 / -1', padding: '40px 0', color: 'var(--text-muted)' }}>
+                  No feedback received yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
     </div>
   );
 }
