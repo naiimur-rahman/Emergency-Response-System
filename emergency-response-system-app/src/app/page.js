@@ -109,7 +109,7 @@ export default function PortalPage() {
         .portal-header h1 {
           font-size: 48px; font-weight: 950; color: var(--text-primary);
           letter-spacing: -2px; margin-bottom: 8px;
-          background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+          background: var(--header-gradient);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .portal-header p { 
@@ -182,8 +182,8 @@ export default function PortalPage() {
         .portal-card:hover .portal-enter { opacity: 1; transform: translateX(4px); }
 
         .portal-footer {
-          margin-top: 60px; text-align: center; color: var(--text-muted); font-size: 11px;
-          letter-spacing: 2px; z-index: 10; font-weight: 700; opacity: 0.5;
+          margin-top: 60px; text-align: center; color: var(--text-primary); font-size: 11px;
+          letter-spacing: 2px; z-index: 10; font-weight: 700; opacity: 0.6;
         }
         .portal-footer b { color: var(--red); }
 
