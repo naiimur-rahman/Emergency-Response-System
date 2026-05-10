@@ -103,7 +103,17 @@ INSERT INTO Ambulances (License_Plate, Equipment_Level, Current_Status) VALUES
 ('DHK-METRO-AMB-722', 'Basic', 'Available'),
 ('DHK-METRO-AMB-834', 'Advanced', 'Available'),
 ('DHK-METRO-AMB-945', 'Basic', 'Available'),
-('DHK-METRO-AMB-010', 'Advanced', 'Available')
+('DHK-METRO-AMB-010', 'Advanced', 'Available'),
+('DHK-METRO-AMB-111', 'Advanced', 'Available'),
+('DHK-METRO-AMB-222', 'Basic', 'Available'),
+('DHK-METRO-AMB-333', 'Advanced', 'Available'),
+('DHK-METRO-AMB-444', 'Basic', 'Available'),
+('DHK-METRO-AMB-555', 'Advanced', 'Available'),
+('DHK-METRO-AMB-666', 'Advanced', 'Available'),
+('DHK-METRO-AMB-777', 'Advanced', 'Available'),
+('DHK-METRO-AMB-888', 'Basic', 'Available'),
+('DHK-METRO-AMB-999', 'Advanced', 'Available'),
+('DHK-METRO-AMB-000', 'Advanced', 'Available')
 ON CONFLICT DO NOTHING;
 
 -- 7. Drivers
@@ -117,7 +127,17 @@ INSERT INTO Drivers (Name, License_No, Shift_Status) VALUES
 ('Nabila Islam', 'BD-DL-88443', 'Off_Duty'),
 ('Tanvir Hasan', 'BD-DL-11990', 'On_Duty'),
 ('Lutfur Rahman', 'BD-DL-44229', 'On_Duty'),
-('Jasim Uddin', 'BD-DL-11223', 'Off_Duty')
+('Jasim Uddin', 'BD-DL-11223', 'On_Duty'),
+('Sumon Ahmed', 'BD-DL-33445', 'On_Duty'),
+('Rokeya Begum', 'BD-DL-55667', 'On_Duty'),
+('Abid Hasan', 'BD-DL-77889', 'On_Duty'),
+('Momena Akter', 'BD-DL-99001', 'On_Duty'),
+('Sharif Khan', 'BD-DL-11220', 'On_Duty'),
+('Shohel Rana', 'BD-DL-22334', 'On_Duty'),
+('Anika Tabassum', 'BD-DL-44557', 'On_Duty'),
+('Mustafizur Rahman', 'BD-DL-66778', 'On_Duty'),
+('Salma Khatun', 'BD-DL-88990', 'On_Duty'),
+('Imran Hossain', 'BD-DL-00112', 'On_Duty')
 ON CONFLICT DO NOTHING;
 
 -- 8. Dispatchers

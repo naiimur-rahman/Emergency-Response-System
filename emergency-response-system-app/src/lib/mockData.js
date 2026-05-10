@@ -35,6 +35,17 @@ export const drivers = [
   { driver_id: 7, id: 7, name: 'Nabila Islam', license_no: 'BD-DL-88443', license: 'BD-DL-88443', shift_status: 'Off_Duty', status: 'Off_Duty' },
   { driver_id: 8, id: 8, name: 'Tanvir Hasan', license_no: 'BD-DL-11990', license: 'BD-DL-11990', shift_status: 'Available', status: 'Available' },
   { driver_id: 9, id: 9, name: 'Lutfur Rahman', license_no: 'BD-DL-44229', license: 'BD-DL-44229', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 10, id: 10, name: 'Jasim Uddin', license_no: 'BD-DL-11223', license: 'BD-DL-11223', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 11, id: 11, name: 'Sumon Ahmed', license_no: 'BD-DL-33445', license: 'BD-DL-33445', shift_status: 'Available', status: 'Available' },
+  { driver_id: 12, id: 12, name: 'Rokeya Begum', license_no: 'BD-DL-55667', license: 'BD-DL-55667', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 13, id: 13, name: 'Abid Hasan', license_no: 'BD-DL-77889', license: 'BD-DL-77889', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 14, id: 14, name: 'Momena Akter', license_no: 'BD-DL-99001', license: 'BD-DL-99001', shift_status: 'Available', status: 'Available' },
+  { driver_id: 15, id: 15, name: 'Sharif Khan', license_no: 'BD-DL-11220', license: 'BD-DL-11220', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 16, id: 16, name: 'Shohel Rana', license_no: 'BD-DL-22334', license: 'BD-DL-22334', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 17, id: 17, name: 'Anika Tabassum', license_no: 'BD-DL-44557', license: 'BD-DL-44557', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 18, id: 18, name: 'Mustafizur Rahman', license_no: 'BD-DL-66778', license: 'BD-DL-66778', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 19, id: 19, name: 'Salma Khatun', license_no: 'BD-DL-88990', license: 'BD-DL-88990', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 20, id: 20, name: 'Imran Hossain', license_no: 'BD-DL-00112', license: 'BD-DL-00112', shift_status: 'On_Duty', status: 'On_Duty' },
 ];
 
 export const ambulances = [
@@ -48,6 +59,16 @@ export const ambulances = [
   { vehicle_id: 8, id: 8, license_plate: 'DHK-METRO-AMB-834', equipment_level: 'Advanced Life Support', current_status: 'Available' },
   { vehicle_id: 9, id: 9, license_plate: 'DHK-METRO-AMB-945', equipment_level: 'Basic Life Support', current_status: 'Available' },
   { vehicle_id: 10, id: 10, license_plate: 'DHK-METRO-AMB-010', equipment_level: 'ICU Support', current_status: 'Available' },
+  { vehicle_id: 11, id: 11, license_plate: 'DHK-METRO-AMB-111', equipment_level: 'Advanced Life Support', current_status: 'Available' },
+  { vehicle_id: 12, id: 12, license_plate: 'DHK-METRO-AMB-222', equipment_level: 'Basic Life Support', current_status: 'Available' },
+  { vehicle_id: 13, id: 13, license_plate: 'DHK-METRO-AMB-333', equipment_level: 'ICU Support', current_status: 'Available' },
+  { vehicle_id: 14, id: 14, license_plate: 'DHK-METRO-AMB-444', equipment_level: 'Basic Life Support', current_status: 'Available' },
+  { vehicle_id: 15, id: 15, license_plate: 'DHK-METRO-AMB-555', equipment_level: 'Advanced Life Support', current_status: 'Available' },
+  { vehicle_id: 16, id: 16, license_plate: 'DHK-METRO-AMB-666', equipment_level: 'ICU Support', current_status: 'Available' },
+  { vehicle_id: 17, id: 17, license_plate: 'DHK-METRO-AMB-777', equipment_level: 'Advanced Life Support', current_status: 'Available' },
+  { vehicle_id: 18, id: 18, license_plate: 'DHK-METRO-AMB-888', equipment_level: 'Basic Life Support', current_status: 'Available' },
+  { vehicle_id: 19, id: 19, license_plate: 'DHK-METRO-AMB-999', equipment_level: 'ICU Support', current_status: 'Available' },
+  { vehicle_id: 20, id: 20, license_plate: 'DHK-METRO-AMB-000', equipment_level: 'Advanced Life Support', current_status: 'Available' },
 ];
 
 export const emergencyRequests = [
