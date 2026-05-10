@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const [hospitalRank, zoneAnalysis, maintenanceStats, inventoryAlerts] = await Promise.all([
+    const [hospitalRank, zoneAnalysis, maintenanceStats, inventoryAlerts, costTrend] = await Promise.all([
       // Hospital Rank by ICU Beds (Window Function)
       query(`
         SELECT Name, ICU_Beds, General_Beds,
@@ -32,6 +32,12 @@ export async function GET() {
         FROM Vehicle_Inventory vi
         JOIN Ambulances a ON vi.Vehicle_ID = a.Vehicle_ID
         WHERE vi.Quantity <= 5
+      `),
+      // Daily cost trend
+      query(`
+        SELECT TO_CHAR(DATE_TRUNC('day', Date_Started), 'DD Mon') as day, SUM(Cost) as total_cost
+        FROM Maintenance_Logs
+        GROUP BY day ORDER BY MIN(Date_Started) ASC
       `)
     ]);
 
@@ -39,7 +45,8 @@ export async function GET() {
       hospitalRank: hospitalRank.rows,
       zoneAnalysis: zoneAnalysis.rows,
       maintenanceStats: maintenanceStats.rows,
-      inventoryAlerts: inventoryAlerts.rows
+      inventoryAlerts: inventoryAlerts.rows,
+      costTrend: costTrend.rows
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

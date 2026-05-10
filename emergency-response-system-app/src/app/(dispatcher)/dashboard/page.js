@@ -4,6 +4,47 @@ import { AlertTriangle, Truck, BedDouble, Users, Zap, RefreshCw, Clock, MessageC
 import { SeverityBadge, StatusBadge } from '@/components/Badges';
 import { useToast } from '@/components/Toast';
 
+const TrendGraph = ({ trend }) => {
+  if (!trend || trend.length === 0) return null;
+  const maxVal = Math.max(...trend.map(t => parseInt(t.count)), 5);
+  const width = 300;
+  const height = 140;
+  const padding = 20;
+  const chartWidth = width - (padding * 2);
+  const chartHeight = height - (padding * 2);
+
+  const points = trend.map((t, i) => ({
+    x: padding + (i * (chartWidth / (trend.length - 1 || 1))),
+    y: height - padding - ((parseInt(t.count) / maxVal) * chartHeight)
+  }));
+
+  const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  const areaData = `${pathData} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: height }}>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--blue)" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="var(--blue)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaData} fill="url(#trendGradient)" />
+        <path d={pathData} fill="none" stroke="var(--blue)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="4" fill="var(--bg-primary)" stroke="var(--blue)" strokeWidth="2" />
+        ))}
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, padding: '0 4px' }}>
+        {trend.map((t, i) => (
+          <span key={i} style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>{t.day}</span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -275,26 +316,21 @@ export default function DashboardPage() {
 
           <div className="table-wrapper">
             <div className="table-header">
-              <h3><Zap size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Fleet Insights</h3>
+              <h3><Zap size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Weekly Volume Trend</h3>
             </div>
-            <div style={{ padding: 16 }}>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Response Time (Avg)</label>
-                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--green)' }}>{data?.insights?.avgResponseTime || '0.0'} min</div>
-                <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: 8 }}>
-                    <div style={{ width: `${Math.min(parseFloat(data?.insights?.avgResponseTime || 0) * 10, 100)}%`, height: '100%', background: 'var(--green)', borderRadius: 2 }} />
+            <div style={{ padding: '24px 16px 16px' }}>
+              <TrendGraph trend={data?.trend} />
+            </div>
+            <div style={{ padding: 16, borderTop: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Peak Load</div>
+                  <div style={{ fontSize: 16, fontWeight: 800 }}>{Math.max(...(data?.trend || []).map(t => parseInt(t.count)), 0)} Calls/Day</div>
                 </div>
-              </div>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Fleet Utilization</label>
-                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--blue)' }}>{Math.round((s.dispatchedAmbulances / (s.availableAmbulances + s.dispatchedAmbulances)) * 100) || 0}%</div>
-                <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: 8 }}>
-                   <div style={{ width: `${(s.dispatchedAmbulances / (s.availableAmbulances + s.dispatchedAmbulances)) * 100 || 0}%`, height: '100%', background: 'var(--blue)', borderRadius: 2 }} />
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Status</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>OPTIMAL</div>
                 </div>
-              </div>
-              <div style={{ marginTop: 20, padding: 12, background: 'rgba(255,159,10,0.05)', borderRadius: 8, border: '1px dashed rgba(255,159,10,0.3)' }}>
-                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--yellow)' }}>🔥 Area Hotspot</div>
-                 <div style={{ fontSize: 14, marginTop: 4 }}>{data?.insights?.hotspot || 'Scanning...'}</div>
               </div>
             </div>
           </div>

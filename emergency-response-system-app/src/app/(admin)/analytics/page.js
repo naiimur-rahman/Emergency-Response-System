@@ -1,6 +1,57 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Activity, BarChart3, ShieldAlert, Map } from 'lucide-react';
+import { Activity, BarChart3, ShieldAlert, Map, TrendingUp } from 'lucide-react';
+
+const CostTrendGraph = ({ data }) => {
+  if (!data || data.length === 0) return null;
+  const maxVal = Math.max(...data.map(d => parseFloat(d.total_cost)), 1000);
+  const width = 400;
+  const height = 180;
+  const padding = 30;
+  const chartWidth = width - (padding * 2);
+  const chartHeight = height - (padding * 2);
+
+  const points = data.map((d, i) => ({
+    x: padding + (i * (chartWidth / (data.length - 1 || 1))),
+    y: height - padding - ((parseFloat(d.total_cost) / maxVal) * chartHeight)
+  }));
+
+  const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+  return (
+    <div style={{ width: '100%', padding: '20px 0' }}>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <path d={pathData} fill="none" stroke="var(--blue)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="3" fill="var(--blue)" />
+        ))}
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+        {data.map((d, i) => (
+          <span key={i} style={{ fontSize: 9, color: 'var(--text-muted)' }}>{d.day}</span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ZoneBarChart = ({ data }) => {
+  if (!data || data.length === 0) return null;
+  const maxVal = Math.max(...data.map(d => parseInt(d.count)), 1);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 0' }}>
+      {data.map((z, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 80, fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{z.zone_name}</div>
+          <div style={{ flex: 1, height: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ width: `${(parseInt(z.count) / maxVal) * 100}%`, height: '100%', background: i === 0 ? 'var(--red)' : 'var(--blue)', borderRadius: 6 }} />
+          </div>
+          <div style={{ width: 30, fontSize: 11, fontWeight: 700 }}>{z.count}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default function AnalyticsPage() {
   const [data, setData] = useState(null);
@@ -23,6 +74,17 @@ export default function AnalyticsPage() {
         <div>
           <h2>System Analytics</h2>
           <p className="page-header-sub">Advanced insights powered by PostGIS & Window Functions</p>
+        </div>
+      </div>
+
+      <div className="stats-grid" style={{ marginBottom: 24 }}>
+        <div className="stat-card">
+          <div className="stat-card-label">Total Service Cost</div>
+          <div className="stat-card-value">৳{data.maintenanceStats.reduce((acc, curr) => acc + parseFloat(curr.cost), 0).toLocaleString()}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-label">Avg Requests/Zone</div>
+          <div className="stat-card-value">{(data.zoneAnalysis.reduce((acc, curr) => acc + parseInt(curr.count), 0) / (data.zoneAnalysis.length || 1)).toFixed(1)}</div>
         </div>
       </div>
 
@@ -59,23 +121,18 @@ export default function AnalyticsPage() {
           <div className="section-header">
             <h3><Map size={16} /> Emergencies by Zone</h3>
           </div>
-          <div className="section-body">
-            <table>
-              <thead>
-                <tr>
-                  <th>Zone Name</th>
-                  <th>Request Count</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.zoneAnalysis.map((z, i) => (
-                  <tr key={i}>
-                    <td>{z.zone_name}</td>
-                    <td style={{ fontWeight: 700 }}>{z.count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="section-body" style={{ padding: 20 }}>
+            <ZoneBarChart data={data.zoneAnalysis} />
+          </div>
+        </div>
+
+        {/* Cost Trend Graph */}
+        <div className="section-card" style={{ gridColumn: '1 / -1' }}>
+          <div className="section-header">
+            <h3><TrendingUp size={16} /> Maintenance Spending Trend</h3>
+          </div>
+          <div className="section-body" style={{ padding: 20 }}>
+            <CostTrendGraph data={data.costTrend} />
           </div>
         </div>
 

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips, chatMessages, responseStats, hotspotStats] = await Promise.all([
+    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips, chatMessages, responseStats, hotspotStats, trendStats] = await Promise.all([
       query(`SELECT COUNT(*) as total, 
              COUNT(*) FILTER (WHERE status = 'Pending') as pending,
              COUNT(*) FILTER (WHERE status = 'Active') as active
@@ -47,6 +47,10 @@ export async function GET() {
              GROUP BY p.address
              ORDER BY COUNT(*) DESC
              LIMIT 1`),
+      query(`SELECT TO_CHAR(DATE_TRUNC('day', timestamp_created), 'DD Mon') as day, COUNT(*) as count 
+             FROM emergency_requests 
+             WHERE timestamp_created > NOW() - INTERVAL '7 days'
+             GROUP BY day ORDER BY MIN(timestamp_created) ASC`),
     ]);
 
     const fleet = {};
@@ -73,7 +77,8 @@ export async function GET() {
       insights: {
         avgResponseTime: parseFloat(responseStats.rows[0]?.avg_response_time || 0).toFixed(1),
         hotspot: hotspotStats.rows[0]?.area || 'N/A'
-      }
+      },
+      trend: trendStats.rows,
     });
   } catch (error) {
     console.error('Dashboard API error:', error);
