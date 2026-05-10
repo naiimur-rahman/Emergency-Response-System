@@ -48,10 +48,12 @@ export default function DriverDutyPage() {
     return () => mqttService.disconnect();
   }, [activeDriver?.id]);
 
-  const simInterval = useRef(null);
-
-  const startRealGPS = useCallback(() => {
+  const startBroadcasting = useCallback(() => {
     if (!navigator.geolocation) return;
+
+    setIsBroadcasting(true);
+    tripStartTime.current = Date.now();
+
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, speed: rawSpeed, accuracy: acc } = pos.coords;
@@ -80,80 +82,11 @@ export default function DriverDutyPage() {
     );
   }, [activeDriver]);
 
-  const startBroadcasting = useCallback(async () => {
-    setIsBroadcasting(true);
-    tripStartTime.current = Date.now();
-
-    // 1. Try to fetch OSRM route for realistic transit simulation
-    const isEnRoute = trip?.request_status === 'Active' || trip?.request_status === 'Pending' || trip?.request_status === 'En Route';
-    const isTransporting = trip?.request_status === 'Picked Up';
-    
-    let startCoords, endCoords;
-    if (isEnRoute && trip?.hospital_lat && trip?.patient_lat) {
-      startCoords = { lat: trip.hospital_lat, lon: trip.hospital_lon }; // Dispatch from hospital
-      endCoords = { lat: trip.patient_lat, lon: trip.patient_lon };
-    } else if (isTransporting && trip?.patient_lat && trip?.hospital_lat) {
-      startCoords = { lat: trip.patient_lat, lon: trip.patient_lon };
-      endCoords = { lat: trip.hospital_lat, lon: trip.hospital_lon };
-    } else {
-      startRealGPS();
-      return;
-    }
-
-    try {
-      const url = `https://router.project-osrm.org/route/v1/driving/${startCoords.lon},${startCoords.lat};${endCoords.lon},${endCoords.lat}?overview=full&geometries=geojson`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.code === 'Ok' && data.routes.length > 0) {
-        const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); // [lat, lon]
-        
-        // Start simulation along route
-        let currentIdx = 0;
-        simInterval.current = setInterval(() => {
-          if (currentIdx >= coords.length - 1) {
-            clearInterval(simInterval.current);
-            setSpeed(0);
-            return;
-          }
-          
-          currentIdx += Math.max(1, Math.floor(coords.length / 100)); // Complete route in ~100 seconds
-          if (currentIdx >= coords.length) currentIdx = coords.length - 1;
-          
-          const newPos = coords[currentIdx];
-          const speedKmH = 45 + Math.random() * 15;
-          const acc = 4 + Math.random() * 3;
-          
-          setSpeed(speedKmH);
-          setAccuracy(acc);
-          setRealtimeMarker({ lat: newPos[0], lng: newPos[1], speed: speedKmH.toFixed(1), acc });
-          
-          mqttService.publish({
-            id: `ambulance-${activeDriver.id}`,
-            driver_name: activeDriver.name,
-            lat: newPos[0],
-            lng: newPos[1],
-            speed: speedKmH.toFixed(1),
-            acc: acc,
-            status: 'active'
-          });
-        }, 1000);
-      } else {
-        startRealGPS();
-      }
-    } catch {
-      startRealGPS();
-    }
-  }, [activeDriver, trip, startRealGPS]);
-
   const stopBroadcasting = useCallback(() => {
     setIsBroadcasting(false);
     if (watchId.current) {
       navigator.geolocation.clearWatch(watchId.current);
       watchId.current = null;
-    }
-    if (simInterval.current) {
-      clearInterval(simInterval.current);
-      simInterval.current = null;
     }
     mqttService.publishOffline(`ambulance-${activeDriver.id}`);
     setRealtimeMarker(null);
