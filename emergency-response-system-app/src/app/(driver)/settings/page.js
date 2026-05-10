@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Truck, ShieldCheck, MapPin, Settings as SettingsIcon, Award } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
