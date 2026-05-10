@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips, chatMessages] = await Promise.all([
+    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips, chatMessages, responseStats, hotspotStats] = await Promise.all([
       query(`SELECT COUNT(*) as total, 
              COUNT(*) FILTER (WHERE status = 'Pending') as pending,
              COUNT(*) FILTER (WHERE status = 'Active') as active
@@ -38,6 +38,15 @@ export async function GET() {
              JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
              ORDER BY tl.time_dispatched DESC LIMIT 5`),
       query(`SELECT * FROM chat_messages ORDER BY timestamp ASC`),
+      query(`SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (tl.time_dispatched - er.timestamp_created)) / 60), 0) as avg_response_time
+             FROM trip_logs tl
+             JOIN emergency_requests er ON tl.trip_id = er.request_id`),
+      query(`SELECT COALESCE(p.address, 'Unknown Area') as area
+             FROM emergency_requests er
+             JOIN patients p ON er.patient_id = p.patient_id
+             GROUP BY p.address
+             ORDER BY COUNT(*) DESC
+             LIMIT 1`),
     ]);
 
     const fleet = {};
@@ -61,6 +70,10 @@ export async function GET() {
       activeView: dashboardView.rows,
       recentTrips: recentTrips.rows,
       chatMessages: chatMessages.rows,
+      insights: {
+        avgResponseTime: parseFloat(responseStats.rows[0]?.avg_response_time || 0).toFixed(1),
+        hotspot: hotspotStats.rows[0]?.area || 'N/A'
+      }
     });
   } catch (error) {
     console.error('Dashboard API error:', error);

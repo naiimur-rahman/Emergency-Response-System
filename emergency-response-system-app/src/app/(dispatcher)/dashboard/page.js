@@ -280,9 +280,9 @@ export default function DashboardPage() {
             <div style={{ padding: 16 }}>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Response Time (Avg)</label>
-                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--green)' }}>8.4 min</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--green)' }}>{data?.insights?.avgResponseTime || '0.0'} min</div>
                 <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: 8 }}>
-                   <div style={{ width: '84%', height: '100%', background: 'var(--green)', borderRadius: 2 }} />
+                    <div style={{ width: `${Math.min(parseFloat(data?.insights?.avgResponseTime || 0) * 10, 100)}%`, height: '100%', background: 'var(--green)', borderRadius: 2 }} />
                 </div>
               </div>
               <div>
@@ -294,7 +294,7 @@ export default function DashboardPage() {
               </div>
               <div style={{ marginTop: 20, padding: 12, background: 'rgba(255,159,10,0.05)', borderRadius: 8, border: '1px dashed rgba(255,159,10,0.3)' }}>
                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--yellow)' }}>🔥 Area Hotspot</div>
-                 <div style={{ fontSize: 14, marginTop: 4 }}>Dhanmondi / Panthapath</div>
+                 <div style={{ fontSize: 14, marginTop: 4 }}>{data?.insights?.hotspot || 'Scanning...'}</div>
               </div>
             </div>
           </div>
