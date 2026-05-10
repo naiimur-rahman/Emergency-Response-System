@@ -150,35 +150,44 @@ export default function FleetPage() {
             <button className="btn btn-primary btn-sm" onClick={() => setShowAmbModal(true)}><Plus size={14} /> Add</button>
           </div>
           <div style={{ padding: 16 }}>
-            <div className="cards-grid" style={{ gridTemplateColumns: '1fr' }}>
-              {filteredAmb.map(a => (
-                <div className="card" key={a.vehicle_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', position: 'relative', overflow: 'hidden' }}>
-                  {a.current_status === 'Maintenance_Required' && (
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--red)' }} />
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 5, background: a.current_status === 'Available' ? 'var(--green)' : a.current_status === 'Dispatched' ? 'var(--blue)' : 'var(--red)' }} />
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {a.license_plate}
+            <div className="table-wrapper">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <th style={{ padding: '12px 16px' }}>License Plate</th>
+                    <th style={{ padding: '12px 16px' }}>Status</th>
+                    <th style={{ padding: '12px 16px' }}>Equipment</th>
+                    <th style={{ padding: '12px 16px' }}>Service Info</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAmb.map(a => (
+                    <tr key={a.vehicle_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }} className="hover:bg-white/5">
+                      <td style={{ padding: '12px 16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                         {a.current_status === 'Maintenance_Required' && <Wrench size={14} color="var(--red)" />}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{a.trips_since_maintenance || 0} trips since last service</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <EquipmentBadge level={a.equipment_level} />
-                    <StatusBadge status={a.current_status} />
-                    <button className="btn-icon" onClick={() => openInventory(a)} title="Manage Inventory" style={{ marginLeft: 8 }}>
-                      <Package size={16} />
-                    </button>
-                    <button className="btn-icon" onClick={() => removeAmbulance(a)} title="Remove Ambulance" style={{ color: 'var(--red)' }}>
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {filteredAmb.length === 0 && <div className="empty-state" style={{ padding: 20 }}><p>No ambulances found</p></div>}
+                        {a.license_plate}
+                      </td>
+                      <td style={{ padding: '12px 16px' }}><StatusBadge status={a.current_status} /></td>
+                      <td style={{ padding: '12px 16px' }}><EquipmentBadge level={a.equipment_level} /></td>
+                      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
+                        {a.trips_since_maintenance || 0} trips since service
+                      </td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                        <button className="btn-icon" onClick={() => openInventory(a)} title="Manage Inventory" style={{ marginRight: 8, display: 'inline-flex' }}>
+                          <Package size={16} />
+                        </button>
+                        <button className="btn-icon" onClick={() => removeAmbulance(a)} title="Remove Ambulance" style={{ color: 'var(--red)', display: 'inline-flex' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredAmb.length === 0 && (
+                    <tr><td colSpan="5" style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>No ambulances found</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -190,25 +199,37 @@ export default function FleetPage() {
             <button className="btn btn-blue btn-sm" onClick={() => setShowDrvModal(true)}><Plus size={14} /> Add</button>
           </div>
           <div style={{ padding: 16 }}>
-            <div className="cards-grid" style={{ gridTemplateColumns: '1fr' }}>
-              {filteredDrv.map(d => (
-                <div className="card" key={d.driver_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 15 }}>{d.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>License: {d.license_no}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <StatusBadge status={d.shift_status} />
-                    <button className="btn-icon" onClick={() => toggleShift(d)} title="Toggle Shift">
-                      {d.shift_status === 'On_Duty' ? <ToggleRight size={20} color="var(--green)" /> : <ToggleLeft size={20} />}
-                    </button>
-                    <button className="btn-icon" onClick={() => removeDriver(d)} title="Remove Driver" style={{ color: 'var(--red)', marginLeft: 8 }}>
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {filteredDrv.length === 0 && <div className="empty-state" style={{ padding: 20 }}><p>No drivers found</p></div>}
+            <div className="table-wrapper">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <th style={{ padding: '12px 16px' }}>Driver Name</th>
+                    <th style={{ padding: '12px 16px' }}>License No</th>
+                    <th style={{ padding: '12px 16px' }}>Shift Status</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDrv.map(d => (
+                    <tr key={d.driver_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }} className="hover:bg-white/5">
+                      <td style={{ padding: '12px 16px', fontWeight: 600 }}>{d.name}</td>
+                      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{d.license_no}</td>
+                      <td style={{ padding: '12px 16px' }}><StatusBadge status={d.shift_status} /></td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                        <button className="btn-icon" onClick={() => toggleShift(d)} title="Toggle Shift" style={{ marginRight: 8, display: 'inline-flex' }}>
+                          {d.shift_status === 'On_Duty' ? <ToggleRight size={18} color="var(--green)" /> : <ToggleLeft size={18} />}
+                        </button>
+                        <button className="btn-icon" onClick={() => removeDriver(d)} title="Remove Driver" style={{ color: 'var(--red)', display: 'inline-flex' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredDrv.length === 0 && (
+                    <tr><td colSpan="4" style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>No drivers found</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -215,145 +215,159 @@ export default function DriverDutyPage() {
         </div>
       </div>
 
-      {!trip ? (
-        <div className="empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
-          <div className="animate-float">
-            <Radio size={64} style={{ color: 'var(--blue)', opacity: 0.3, marginBottom: 24 }} />
-          </div>
-          <h3 style={{ fontSize: 24, fontWeight: 700 }}>Scanning for Dispatch...</h3>
-          <p style={{ maxWidth: 400, margin: '12px auto' }}>You are currently on the standby list. Emergency requests will be pushed to your terminal instantly.</p>
-        </div>
-      ) : (
-        <div className="track-layout">
-          
-          {/* Left Panel: Details & Actions */}
-          <div className="track-sidebar">
-            
-            {/* Trip Card */}
-            <div className="glass p-6 border-l-4 border-l-orange-500 shadow-2xl">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                <div>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--orange)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                    Active Assignment
-                  </span>
-                  <h3 style={{ fontSize: 32, fontWeight: 900, marginTop: 4 }}>#{trip.trip_id}</h3>
-                </div>
-                <SeverityBadge level={trip.severity_level} />
+      <div className="track-layout">
+        
+        {/* Left Panel: Details & Actions */}
+        <div className="track-sidebar">
+          {!trip ? (
+            <div className="glass p-6 border-l-4 border-l-blue-500 shadow-2xl" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+              <div className="animate-float">
+                <Radio size={48} style={{ color: 'var(--blue)', marginBottom: 16 }} />
               </div>
+              <h3 style={{ fontSize: 20, fontWeight: 800 }}>Scanning for Dispatch...</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>You are on the standby list. Emergency requests will appear here instantly.</p>
+              
+              <div style={{ marginTop: 32, width: '100%' }}>
+                <button 
+                  onClick={isBroadcasting ? stopBroadcasting : startBroadcasting}
+                  className={`btn ${isBroadcasting ? 'btn-secondary' : 'btn-primary'}`}
+                  style={{ width: '100%', height: 48, borderRadius: 12, fontSize: 13, fontWeight: 800, background: isBroadcasting ? 'rgba(255,45,85,0.1)' : 'var(--blue)', borderColor: isBroadcasting ? 'var(--red)' : 'var(--blue)', color: isBroadcasting ? 'var(--red)' : '#fff' }}
+                >
+                  {isBroadcasting ? '🛑 STOP LOCATION BROADCAST' : '📡 START LOCATION BROADCAST'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Trip Card */}
+              <div className="glass p-6 border-l-4 border-l-orange-500 shadow-2xl">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                  <div>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--orange)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                      Active Assignment
+                    </span>
+                    <h3 style={{ fontSize: 32, fontWeight: 900, marginTop: 4 }}>#{trip.trip_id}</h3>
+                  </div>
+                  <SeverityBadge level={trip.severity_level} />
+                </div>
 
-              {/* ACTION BUTTONS */}
-              <div style={{ marginBottom: 24 }}>
-                {(trip.request_status === 'Active' || trip.request_status === 'Pending') && (
-                  <button 
-                    onClick={() => handleAction('Accept')} 
-                    disabled={actionLoading} 
-                    className="btn btn-primary"
-                    style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 800, letterSpacing: 1 }}
-                  >
-                    {actionLoading ? 'CONFIRMING...' : 'ACCEPT MISSION'}
-                  </button>
-                )}
-                
-                {trip.request_status !== 'Active' && trip.request_status !== 'Pending' && trip.request_status !== 'Complete' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    
-                    {/* START/STOP BROADCAST TOGGLE */}
+                {/* ACTION BUTTONS */}
+                <div style={{ marginBottom: 24 }}>
+                  {(trip.request_status === 'Active' || trip.request_status === 'Pending') && (
                     <button 
-                      onClick={isBroadcasting ? stopBroadcasting : startBroadcasting}
-                      className={`btn ${isBroadcasting ? 'btn-secondary' : 'btn-primary'}`}
-                      style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 15, fontWeight: 800, background: isBroadcasting ? 'rgba(255,45,85,0.1)' : 'var(--blue)', borderColor: isBroadcasting ? 'var(--red)' : 'var(--blue)', color: isBroadcasting ? 'var(--red)' : '#fff' }}
+                      onClick={() => handleAction('Accept')} 
+                      disabled={actionLoading} 
+                      className="btn btn-primary"
+                      style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 800, letterSpacing: 1 }}
                     >
-                      {isBroadcasting ? '🛑 STOP BROADCAST' : '📡 START BROADCAST'}
+                      {actionLoading ? 'CONFIRMING...' : 'ACCEPT MISSION'}
                     </button>
+                  )}
+                  
+                  {trip.request_status !== 'Active' && trip.request_status !== 'Pending' && trip.request_status !== 'Complete' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      
+                      {/* START/STOP BROADCAST TOGGLE */}
+                      <button 
+                        onClick={isBroadcasting ? stopBroadcasting : startBroadcasting}
+                        className={`btn ${isBroadcasting ? 'btn-secondary' : 'btn-primary'}`}
+                        style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 15, fontWeight: 800, background: isBroadcasting ? 'rgba(255,45,85,0.1)' : 'var(--blue)', borderColor: isBroadcasting ? 'var(--red)' : 'var(--blue)', color: isBroadcasting ? 'var(--red)' : '#fff' }}
+                      >
+                        {isBroadcasting ? '🛑 STOP BROADCAST' : '📡 START BROADCAST'}
+                      </button>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                       {trip.request_status === 'En Route' && (
-                        <button onClick={() => handleAction('Picked')} className="btn btn-secondary" style={{ height: 48, borderRadius: 12, fontWeight: 700, borderColor: 'var(--orange)', color: 'var(--orange)' }}>PICKED UP</button>
-                       )}
-                       {trip.request_status === 'Picked Up' && (
-                        <button onClick={() => handleAction('Arrived')} className="btn btn-secondary" style={{ height: 48, borderRadius: 12, fontWeight: 700, borderColor: 'var(--blue)', color: 'var(--blue)' }}>ARRIVED</button>
-                       )}
-                       {trip.request_status === 'Arrived' && (
-                        <button onClick={() => handleAction('Complete')} className="btn btn-primary" style={{ height: 48, borderRadius: 12, fontWeight: 700, background: 'var(--green)', borderColor: 'var(--green)', gridColumn: 'span 2' }}>COMPLETE MISSION</button>
-                       )}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        {trip.request_status === 'En Route' && (
+                          <button onClick={() => handleAction('Picked')} className="btn btn-secondary" style={{ height: 48, borderRadius: 12, fontWeight: 700, borderColor: 'var(--orange)', color: 'var(--orange)' }}>PICKED UP</button>
+                        )}
+                        {trip.request_status === 'Picked Up' && (
+                          <button onClick={() => handleAction('Arrived')} className="btn btn-secondary" style={{ height: 48, borderRadius: 12, fontWeight: 700, borderColor: 'var(--blue)', color: 'var(--blue)' }}>ARRIVED</button>
+                        )}
+                        {trip.request_status === 'Arrived' && (
+                          <button onClick={() => handleAction('Complete')} className="btn btn-primary" style={{ height: 48, borderRadius: 12, fontWeight: 700, background: 'var(--green)', borderColor: 'var(--green)', gridColumn: 'span 2' }}>COMPLETE MISSION</button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Telemetry Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 24 }}>
+                  <div className="glass-dark p-3 rounded-xl text-center">
+                    <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Speed</p>
+                    <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue)' }}>{speed.toFixed(1)}<span style={{ fontSize: 10, marginLeft: 2 }}>km/h</span></p>
+                  </div>
+                  <div className="glass-dark p-3 rounded-xl text-center">
+                    <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>GPS Acc</p>
+                    <p style={{ fontSize: 18, fontWeight: 800, color: accuracy < 20 ? 'var(--green)' : 'var(--yellow)' }}>{Math.round(accuracy)}m</p>
+                  </div>
+                  <div className="glass-dark p-3 rounded-xl text-center">
+                    <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Time</p>
+                    <p style={{ fontSize: 18, fontWeight: 800 }}>{uptime}</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <MapPin size={20} style={{ color: 'var(--red)' }} />
+                    <div>
+                      <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>PICKUP LOCATION</label>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{trip.patient_lat.toFixed(4)}, {trip.patient_lon.toFixed(4)}</div>
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Telemetry Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 24 }}>
-                <div className="glass-dark p-3 rounded-xl text-center">
-                  <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Speed</p>
-                  <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue)' }}>{speed.toFixed(1)}<span style={{ fontSize: 10, marginLeft: 2 }}>km/h</span></p>
-                </div>
-                <div className="glass-dark p-3 rounded-xl text-center">
-                  <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>GPS Acc</p>
-                  <p style={{ fontSize: 18, fontWeight: 800, color: accuracy < 20 ? 'var(--green)' : 'var(--yellow)' }}>{Math.round(accuracy)}m</p>
-                </div>
-                <div className="glass-dark p-3 rounded-xl text-center">
-                  <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Time</p>
-                  <p style={{ fontSize: 18, fontWeight: 800 }}>{uptime}</p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <MapPin size={20} style={{ color: 'var(--red)' }} />
-                  <div>
-                    <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>PICKUP LOCATION</label>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{trip.patient_lat.toFixed(4)}, {trip.patient_lon.toFixed(4)}</div>
-                  </div>
-                </div>
-                <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Building2 size={20} style={{ color: 'var(--blue)' }} />
-                  <div>
-                    <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>DESTINATION</label>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{trip.hospital_name}</div>
+                  <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Building2 size={20} style={{ color: 'var(--blue)' }} />
+                    <div>
+                      <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>DESTINATION</label>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{trip.hospital_name}</div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Chat with Dispatcher */}
-            <div className="glass" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', minHeight: 250, border: 'none' }}>
-              <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <MessageCircle size={16} style={{ color: 'var(--blue)' }} />
-                <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>Nexus Dispatch Chat</span>
+              {/* Chat with Dispatcher */}
+              <div className="glass" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', minHeight: 250, border: 'none', marginTop: 16 }}>
+                <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <MessageCircle size={16} style={{ color: 'var(--blue)' }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>Nexus Dispatch Chat</span>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {chatMessages.map((m, i) => (
+                    <div key={i} style={{ alignSelf: m.sender.includes('Driver') ? 'flex-end' : 'flex-start', background: m.sender.includes('Driver') ? 'rgba(10,132,255,0.2)' : 'rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 16, maxWidth: '85%', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, opacity: 0.5, marginBottom: 4 }}>{m.sender.toUpperCase()}</div>
+                      <div style={{ fontSize: 13, lineHeight: 1.4 }}>{m.message_text}</div>
+                    </div>
+                  ))}
+                </div>
+                <form onSubmit={handleSendMessage} style={{ padding: 12, display: 'flex', gap: 8, background: 'rgba(0,0,0,0.3)' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    style={{ fontSize: 13, background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 12 }}
+                    placeholder="Type message..." 
+                    value={newMessage}
+                    onChange={e => setNewMessage(e.target.value)}
+                  />
+                  <button type="submit" className="btn btn-primary" style={{ padding: '0 16px', borderRadius: 12 }}><Send size={18}/></button>
+                </form>
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {chatMessages.map((m, i) => (
-                  <div key={i} style={{ alignSelf: m.sender.includes('Driver') ? 'flex-end' : 'flex-start', background: m.sender.includes('Driver') ? 'rgba(10,132,255,0.2)' : 'rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 16, maxWidth: '85%', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: 9, fontWeight: 800, opacity: 0.5, marginBottom: 4 }}>{m.sender.toUpperCase()}</div>
-                    <div style={{ fontSize: 13, lineHeight: 1.4 }}>{m.message_text}</div>
-                  </div>
-                ))}
-              </div>
-              <form onSubmit={handleSendMessage} style={{ padding: 12, display: 'flex', gap: 8, background: 'rgba(0,0,0,0.3)' }}>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  style={{ fontSize: 13, background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 12 }}
-                  placeholder="Type message..." 
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                />
-                <button type="submit" className="btn btn-primary" style={{ padding: '0 16px', borderRadius: 12 }}><Send size={18}/></button>
-              </form>
-            </div>
-          </div>
+            </>
+          )}
+        </div>
 
-          {/* Right Panel: Map Navigation */}
-          <div className="track-map">
-             <MapView 
+        {/* Right Panel: Map Navigation */}
+        <div className="track-map">
+          {trip ? (
+            <>
+              <MapView 
                 pickupCoords={{ lat: trip.patient_lat, lon: trip.patient_lon }} 
                 hospitals={[{ hospital_id: 1, name: trip.hospital_name, lat: trip.hospital_lat, lon: trip.hospital_lon, general_beds: 'Destination', icu_beds: 'Secured' }]}
                 requestStatus={trip.request_status}
                 realtimeMarker={realtimeMarker}
-             />
-             
-             {/* Map Overlay Stats */}
-             <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24, zIndex: 1000, display: 'flex', gap: 12 }}>
+              />
+              
+              {/* Map Overlay Stats */}
+              <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24, zIndex: 1000, display: 'flex', gap: 12 }}>
                 <div className="glass p-4 flex-1 flex items-center gap-4 shadow-2xl">
                     <div style={{ width: 48, height: 48, borderRadius: 24, background: 'rgba(249,115,22,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--orange)' }}>
                         <Gauge size={24} />
@@ -370,20 +384,28 @@ export default function DriverDutyPage() {
                     <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Navigation</div>
                         <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                           {trip.request_status === 'En Route' ? 'Moving to Pickup' : 'Driving to Hospital'}
+                            {trip.request_status === 'En Route' ? 'Moving to Pickup' : 'Driving to Hospital'}
                         </div>
                     </div>
                 </div>
-             </div>
+              </div>
 
-             {/* Status Badge Over Map */}
-             <div className="glass px-4 py-2" style={{ position: 'absolute', top: 24, left: 24, zIndex: 1000, fontWeight: 800, fontSize: 12, color: 'var(--yellow)', border: '1px solid var(--yellow-glow)' }}>
+              {/* Status Badge Over Map */}
+              <div className="glass px-4 py-2" style={{ position: 'absolute', top: 24, left: 24, zIndex: 1000, fontWeight: 800, fontSize: 12, color: 'var(--yellow)', border: '1px solid var(--yellow-glow)' }}>
                 DISPATCHED: UNIT {trip.license_plate}
-             </div>
-          </div>
-
+              </div>
+            </>
+          ) : (
+            <>
+              <MapView realtimeMarker={realtimeMarker} />
+              <div className="glass px-4 py-2" style={{ position: 'absolute', top: 24, left: 24, zIndex: 1000, fontWeight: 800, fontSize: 12, color: 'var(--blue)', border: '1px solid var(--blue-glow)' }}>
+                STANDBY POSITION
+              </div>
+            </>
+          )}
         </div>
-      )}
+
+      </div>
     </div>
   );
 }

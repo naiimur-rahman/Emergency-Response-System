@@ -137,7 +137,7 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
             <PortalIcon size={20} style={{ color: portalColor }} />
           </div>
           <div className="sidebar-brand">
-            <h1>Emergency Response System</h1>
+            <h1 style={{ background: 'linear-gradient(135deg, var(--blue), var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>NEXUS RESPONSE</h1>
             <span style={{ color: portalColor }}>{portalName}</span>
           </div>
         </div>

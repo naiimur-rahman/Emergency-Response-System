@@ -53,18 +53,64 @@
 }
 
 [data-theme="light"] {
-  --bg-primary: #f8f9fa;
-  --bg-secondary: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.9);
-  --bg-card-hover: rgba(245, 245, 250, 0.95);
-  --bg-glass: rgba(0, 0, 0, 0.03);
-  --bg-input: rgba(0, 0, 0, 0.05);
-  --border-subtle: rgba(0, 0, 0, 0.1);
+  --bg-primary: #F4F6F9;
+  --bg-secondary: #FFFFFF;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(255, 255, 255, 1);
+  --bg-glass: rgba(255, 255, 255, 0.6);
+  --bg-input: rgba(0, 0, 0, 0.03);
+  --border-subtle: rgba(0, 0, 0, 0.08);
   --border-accent: rgba(0, 0, 0, 0.15);
-  --text-primary: #111118;
-  --text-secondary: #4b4b5a;
-  --text-muted: #8888a0;
-  --shadow-card: 0 4px 24px rgba(0,0,0,0.06), 0 0 0 1px var(--border-subtle);
+  
+  --text-primary: #0F141E;
+  --text-secondary: #5A6376;
+  --text-muted: #8E96A8;
+  
+  /* Adjusted accents for light mode visibility */
+  --red: #E6004C;
+  --red-glow: rgba(230, 0, 76, 0.2);
+  --red-dim: rgba(230, 0, 76, 0.1);
+  
+  --blue: #0088FF;
+  --blue-glow: rgba(0, 136, 255, 0.2);
+  --blue-dim: rgba(0, 136, 255, 0.1);
+  
+  --green: #00B359;
+  --green-glow: rgba(0, 179, 89, 0.2);
+  --green-dim: rgba(0, 179, 89, 0.1);
+  
+  --yellow: #E69900;
+  --yellow-glow: rgba(230, 153, 0, 0.2);
+  --yellow-dim: rgba(230, 153, 0, 0.1);
+  
+  --purple: #8A00E6;
+  --purple-glow: rgba(138, 0, 230, 0.2);
+  
+  --shadow-card: 0 10px 30px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02);
+}
+
+[data-theme="light"] body::before {
+  background: radial-gradient(ellipse 70% 50% at 50% -20%, rgba(0,136,255,0.04) 0%, transparent 60%),
+              radial-gradient(ellipse 50% 50% at 90% 80%, rgba(230,0,76,0.03) 0%, transparent 50%),
+              radial-gradient(ellipse 60% 40% at 10% 40%, rgba(138,0,230,0.02) 0%, transparent 50%);
+}
+
+[data-theme="light"] .sidebar {
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.03);
+}
+
+[data-theme="light"] .stat-card {
+  background: linear-gradient(135deg, var(--bg-card), rgba(255,255,255,0.4));
+}
+
+[data-theme="light"] .section-card {
+  background: linear-gradient(180deg, var(--bg-card), rgba(255,255,255,0.4));
+}
+
+[data-theme="light"] .glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
+  box-shadow: 0 8px 32px rgba(0,0,0,0.05);
 }
 
 select option {

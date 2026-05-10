@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Phone, MapPin, Siren, Clock, Building2, Truck, Banknote, ShieldAlert, CheckCircle, Loader2, AlertTriangle, Radio, User, Droplet, Activity, ChevronRight } from 'lucide-react';
+import { Phone, MapPin, Siren, Clock, Building2, Truck, Banknote, ShieldAlert, CheckCircle, Loader2, AlertTriangle, Radio, User, Droplet, Activity, ChevronRight, Navigation } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
+import dynamic from 'next/dynamic';
+
+const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 function getAccuratePosition(timeoutMs = 15000) {
   return new Promise((resolve) => {
@@ -183,7 +186,7 @@ export default function SOSPage() {
   useEffect(() => { return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, []);
 
   return (
-    <div className="page-container dot-pattern" style={{ position: 'relative', minHeight: '100vh' }}>
+    <div style={{ position: 'relative', height: '100vh', width: '100%', overflow: 'hidden' }}>
       <style>{`
         .sos-wrapper {
           display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -265,138 +268,181 @@ export default function SOSPage() {
         .hospital-item.best-match { border-color: rgba(48,209,88,0.4); background: rgba(48,209,88,0.05); }
 
         @media (max-width: 600px) {
-          .sos-btn { width: 200px; height: 200px; font-size: 24px; }
+          .sos-btn { width: 140px; height: 140px; font-size: 20px; }
           .result-grid { grid-template-columns: 1fr; }
           .patient-card { flex-direction: column; text-align: center; }
           .hospital-item { flex-direction: column; gap: 12px; align-items: flex-start; }
+          .floating-bottom-card { left: 16px; right: 16px; bottom: 16px; width: auto; padding: 20px; }
+          .uber-layout { margin: 0; border-radius: 0; }
+        }
+        .uber-layout {
+          position: relative;
+          height: 100vh;
+          width: 100%;
+          overflow: hidden;
+          background: var(--bg-primary);
+        }
+        .map-background {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+        }
+        .floating-top-card {
+          position: absolute;
+          top: 24px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 100;
+          background: var(--bg-card);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid var(--border-subtle);
+          border-radius: 40px;
+          padding: 8px 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          box-shadow: var(--shadow-card);
+        }
+        .floating-bottom-card {
+          position: absolute;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 100;
+          background: linear-gradient(180deg, var(--bg-card), rgba(0,0,0,0.8));
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-xl);
+          padding: 24px;
+          width: 90%;
+          max-width: 480px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+          box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
         }
       `}</style>
 
-      <div className="bg-blob"><div className="blob blob-1"></div><div className="blob blob-3" style={{ animationDelay: '3s' }}></div></div>
+      <div className="uber-layout">
+        
+        {/* Full Screen Map Background */}
+        <div className="map-background">
+          <MapView 
+            hospitals={phase === 'recommendations' ? hospitals : []} 
+            pickupCoords={location} 
+            requestStatus={phase === 'result' ? 'Dispatched' : 'Pending'}
+          />
+        </div>
 
-      <div className="sos-wrapper">
-        {phase === 'ready' && (
-          <>
-            <h2 style={{ fontSize: 36, fontWeight: 900, background: 'linear-gradient(to right, var(--text-primary), var(--text-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Emergency SOS
-            </h2>
+        {/* Floating Top Indicator */}
+        <div className="floating-top-card">
+          <div className={`gps-badge ${location ? (locationSource === 'gps' ? 'gps-locked' : 'gps-searching') : (gpsLoading ? 'gps-searching' : 'gps-error')}`} style={{ background: 'transparent', border: 'none', padding: 0 }}>
+            {gpsLoading ? <Loader2 size={13} className="animate-spin" /> : <MapPin size={13} />}
+            {gpsLoading ? 'Acquiring GPS...' : location ? `${locationSource.toUpperCase()} • ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}` : 'Location Unavailable'}
+          </div>
+        </div>
 
-            {activePatient && (
-              <div className="patient-card">
-                <div className="avatar"><User size={24} style={{ color: 'var(--blue)' }} /></div>
-                <div className="info">
-                  <div className="name" style={{ color: 'var(--text-primary)' }}>{activePatient.name}</div>
-                  <div className="meta">
-                    {activePatient.blood_type && <span><Droplet size={10} /> {activePatient.blood_type}</span>}
-                    {profile?.phone && <span><Phone size={10} /> {profile.phone}</span>}
-                  </div>
-                </div>
-                <CheckCircle size={20} style={{ color: 'var(--green)', flexShrink: 0 }} />
+        {/* Floating Bottom Interaction Card */}
+        <div className="floating-bottom-card">
+          
+          {phase === 'ready' && (
+            <>
+              <div style={{ textAlign: 'center' }}>
+                <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 4 }}>Emergency SOS</h2>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Tap the button below to summon an ambulance immediately.</p>
               </div>
-            )}
 
-            <div className={`gps-badge ${location ? (locationSource === 'gps' ? 'gps-locked' : 'gps-searching') : (gpsLoading ? 'gps-searching' : 'gps-error')}`}>
-              {gpsLoading ? <Loader2 size={13} className="animate-spin" /> : <MapPin size={13} />}
-              {gpsLoading ? 'Acquiring GPS...' : location ? `${locationSource.toUpperCase()} • ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}${gpsAccuracy ? ` • ±${gpsAccuracy}m` : ''}` : 'Location Unavailable'}
+              <div className="severity-row">
+                {['Critical', 'High', 'Medium'].map(s => (
+                  <div key={s} className={`sev-pill ${severity === s ? `active-${s}` : ''}`} onClick={() => setSeverity(s)} style={{ padding: '8px 20px', fontSize: 12 }}>
+                    {s === 'Critical' ? '🔴' : s === 'High' ? '🟠' : '🔵'} {s}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '16px 0' }}>
+                <div className="sos-ring ring-1" style={{ width: 180, height: 180 }} />
+                <div className="sos-ring ring-2" style={{ width: 220, height: 220 }} />
+                <button className="sos-btn" onClick={triggerSOS} disabled={!activePatient} style={{ width: 140, height: 140, fontSize: 22 }}>
+                  <Siren size={36} /> SOS
+                </button>
+              </div>
+              {locationError && <p style={{ color: 'var(--red)', fontSize: 12, marginTop: -10 }}>{locationError}</p>}
+            </>
+          )}
+
+          {phase === 'loading_recs' && (
+            <div className="dispatch-overlay" style={{ padding: '40px 0' }}>
+              <div className="dispatch-spinner" style={{ width: 80, height: 80, borderWidth: 3 }} />
+              <h3 style={{ fontSize: 18, fontWeight: 800 }}>Analyzing Situation...</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center' }}>Finding the best hospital for your condition.</p>
             </div>
+          )}
 
-            <div className="severity-row">
-              {['Critical', 'High', 'Medium'].map(s => (
-                <div key={s} className={`sev-pill ${severity === s ? `active-${s}` : ''}`} onClick={() => setSeverity(s)}>
-                  {s === 'Critical' ? '🔴' : s === 'High' ? '🟠' : '🔵'} {s}
+          {phase === 'recommendations' && (
+            <div style={{ width: '100%', maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 12 }}>Select Destination</h3>
+              <div className="hospital-list">
+                {hospitals.map((h, i) => (
+                  <div key={h.hospital_id} className={`hospital-item ${h.spec_match ? 'best-match' : ''}`} onClick={() => confirmDispatch(h.hospital_id)} style={{ padding: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {h.name} {h.spec_match && <span style={{ fontSize: 9, background: 'var(--green)', color: '#000', padding: '2px 4px', borderRadius: 6, fontWeight: 900 }}>BEST MATCH</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, display: 'flex', gap: 8 }}>
+                        <span><Navigation size={10} style={{ display: 'inline' }} /> {h.distance_km} km</span>
+                        <span><Clock size={10} style={{ display: 'inline' }} /> {h.eta_minutes} min</span>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} style={{ color: 'var(--blue)' }} />
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-secondary" style={{ width: '100%', marginTop: 12 }} onClick={() => setPhase('ready')}>Cancel Request</button>
+            </div>
+          )}
+
+          {phase === 'dispatching' && (
+            <div className="dispatch-overlay" style={{ padding: '40px 0' }}>
+              <div className="dispatch-spinner" style={{ width: 80, height: 80, borderWidth: 3 }} />
+              <div className="dispatch-timer" style={{ fontSize: 32 }}>{dispatchTimer}s</div>
+              <h3 style={{ fontSize: 18, fontWeight: 800 }}>Dispatching Ambulance...</h3>
+            </div>
+          )}
+
+          {phase === 'result' && result && (
+            <div style={{ width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 24, background: 'rgba(48,209,88,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle size={24} style={{ color: 'var(--green)' }} />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <h2 style={{ fontSize: 20, fontWeight: 900, color: 'var(--green)' }}>Dispatched!</h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Request #{result.request_id} • ৳{result.estimated_fare}</p>
+                </div>
+              </div>
 
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
-              <div className="sos-ring ring-1" /><div className="sos-ring ring-2" /><div className="sos-ring ring-3" />
-              <button className="sos-btn" onClick={triggerSOS} disabled={!activePatient}>
-                <Siren size={56} /> SOS
+              <div className="result-grid">
+                <div className="result-card" style={{ padding: 12, borderColor: 'rgba(48,209,88,0.3)', background: 'rgba(48,209,88,0.04)' }}>
+                  <span className="result-card-label"><Clock size={12} /> ETA</span>
+                  <span className="result-card-value" style={{ fontSize: 18 }}>{result.eta_minutes} min</span>
+                </div>
+                <div className="result-card" style={{ padding: 12 }}>
+                  <span className="result-card-label"><Building2 size={12} /> Hospital</span>
+                  <span className="result-card-value" style={{ fontSize: 14 }}>{result.nearest_hospital}</span>
+                </div>
+              </div>
+
+              <button className="btn btn-primary" style={{ width: '100%', height: 48, borderRadius: 12, fontSize: 14, fontWeight: 800, marginTop: 16 }} onClick={() => window.location.href = '/track'}>
+                <Radio size={16} /> GO TO LIVE TRACKING
               </button>
             </div>
-            {locationError && <p style={{ color: 'var(--red)', fontSize: 13 }}>{locationError}</p>}
-          </>
-        )}
+          )}
 
-        {phase === 'loading_recs' && (
-          <div className="dispatch-overlay">
-            <div className="dispatch-spinner" />
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)' }}>Finding Best Hospitals...</h3>
-            <p style={{ color: 'var(--text-muted)' }}>Analyzing your medical profile and location...</p>
-          </div>
-        )}
-
-        {phase === 'recommendations' && (
-          <>
-            <h2 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-primary)' }}>Select Destination</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Based on your medical conditions, here are the best options:</p>
-            <div className="hospital-list">
-              {hospitals.map((h, i) => (
-                <div key={h.hospital_id} className={`hospital-item ${h.spec_match ? 'best-match' : ''}`} onClick={() => confirmDispatch(h.hospital_id)}>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {h.name} {h.spec_match && <span style={{ fontSize: 10, background: 'var(--green)', color: '#000', padding: '2px 6px', borderRadius: 10, fontWeight: 900 }}>BEST MATCH</span>}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, display: 'flex', gap: 12 }}>
-                      <span><MapPin size={10} style={{ display: 'inline', marginRight: 2 }} /> {h.distance_km} km</span>
-                      <span><Clock size={10} style={{ display: 'inline', marginRight: 2 }} /> {h.eta_minutes} min ETA</span>
-                      <span><Banknote size={10} style={{ display: 'inline', marginRight: 2 }} /> ৳{h.estimated_fare}</span>
-                    </div>
-                  </div>
-                  <ChevronRight size={20} style={{ color: 'var(--text-muted)' }} />
-                </div>
-              ))}
-            </div>
-            <button className="btn btn-secondary" onClick={() => setPhase('ready')}>Cancel</button>
-          </>
-        )}
-
-        {phase === 'dispatching' && (
-          <div className="dispatch-overlay">
-            <div className="dispatch-spinner" />
-            <div className="dispatch-timer">{dispatchTimer}s</div>
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)' }}>Dispatching Ambulance...</h3>
-          </div>
-        )}
-
-        {phase === 'result' && result && (
-          <>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, marginBottom: 8 }}>
-              <div style={{ width: 80, height: 80, borderRadius: 40, background: 'rgba(48,209,88,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CheckCircle size={40} style={{ color: 'var(--green)' }} />
-              </div>
-              <h2 style={{ fontSize: 26, fontWeight: 900, color: 'var(--green)' }}>
-                {result.dispatched ? 'Ambulance Dispatched!' : 'Request Created'}
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Request #{result.request_id} — {dispatchTimer}s</p>
-            </div>
-
-            <div className="result-grid">
-              <div className="result-card" style={{ borderColor: 'rgba(48,209,88,0.3)', background: 'rgba(48,209,88,0.04)' }}>
-                <span className="result-card-label"><Truck size={14} /> Ambulance</span>
-                <span className="result-card-value">{result.ambulance}</span>
-              </div>
-              <div className="result-card" style={{ borderColor: 'rgba(48,209,88,0.3)', background: 'rgba(48,209,88,0.04)' }}>
-                <span className="result-card-label"><Clock size={14} /> ETA</span>
-                <span className="result-card-value">{result.eta_minutes} min</span>
-              </div>
-              <div className="result-card">
-                <span className="result-card-label"><Building2 size={14} /> Hospital</span>
-                <span className="result-card-value" style={{ fontSize: 16 }}>{result.nearest_hospital}</span>
-              </div>
-              <div className="result-card" style={{ borderColor: 'rgba(10,132,255,0.3)', background: 'rgba(10,132,255,0.04)' }}>
-                <span className="result-card-label"><Banknote size={14} /> Est. Fare</span>
-                <span className="result-card-value" style={{ color: 'var(--blue)', fontSize: 28 }}>৳{result.estimated_fare}</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 12, marginTop: 16, width: '100%', maxWidth: 540 }}>
-              <button className="btn btn-primary" style={{ flex: 1, height: 52, borderRadius: 16, fontSize: 15, fontWeight: 800 }} onClick={() => window.location.href = '/track'}>
-                <Radio size={18} /> TRACK LIVE
-              </button>
-            </div>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );
