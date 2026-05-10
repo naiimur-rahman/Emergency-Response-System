@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd druto-sheba-app && npm install && npm run build",
+  "outputDirectory": "druto-sheba-app/.next",
+  "installCommand": "cd druto-sheba-app && npm install",
+  "framework": "nextjs",
+  "env": {
+    "TZ": "Asia/Dhaka"
+  }
+}
