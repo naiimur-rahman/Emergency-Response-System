@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "TZ=Asia/Dhaka next dev -H localhost",
-    "dev:webpack": "TZ=Asia/Dhaka next dev -H localhost --webpack",
-    "dev:3001": "TZ=Asia/Dhaka next dev -H localhost -p 3001",
-    "build": "TZ=Asia/Dhaka next build",
-    "start": "TZ=Asia/Dhaka next start",
+    "dev": "next dev -H localhost",
+    "dev:webpack": "next dev -H localhost --webpack",
+    "dev:3001": "next dev -H localhost -p 3001",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint",
     "check": "npm run lint && npm run build"
   },
