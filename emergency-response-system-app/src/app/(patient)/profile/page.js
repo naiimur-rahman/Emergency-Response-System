@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { User, Phone, Droplet, Activity, Save, CheckCircle } from 'lucide-react';
+import { User, Phone, Droplet, Activity, Save, CheckCircle, Trash2, Plus } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 import { useToast } from '@/components/Toast';
 
@@ -46,17 +46,21 @@ export default function PatientProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [contacts, setContacts] = useState([]);
+  const [newContact, setNewContact] = useState({ name: '', relationship: '', phone: '' });
 
   useEffect(() => {
     // Only fetch if we don't have a profile yet, or if the active patient ID has changed.
     // This prevents the background polling in UserContext from resetting the local unsaved state.
     if (activePatient && (!profile || String(profile.patient_id) !== String(activePatient.id))) {
-      fetch(`/api/patients?patient_id=${activePatient.id}`)
-        .then(res => res.json())
-        .then(data => {
-           setProfile(Array.isArray(data) ? data[0] : data);
-           setLoading(false);
-        });
+      Promise.all([
+        fetch(`/api/patients?patient_id=${activePatient.id}`).then(res => res.json()),
+        fetch(`/api/patients/contacts?patient_id=${activePatient.id}`).then(res => res.json())
+      ]).then(([profileData, contactsData]) => {
+         setProfile(Array.isArray(profileData) ? profileData[0] : profileData);
+         setContacts(Array.isArray(contactsData) ? contactsData : []);
+         setLoading(false);
+      });
     }
   }, [activePatient?.id, profile?.patient_id]);
 
@@ -93,6 +97,38 @@ export default function PatientProfile() {
         : [...current, conditionName];
       return { ...prev, conditions: newConditions };
     });
+  };
+
+  const handleAddContact = async (e) => {
+    e.preventDefault();
+    if (!newContact.name || !newContact.phone) return;
+    try {
+      const res = await fetch('/api/patients/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_id: activePatient.id, contact_name: newContact.name, relationship: newContact.relationship, phone: newContact.phone })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setContacts([...contacts, data.contact]);
+        setNewContact({ name: '', relationship: '', phone: '' });
+        toast('Emergency contact added.', 'success');
+      }
+    } catch (err) {
+      toast('Failed to add contact.', 'error');
+    }
+  };
+
+  const handleDeleteContact = async (contactId) => {
+    try {
+      const res = await fetch(`/api/patients/contacts?contact_id=${contactId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setContacts(contacts.filter(c => c.contact_id !== contactId));
+        toast('Contact removed.', 'success');
+      }
+    } catch (err) {
+      toast('Failed to remove contact.', 'error');
+    }
   };
 
   if (loading || !profile) return <div className="page-container"><div className="spinner" /></div>;
@@ -199,6 +235,57 @@ export default function PatientProfile() {
               <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8 }}>
                 * Selecting a requirement ensures you are auto-routed to a hospital specializing in this field.
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="content-grid" style={{ gridTemplateColumns: '1fr', marginTop: 28 }}>
+        <div className="section-card">
+          <div className="section-header">
+            <h3><Phone size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Emergency Contacts</h3>
+          </div>
+          <div style={{ padding: 20 }}>
+            {contacts.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginBottom: 24 }}>
+                {contacts.map(contact => (
+                  <div key={contact.contact_id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700 }}>{contact.contact_name}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                        {contact.relationship && <span style={{ marginRight: 8 }}>{contact.relationship} • </span>}
+                        {contact.phone}
+                      </div>
+                    </div>
+                    <button className="btn-icon" onClick={() => handleDeleteContact(contact.contact_id)} style={{ color: 'var(--red)', borderColor: 'rgba(255,45,85,0.2)' }}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)' }}>
+                No emergency contacts added yet.
+              </div>
+            )}
+
+            <div className="glass p-4 mt-4" style={{ border: '1px solid var(--border-accent)' }}>
+              <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Add New Contact</h4>
+              <form className="form-row" onSubmit={handleAddContact} style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Name</label>
+                  <input required className="form-input" value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} placeholder="Full Name" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Relationship</label>
+                  <input className="form-input" value={newContact.relationship} onChange={e => setNewContact({...newContact, relationship: e.target.value})} placeholder="e.g. Brother" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Phone</label>
+                  <input required className="form-input" value={newContact.phone} onChange={e => setNewContact({...newContact, phone: e.target.value})} placeholder="Phone Number" />
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ height: 40 }}><Plus size={16} /> Add</button>
+              </form>
             </div>
           </div>
         </div>

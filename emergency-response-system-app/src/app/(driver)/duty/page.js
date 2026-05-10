@@ -224,10 +224,10 @@ export default function DriverDutyPage() {
           <p style={{ maxWidth: 400, margin: '12px auto' }}>You are currently on the standby list. Emergency requests will be pushed to your terminal instantly.</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: 20, flex: 1, overflow: 'hidden', position: 'relative', zIndex: 10 }}>
+        <div className="track-layout">
           
           {/* Left Panel: Details & Actions */}
-          <div style={{ width: '420px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingRight: 8 }}>
+          <div className="track-sidebar">
             
             {/* Trip Card */}
             <div className="glass p-6 border-l-4 border-l-orange-500 shadow-2xl">
@@ -344,7 +344,7 @@ export default function DriverDutyPage() {
           </div>
 
           {/* Right Panel: Map Navigation */}
-          <div style={{ flex: 1, borderRadius: 24, overflow: 'hidden', border: '1px solid var(--border-subtle)', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+          <div className="track-map">
              <MapView 
                 pickupCoords={{ lat: trip.patient_lat, lon: trip.patient_lon }} 
                 hospitals={[{ hospital_id: 1, name: trip.hospital_name, lat: trip.hospital_lat, lon: trip.hospital_lon, general_beds: 'Destination', icu_beds: 'Secured' }]}

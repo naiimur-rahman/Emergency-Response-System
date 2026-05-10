@@ -1,13 +1,43 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, MapPin, Download, CheckCircle, Clock } from 'lucide-react';
+import { FileText, MapPin, Download, CheckCircle, Clock, Star } from 'lucide-react';
 import { SeverityBadge } from '@/components/Badges';
+import Modal from '@/components/Modal';
+import { useToast } from '@/components/Toast';
 import { useUser } from '@/lib/UserContext';
 
 export default function PatientHistoryPage() {
   const { activePatient } = useUser();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const [ratingData, setRatingData] = useState({ rating: 5, comments: '' });
+
+  const handleOpenRating = (trip) => {
+    setSelectedTrip(trip);
+    setRatingData({ rating: 5, comments: '' });
+    setShowRatingModal(true);
+  };
+
+  const submitRating = async () => {
+    try {
+      const res = await fetch('/api/trips/rating', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_id: selectedTrip.id, rating: ratingData.rating, comments: ratingData.comments })
+      });
+      if (res.ok) {
+        toast('Thank you for your feedback!', 'success');
+        setShowRatingModal(false);
+      } else {
+        toast('Failed to submit rating.', 'error');
+      }
+    } catch (err) {
+      toast('Failed to submit rating.', 'error');
+    }
+  };
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -65,6 +95,9 @@ export default function PatientHistoryPage() {
                  <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Total Fare</div>
                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{trip.fare}</div>
                </div>
+               <button className="btn btn-primary btn-sm" onClick={() => handleOpenRating(trip)} style={{ padding: '8px 16px', background: 'var(--blue)', color: 'white' }} title="Leave Review">
+                 <Star size={16} /> Rate Trip
+               </button>
                <button className="btn btn-secondary btn-sm" style={{ padding: '8px 16px' }} title="Download Invoice">
                  <Download size={16} /> Invoice
                </button>
@@ -79,6 +112,42 @@ export default function PatientHistoryPage() {
           </div>
         )}
       </div>
+
+      <Modal isOpen={showRatingModal} onClose={() => setShowRatingModal(false)} title="Rate Your Experience" footer={
+        <>
+          <button className="btn btn-secondary" onClick={() => setShowRatingModal(false)}>Cancel</button>
+          <button className="btn btn-primary" onClick={submitRating}>Submit Feedback</button>
+        </>
+      }>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ textAlign: 'center', marginBottom: 8 }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>How was your trip to {selectedTrip?.hospital}?</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <Star 
+                  key={star} 
+                  size={32} 
+                  fill={ratingData.rating >= star ? 'var(--yellow)' : 'none'} 
+                  color={ratingData.rating >= star ? 'var(--yellow)' : 'var(--border-accent)'} 
+                  style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                  onClick={() => setRatingData({ ...ratingData, rating: star })}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Additional Comments (Optional)</label>
+            <textarea 
+              className="form-input" 
+              rows={4} 
+              placeholder="Tell us about the driver, the ambulance condition, or your overall experience..."
+              value={ratingData.comments}
+              onChange={e => setRatingData({ ...ratingData, comments: e.target.value })}
+            />
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }

@@ -1,11 +1,23 @@
 'use client';
 import { useState } from 'react';
-import { User, Truck, ShieldCheck, MapPin, Settings as SettingsIcon } from 'lucide-react';
+import { User, Truck, ShieldCheck, MapPin, Settings as SettingsIcon, Award } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
 export default function DriverSettings() {
   const { activeDriver } = useUser();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [certifications, setCertifications] = useState([]);
+
+  useEffect(() => {
+    if (activeDriver?.id) {
+      fetch(`/api/driver/certifications?driver_id=${activeDriver.id}`)
+        .then(res => res.json())
+        .then(data => {
+          setCertifications(Array.isArray(data) ? data : []);
+          setLoading(false);
+        });
+    }
+  }, [activeDriver]);
 
   if (!activeDriver) return null;
   return (
@@ -100,6 +112,43 @@ export default function DriverSettings() {
               </div>
             </div>
           </div>
+
+          <div className="section-card">
+            <div className="section-header">
+              <h3><Award size={16} /> Certifications & Licensing</h3>
+            </div>
+            <div className="section-body">
+              {certifications.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {certifications.map(cert => {
+                    const isExpiring = cert.expiry_date && new Date(cert.expiry_date) < new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // 60 days
+                    return (
+                      <div key={cert.certification_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {cert.certification_name}
+                            {isExpiring && <span className="badge badge-critical" style={{ fontSize: 10 }}>Expiring Soon</span>}
+                          </div>
+                          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                            {cert.issuing_authority} • Issued: {cert.date_issued ? new Date(cert.date_issued).toLocaleDateString() : 'N/A'}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Valid Until</div>
+                          <div style={{ fontWeight: 600, color: isExpiring ? 'var(--red)' : 'var(--green)' }}>
+                            {cert.expiry_date ? new Date(cert.expiry_date).toLocaleDateString() : 'Lifetime'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ padding: 20 }}>No certifications found on record.</div>
+              )}
+            </div>
+          </div>
+
         </div>
 
       </div>
