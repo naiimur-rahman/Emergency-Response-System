@@ -41,12 +41,23 @@ function FollowAmbulance({ position, shouldFollow, useMap }) {
   return null;
 }
 
-export default function MapView({ hospitals = [], pickupCoords = null, requestStatus = 'Pending', realtimeMarker = null }) {
+export default function MapView({ 
+  hospitals = [], 
+  pickupCoords = null, 
+  requestStatus = 'Pending', 
+  realtimeMarker = null,
+  onHospitalClick = null,
+  selectedHospitalId = null
+}) {
   const [MapComponents, setMapComponents] = useState(null);
   const [followAmbulance, setFollowAmbulance] = useState(true);
   const [patientToHospitalRoute, setPatientToHospitalRoute] = useState(null);
   const [ambulanceToPatientRoute, setAmbulanceToPatientRoute] = useState(null);
   const [initialAmbulancePos, setInitialAmbulancePos] = useState(null);
+
+  const selectedHospital = selectedHospitalId 
+    ? hospitals.find(h => h.hospital_id === selectedHospitalId) 
+    : hospitals[0];
 
   useEffect(() => {
     // Dynamic import to avoid SSR issues with Leaflet
@@ -129,7 +140,7 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
             width: 36px; height: 36px; border-radius: 50%;
             background: linear-gradient(135deg, #ff9f0a, #e68600);
             display: flex; align-items: center; justify-content: center;
-            font-size: 20px; box-shadow: 0 4px 16px rgba(255,159,10,0.6);
+            font-size: 20px; box-shadow: 0 4px 166px rgba(255,159,10,0.6);
             border: 2px solid rgba(255,255,255,0.4);
           ">🚑</div>
         </div>`,
@@ -144,9 +155,7 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
     });
   }, []);
 
-
-
-
+  // ... (rest of the component)
 
   // Determine map center: prioritize pickup, then first hospital, then Dhaka
   const center = pickupCoords
@@ -161,7 +170,7 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
   const routePoints = [];
   if (currentAmbulancePos) routePoints.push(currentAmbulancePos);
   if (pickupCoords) routePoints.push([pickupCoords.lat, pickupCoords.lon]);
-  if (hospitals.length > 0) routePoints.push([hospitals[0].lat, hospitals[0].lon]);
+  if (selectedHospital) routePoints.push([selectedHospital.lat, selectedHospital.lon]);
 
   // Build bounds for auto-fit
   const boundsPoints = [];
@@ -176,8 +185,8 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
   }, [currentAmbulancePos, initialAmbulancePos]);
 
   useEffect(() => {
-    if (pickupCoords && hospitals.length > 0 && hospitals[0].lat && hospitals[0].lon) {
-      const url = `https://router.project-osrm.org/route/v1/driving/${pickupCoords.lon},${pickupCoords.lat};${hospitals[0].lon},${hospitals[0].lat}?overview=full&geometries=geojson`;
+    if (pickupCoords && selectedHospital?.lat && selectedHospital?.lon) {
+      const url = `https://router.project-osrm.org/route/v1/driving/${pickupCoords.lon},${pickupCoords.lat};${selectedHospital.lon},${selectedHospital.lat}?overview=full&geometries=geojson`;
       fetch(url)
         .then(r => r.json())
         .then(data => {
@@ -189,7 +198,7 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
     } else {
       setPatientToHospitalRoute(null);
     }
-  }, [pickupCoords, hospitals]);
+  }, [pickupCoords, selectedHospital]);
 
   useEffect(() => {
     if (initialAmbulancePos && pickupCoords) {
@@ -212,8 +221,8 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
     ? [currentAmbulancePos, [pickupCoords.lat, pickupCoords.lon]]
     : null);
 
-  const patientToHospital = patientToHospitalRoute || (pickupCoords && hospitals.length > 0 && hospitals[0].lat && hospitals[0].lon
-    ? [[pickupCoords.lat, pickupCoords.lon], [hospitals[0].lat, hospitals[0].lon]]
+  const patientToHospital = patientToHospitalRoute || (pickupCoords && selectedHospital?.lat && selectedHospital?.lon
+    ? [[pickupCoords.lat, pickupCoords.lon], [selectedHospital.lat, selectedHospital.lon]]
     : null);
 
   if (!MapComponents) {
@@ -325,7 +334,14 @@ export default function MapView({ hospitals = [], pickupCoords = null, requestSt
 
         {/* Hospital markers */}
         {hospitals.map((h) => (
-          <Marker key={h.hospital_id} position={[h.lat, h.lon]} icon={h.type === 'Government' ? govtHospitalIcon : hospitalIcon}>
+          <Marker 
+            key={h.hospital_id} 
+            position={[h.lat, h.lon]} 
+            icon={h.type === 'Government' ? govtHospitalIcon : hospitalIcon}
+            eventHandlers={{
+              click: () => onHospitalClick?.(h)
+            }}
+          >
             <Popup>
               <div class="popup-title">🏥 {h.name}</div>
               <div class="popup-sub">{h.type || 'Private'} Hospital</div>

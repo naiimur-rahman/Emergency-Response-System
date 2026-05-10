@@ -99,13 +99,12 @@ export async function POST(request) {
 
     if (primarySpecialization) {
       hospitalQuery = `
-        SELECT DISTINCT h.hospital_id, h.name,
+        SELECT h.hospital_id, h.name,
           ST_Y(h.location_coords::geometry) AS lat, ST_X(h.location_coords::geometry) AS lon,
           ROUND(ST_Distance(h.location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
-          CASE WHEN s.spec_name = $3 THEN 1 ELSE 0 END AS spec_match
+          EXISTS(SELECT 1 FROM hospital_specializations hs JOIN specializations s ON hs.spec_id = s.spec_id WHERE hs.hospital_id = h.hospital_id AND s.spec_name = $3) AS spec_match,
+          (SELECT array_agg(s.spec_name) FROM hospital_specializations hs JOIN specializations s ON hs.spec_id = s.spec_id WHERE hs.hospital_id = h.hospital_id) as specializations
         FROM hospitals h
-        LEFT JOIN hospital_specializations hs ON h.hospital_id = hs.hospital_id
-        LEFT JOIN specializations s ON hs.spec_id = s.spec_id
         WHERE (h.icu_beds > 0 OR h.general_beds > 0)
         ORDER BY spec_match DESC, distance_m ASC
         LIMIT 5
@@ -113,13 +112,14 @@ export async function POST(request) {
       hospitalParams = [lon, lat, primarySpecialization];
     } else {
       hospitalQuery = `
-        SELECT hospital_id, name,
-          ST_Y(location_coords::geometry) AS lat, ST_X(location_coords::geometry) AS lon,
-          ROUND(ST_Distance(location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
-          0 AS spec_match
-        FROM hospitals
-        WHERE icu_beds > 0 OR general_beds > 0
-        ORDER BY location_coords <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
+        SELECT h.hospital_id, h.name,
+          ST_Y(h.location_coords::geometry) AS lat, ST_X(h.location_coords::geometry) AS lon,
+          ROUND(ST_Distance(h.location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
+          false AS spec_match,
+          (SELECT array_agg(s.spec_name) FROM hospital_specializations hs JOIN specializations s ON hs.spec_id = s.spec_id WHERE hs.hospital_id = h.hospital_id) as specializations
+        FROM hospitals h
+        WHERE (h.icu_beds > 0 OR h.general_beds > 0)
+        ORDER BY h.location_coords <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
         LIMIT 5
       `;
       hospitalParams = [lon, lat];
@@ -164,7 +164,8 @@ export async function POST(request) {
         distance_km: distanceKm.toFixed(2),
         eta_minutes: Math.max(3, Math.round(distanceKm * 4)), // Assuming ~15 km/h in Dhaka traffic
         estimated_fare: Math.round(baseFare + (distanceKm * perKmRate) + severityCharge),
-        spec_match: h.spec_match === 1,
+        spec_match: h.spec_match === 1 || h.spec_match === true,
+        specializations: h.specializations || []
       };
     });
 

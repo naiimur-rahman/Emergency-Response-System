@@ -61,6 +61,7 @@ export default function SOSPage() {
   const [severity, setSeverity] = useState('Critical');
   const [dispatchTimer, setDispatchTimer] = useState(0);
   const [profile, setProfile] = useState(null);
+  const [selectedHospitalId, setSelectedHospitalId] = useState(null);
   const timerRef = useRef(null);
   const watchRef = useRef(null);
 
@@ -334,6 +335,8 @@ export default function SOSPage() {
             hospitals={phase === 'recommendations' ? hospitals : []} 
             pickupCoords={location} 
             requestStatus={phase === 'result' ? 'Dispatched' : 'Pending'}
+            selectedHospitalId={selectedHospitalId}
+            onHospitalClick={(h) => setSelectedHospitalId(h.hospital_id)}
           />
         </div>
 
@@ -386,18 +389,42 @@ export default function SOSPage() {
             <div style={{ width: '100%', maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 }}>
               <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 12 }}>Select Destination</h3>
               <div className="hospital-list">
-                {hospitals.map((h, i) => (
-                  <div key={h.hospital_id} className={`hospital-item ${h.spec_match ? 'best-match' : ''}`} onClick={() => confirmDispatch(h.hospital_id)} style={{ padding: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {h.name} {h.spec_match && <span style={{ fontSize: 9, background: 'var(--green)', color: '#000', padding: '2px 4px', borderRadius: 6, fontWeight: 900 }}>BEST MATCH</span>}
+                {hospitals.map((h) => (
+                  <div key={h.hospital_id} 
+                    className={`hospital-item ${h.spec_match ? 'best-match' : ''}`} 
+                    onClick={() => {
+                      if (selectedHospitalId === h.hospital_id) {
+                        confirmDispatch(h.hospital_id);
+                      } else {
+                        setSelectedHospitalId(h.hospital_id);
+                      }
+                    }} 
+                    style={{ 
+                      padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 12,
+                      borderColor: selectedHospitalId === h.hospital_id ? 'var(--blue)' : 'var(--border-subtle)',
+                      background: selectedHospitalId === h.hospital_id ? 'rgba(10,132,255,0.05)' : 'var(--bg-card)'
+                    }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 15, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {h.name} {h.spec_match && <span style={{ fontSize: 9, background: 'var(--green-dim)', color: 'var(--green)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, border: '1px solid rgba(0,255,136,0.2)' }}>MATCHED</span>}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, display: 'flex', gap: 8 }}>
-                        <span><Navigation size={10} style={{ display: 'inline' }} /> {h.distance_km} km</span>
-                        <span><Clock size={10} style={{ display: 'inline' }} /> {h.eta_minutes} min</span>
+                      
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, margin: '8px 0' }}>
+                        {h.specializations?.slice(0, 3).map(s => (
+                          <span key={s} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>{s}</span>
+                        ))}
+                      </div>
+
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Navigation size={12} /> {h.distance_km} km</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} /> {h.eta_minutes} min</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--yellow)', fontWeight: 800 }}>৳{h.estimated_fare}</span>
                       </div>
                     </div>
-                    <ChevronRight size={16} style={{ color: 'var(--blue)' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <ChevronRight size={18} style={{ color: selectedHospitalId === h.hospital_id ? 'var(--blue)' : 'var(--text-muted)' }} />
+                      {selectedHospitalId === h.hospital_id && <span style={{ fontSize: 8, fontWeight: 800, color: 'var(--blue)' }}>CONFIRM</span>}
+                    </div>
                   </div>
                 ))}
               </div>
