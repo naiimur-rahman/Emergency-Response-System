@@ -254,39 +254,64 @@ export default function MapView({
 
   useEffect(() => {
     let isMounted = true;
-    if (pickupCoords && selectedHospital?.lat && selectedHospital?.lon) {
-      const url = `https://router.project-osrm.org/route/v1/driving/${pickupCoords.lon},${pickupCoords.lat};${selectedHospital.lon},${selectedHospital.lat}?overview=full&geometries=geojson`;
-      fetch(url)
-        .then(r => r.json())
-        .then(data => {
-          if (isMounted && data.code === 'Ok' && data.routes.length > 0) {
-            const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            setPatientToHospitalRoute(coords);
-          }
-        }).catch(err => console.error("OSRM Route Error", err));
+    const pLat = parseFloat(pickupCoords?.lat);
+    const pLon = parseFloat(pickupCoords?.lon);
+    const hLat = parseFloat(selectedHospital?.lat);
+    const hLon = parseFloat(selectedHospital?.lon);
+
+    if (pLat && pLon && hLat && hLon) {
+      const url = `https://router.project-osrm.org/route/v1/driving/${pLon},${pLat};${hLon},${hLat}?overview=full&geometries=geojson`;
+      
+      // Add a small delay to prevent rapid-fire requests during location jitter
+      const timer = setTimeout(() => {
+        fetch(url)
+          .then(r => r.json())
+          .then(data => {
+            if (isMounted && data.code === 'Ok' && data.routes.length > 0) {
+              const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+              setPatientToHospitalRoute(coords);
+            }
+          }).catch(err => {
+            console.error("OSRM Route Error", err);
+            if (isMounted) setPatientToHospitalRoute(null);
+          });
+      }, 500);
+      return () => { isMounted = false; clearTimeout(timer); };
     } else {
       setPatientToHospitalRoute(null);
     }
     return () => { isMounted = false; };
-  }, [pickupCoords, selectedHospital]);
+  }, [pickupCoords?.lat, pickupCoords?.lon, selectedHospital?.lat, selectedHospital?.lon]);
 
   useEffect(() => {
     let isMounted = true;
-    if (initialAmbulancePos && pickupCoords) {
-      const url = `https://router.project-osrm.org/route/v1/driving/${initialAmbulancePos[1]},${initialAmbulancePos[0]};${pickupCoords.lon},${pickupCoords.lat}?overview=full&geometries=geojson`;
-      fetch(url)
-        .then(r => r.json())
-        .then(data => {
-          if (isMounted && data.code === 'Ok' && data.routes.length > 0) {
-            const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            setAmbulanceToPatientRoute(coords);
-          }
-        }).catch(err => console.error("OSRM Route Error", err));
+    const aLat = parseFloat(initialAmbulancePos?.[0]);
+    const aLon = parseFloat(initialAmbulancePos?.[1]);
+    const pLat = parseFloat(pickupCoords?.lat);
+    const pLon = parseFloat(pickupCoords?.lon);
+
+    if (aLat && aLon && pLat && pLon) {
+      const url = `https://router.project-osrm.org/route/v1/driving/${aLon},${aLat};${pLon},${pLat}?overview=full&geometries=geojson`;
+      
+      const timer = setTimeout(() => {
+        fetch(url)
+          .then(r => r.json())
+          .then(data => {
+            if (isMounted && data.code === 'Ok' && data.routes.length > 0) {
+              const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+              setAmbulanceToPatientRoute(coords);
+            }
+          }).catch(err => {
+            console.error("OSRM Route Error", err);
+            if (isMounted) setAmbulanceToPatientRoute(null);
+          });
+      }, 500);
+      return () => { isMounted = false; clearTimeout(timer); };
     } else {
       setAmbulanceToPatientRoute(null);
     }
     return () => { isMounted = false; };
-  }, [initialAmbulancePos, pickupCoords]);
+  }, [initialAmbulancePos, pickupCoords?.lat, pickupCoords?.lon]);
 
   // Route segments: Ambulance→Patient (orange), Patient→Hospital (blue)
   const ambulanceToPatient = ambulanceToPatientRoute || (currentAmbulancePos && pickupCoords
