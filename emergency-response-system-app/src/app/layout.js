@@ -2,7 +2,7 @@ import './globals.css';
 import ClientWrapper from './ClientWrapper';
 
 export const metadata = {
-  title: 'Emergency Response System — Emergency Dispatch Control',
+  title: 'Emergency Response — Emergency Dispatch Control',
   description: 'Real-time ambulance dispatch management system for Dhaka, Bangladesh.',
 };
 

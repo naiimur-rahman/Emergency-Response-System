@@ -247,7 +247,7 @@ export default function SOSPage() {
         @keyframes spin { to { transform: rotate(360deg); } }
         .dispatch-timer {
           font-size: 48px; font-weight: 900; font-family: 'JetBrains Mono', monospace;
-          background: linear-gradient(to right, var(--red), var(--orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          color: var(--red);
         }
         .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 540px; }
         .result-card {

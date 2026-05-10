@@ -27,7 +27,7 @@ const portals = [
   {
     href: '/maintenance',
     title: 'Admin Portal',
-    subtitle: 'System Hub & History',
+    subtitle: 'Control Hub & History',
     description: 'Monitor maintenance logs, hospital beds, and system analytics.',
     icon: ShieldCheck,
     color: '#30d158',
@@ -93,8 +93,8 @@ export default function PortalPage() {
         .portal-header h1 {
           font-size: 42px; font-weight: 900; color: var(--text-primary);
           letter-spacing: -2px; margin-bottom: 4px;
-          background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          background: var(--text-primary);
+          -webkit-background-clip: unset; -webkit-text-fill-color: unset;
         }
         .portal-header p { color: var(--text-muted); font-size: 15px; font-weight: 500; }
 
@@ -175,8 +175,8 @@ export default function PortalPage() {
         <div className="portal-logo">
           <Activity size={24} style={{ color: 'var(--red)' }} />
         </div>
-        <h1>Emergency Response System</h1>
-        <p>Advanced Emergency Dispatch System</p>
+        <h1>Emergency Response</h1>
+        <p>Advanced Emergency Dispatch</p>
       </div>
 
       <div className="portal-grid">

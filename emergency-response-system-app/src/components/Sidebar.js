@@ -24,7 +24,7 @@ export default function Sidebar() {
             <Activity size={20} />
           </div>
           <div className="sidebar-brand">
-            <h1 style={{ background: 'linear-gradient(135deg, var(--blue), var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Emergency Response System</h1>
+            <h1>Emergency Response</h1>
             <span style={{ color: 'var(--blue)' }}>Dispatch Control</span>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function Sidebar() {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <p className="sidebar-footer-text">Emergency Response System v1.0 — Dhaka</p>
+          <p className="sidebar-footer-text">Emergency Response v1.0 — Dhaka</p>
         </div>
       </aside>
 

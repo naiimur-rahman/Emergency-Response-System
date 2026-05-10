@@ -255,9 +255,7 @@ input, select, textarea { font-family: inherit; }
   font-weight: 700;
   letter-spacing: -0.3px;
   white-space: nowrap;
-  background: linear-gradient(135deg, var(--red), var(--blue));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
 }
 
 .sidebar-brand span {

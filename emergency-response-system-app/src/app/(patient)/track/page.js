@@ -69,7 +69,7 @@ export default function PatientTrackPage() {
 
       <div className="page-header" style={{ marginBottom: 16, flexShrink: 0, position: 'relative', zIndex: 10 }}>
         <div>
-          <h2 style={{ fontSize: 32, fontWeight: 800, background: 'linear-gradient(to right, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h2 style={{ fontSize: 32, fontWeight: 800 }}>
             Live Tracking
           </h2>
           <p className="page-header-sub">Monitor your rescue unit in real-time</p>
