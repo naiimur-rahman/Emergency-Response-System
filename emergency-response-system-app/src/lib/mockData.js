@@ -30,6 +30,11 @@ export const drivers = [
   { driver_id: 2, id: 2, name: 'Karim Mia', license_no: 'BD-DL-22839', license: 'BD-DL-22839', shift_status: 'On_Duty', status: 'On_Duty' },
   { driver_id: 3, id: 3, name: 'Zahirul Islam', license_no: 'BD-DL-44556', license: 'BD-DL-44556', shift_status: 'Off_Duty', status: 'Off_Duty' },
   { driver_id: 4, id: 4, name: 'Mim Chowdhury', license_no: 'BD-DL-77120', license: 'BD-DL-77120', shift_status: 'Available', status: 'Available' },
+  { driver_id: 5, id: 5, name: 'Sabbir Ahmed', license_no: 'BD-DL-55221', license: 'BD-DL-55221', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 6, id: 6, name: 'Farhan Kabir', license_no: 'BD-DL-66332', license: 'BD-DL-66332', shift_status: 'On_Duty', status: 'On_Duty' },
+  { driver_id: 7, id: 7, name: 'Nabila Islam', license_no: 'BD-DL-88443', license: 'BD-DL-88443', shift_status: 'Off_Duty', status: 'Off_Duty' },
+  { driver_id: 8, id: 8, name: 'Tanvir Hasan', license_no: 'BD-DL-11990', license: 'BD-DL-11990', shift_status: 'Available', status: 'Available' },
+  { driver_id: 9, id: 9, name: 'Lutfur Rahman', license_no: 'BD-DL-44229', license: 'BD-DL-44229', shift_status: 'On_Duty', status: 'On_Duty' },
 ];
 
 export const ambulances = [
@@ -38,6 +43,11 @@ export const ambulances = [
   { vehicle_id: 3, id: 3, license_plate: 'DHK-METRO-AMB-305', equipment_level: 'ICU Support', current_status: 'Available' },
   { vehicle_id: 4, id: 4, license_plate: 'DHK-METRO-AMB-412', equipment_level: 'Basic Life Support', current_status: 'Available' },
   { vehicle_id: 5, id: 5, license_plate: 'DHK-METRO-AMB-500', equipment_level: 'Advanced Life Support', current_status: 'Available' },
+  { vehicle_id: 6, id: 6, license_plate: 'DHK-METRO-AMB-618', equipment_level: 'ICU Support', current_status: 'Available' },
+  { vehicle_id: 7, id: 7, license_plate: 'DHK-METRO-AMB-722', equipment_level: 'Basic Life Support', current_status: 'Available' },
+  { vehicle_id: 8, id: 8, license_plate: 'DHK-METRO-AMB-834', equipment_level: 'Advanced Life Support', current_status: 'Available' },
+  { vehicle_id: 9, id: 9, license_plate: 'DHK-METRO-AMB-945', equipment_level: 'Basic Life Support', current_status: 'Available' },
+  { vehicle_id: 10, id: 10, license_plate: 'DHK-METRO-AMB-010', equipment_level: 'ICU Support', current_status: 'Available' },
 ];
 
 export const emergencyRequests = [

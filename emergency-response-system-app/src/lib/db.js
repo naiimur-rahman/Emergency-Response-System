@@ -134,7 +134,7 @@ export function suggestSeverity(description = '') {
 function activeTripRows({ driverId, onlyActive = true } = {}) {
   // Get all active/pending emergency requests
   const activeRequests = mockData.emergencyRequests.filter((req) => 
-    !onlyActive || ['Pending', 'Broadcast', 'Active', 'En Route', 'Picked Up', 'Arrived'].includes(req.status)
+    !onlyActive || ['Pending', 'Broadcast', 'Active', 'En Route', 'Picked Up', 'Arrived', 'Admitted'].includes(req.status)
   );
 
   return activeRequests
@@ -372,7 +372,22 @@ function handleMockQuery(text, params = []) {
 
   if (sql.startsWith('update emergency_requests')) {
     const request = getRequest(params[1]);
-    if (request) request.status = params[0];
+    if (request) {
+      const oldStatus = request.status;
+      request.status = params[0];
+      
+      // Simulate resource release in mock mode
+      if ((params[0] === 'Resolved' || params[0] === 'Cancelled') && oldStatus !== 'Resolved' && oldStatus !== 'Cancelled') {
+        const trip = mockData.tripLogs.find(t => t.request_id === request.request_id || t.trip_id === request.request_id);
+        if (trip) {
+          const hospital = getHospital(trip.hospital_id);
+          if (hospital) {
+            if (request.severity_level === 'Critical') hospital.icu_beds++;
+            else hospital.general_beds++;
+          }
+        }
+      }
+    }
     return result(request ? [request] : []);
   }
 

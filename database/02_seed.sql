@@ -94,19 +94,29 @@ ON CONFLICT DO NOTHING;
 -- 6. Ambulances
 INSERT INTO Ambulances (License_Plate, Equipment_Level, Current_Status) VALUES 
 ('DHA-11-9922', 'Advanced', 'Available'),
-('DHA-11-8833', 'Basic', 'Available'),
-('DHA-12-4455', 'Advanced', 'Available'),
-('DHA-14-1122', 'Basic', 'Available'),
-('DHA-15-3344', 'Advanced', 'Available'),
-('DHA-16-5566', 'Basic', 'Available')
+('DHK-METRO-AMB-101', 'Advanced', 'Available'),
+('DHK-METRO-AMB-204', 'Basic', 'Available'),
+('DHK-METRO-AMB-305', 'Advanced', 'Available'),
+('DHK-METRO-AMB-412', 'Basic', 'Available'),
+('DHK-METRO-AMB-500', 'Advanced', 'Available'),
+('DHK-METRO-AMB-618', 'Advanced', 'Available'),
+('DHK-METRO-AMB-722', 'Basic', 'Available'),
+('DHK-METRO-AMB-834', 'Advanced', 'Available'),
+('DHK-METRO-AMB-945', 'Basic', 'Available'),
+('DHK-METRO-AMB-010', 'Advanced', 'Available')
 ON CONFLICT DO NOTHING;
 
 -- 7. Drivers
 INSERT INTO Drivers (Name, License_No, Shift_Status) VALUES 
 ('Rahim Uddin', 'BD-DL-99384', 'On_Duty'),
 ('Karim Mia', 'BD-DL-22839', 'On_Duty'),
-('Selim Ahmed', 'BD-DL-44556', 'Off_Duty'),
-('Tanvir Hossain', 'BD-DL-77889', 'On_Duty'),
+('Zahirul Islam', 'BD-DL-44556', 'Off_Duty'),
+('Mim Chowdhury', 'BD-DL-77120', 'On_Duty'),
+('Sabbir Ahmed', 'BD-DL-55221', 'On_Duty'),
+('Farhan Kabir', 'BD-DL-66332', 'On_Duty'),
+('Nabila Islam', 'BD-DL-88443', 'Off_Duty'),
+('Tanvir Hasan', 'BD-DL-11990', 'On_Duty'),
+('Lutfur Rahman', 'BD-DL-44229', 'On_Duty'),
 ('Jasim Uddin', 'BD-DL-11223', 'Off_Duty')
 ON CONFLICT DO NOTHING;
 

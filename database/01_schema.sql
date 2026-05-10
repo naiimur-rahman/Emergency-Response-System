@@ -147,13 +147,24 @@ BEFORE INSERT ON Emergency_Requests FOR EACH ROW EXECUTE FUNCTION trg_predict_se
 
 -- Triggers for Auto-Dispatch Logic
 CREATE OR REPLACE FUNCTION trg_reserve_resources() RETURNS TRIGGER AS $$
+DECLARE
+    v_Severity severity_lvl;
 BEGIN
+    -- Get severity from the linked request
+    SELECT Severity_Level INTO v_Severity FROM Emergency_Requests WHERE Request_ID = NEW.Trip_ID;
+
     UPDATE Ambulances 
     SET Current_Status = 'Dispatched',
         Trips_Since_Maintenance = Trips_Since_Maintenance + 1
     WHERE Vehicle_ID = NEW.Vehicle_ID;
 
-    UPDATE Hospitals SET ICU_Beds = ICU_Beds - 1 WHERE Hospital_ID = NEW.Hospital_ID AND ICU_Beds > 0;
+    -- Reserve bed based on severity
+    IF v_Severity = 'Critical' THEN
+        UPDATE Hospitals SET ICU_Beds = ICU_Beds - 1 WHERE Hospital_ID = NEW.Hospital_ID AND ICU_Beds > 0;
+    ELSE
+        UPDATE Hospitals SET General_Beds = General_Beds - 1 WHERE Hospital_ID = NEW.Hospital_ID AND General_Beds > 0;
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -172,12 +183,23 @@ DECLARE
     v_Per_KM_Fee DECIMAL := 5.00;
     v_Equipment_Fee DECIMAL := 0.00;
     v_Equipment_Level equipment_lvl;
-    v_Hospital_Coords GEOMETRY;
+    v_Hospital_Level hospital_type;
+    v_Severity severity_lvl;
 BEGIN
-    IF NEW.Status = 'Resolved' THEN
+    IF NEW.Status = 'Resolved' OR NEW.Status = 'Cancelled' THEN
         -- Get Trip Details
-        SELECT Trip_ID, Vehicle_ID, Hospital_ID INTO v_Trip_ID, v_Vehicle_ID, v_Hospital_ID
-        FROM Trip_Logs WHERE Trip_ID = NEW.Request_ID LIMIT 1;
+        SELECT tl.Trip_ID, tl.Vehicle_ID, tl.Hospital_ID, er.Severity_Level 
+        INTO v_Trip_ID, v_Vehicle_ID, v_Hospital_ID, v_Severity
+        FROM Trip_Logs tl
+        JOIN Emergency_Requests er ON tl.Trip_ID = er.Request_ID
+        WHERE tl.Trip_ID = NEW.Request_ID LIMIT 1;
+
+        -- Release Bed
+        IF v_Severity = 'Critical' THEN
+            UPDATE Hospitals SET ICU_Beds = ICU_Beds + 1 WHERE Hospital_ID = v_Hospital_ID;
+        ELSE
+            UPDATE Hospitals SET General_Beds = General_Beds + 1 WHERE Hospital_ID = v_Hospital_ID;
+        END IF;
 
         -- 1. Automated Predictive Maintenance Flagging
         UPDATE Ambulances 

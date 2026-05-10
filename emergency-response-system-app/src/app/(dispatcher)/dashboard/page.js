@@ -245,6 +245,20 @@ export default function DashboardPage() {
                       }}>
                         Profile
                       </button>
+                      {row.request_status === 'Admitted' && (
+                        <button className="btn btn-sm"
+                          style={{ background: 'var(--green-dim)', color: 'var(--green)', borderColor: 'var(--green-glow)' }}
+                          onClick={async () => {
+                            await fetch('/api/driver/accept', { 
+                              method: 'POST', 
+                              headers: { 'Content-Type': 'application/json' }, 
+                              body: JSON.stringify({ request_id: row.request_id, action: 'Discharge' }) 
+                            });
+                            fetchData();
+                          }}>
+                          Discharge
+                        </button>
+                      )}
                       {row.trip_id && (
                         <button className="btn btn-secondary btn-sm" onClick={() => setActiveChatTrip(row)}>
                           <MessageCircle size={14} />

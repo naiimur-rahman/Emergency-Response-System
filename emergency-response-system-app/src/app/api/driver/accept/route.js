@@ -9,7 +9,8 @@ export async function POST(request) {
     if (action === 'Accept') newStatus = 'En Route';
     if (action === 'Picked') newStatus = 'Picked Up';
     if (action === 'Arrived') newStatus = 'Arrived';
-    if (action === 'Complete') newStatus = 'Resolved';
+    if (action === 'Complete') newStatus = 'Admitted';
+    if (action === 'Discharge') newStatus = 'Resolved';
 
     await transaction(async (client) => {
       // If accepting from broadcast, we must initialize the trip
