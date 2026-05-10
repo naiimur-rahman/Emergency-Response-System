@@ -13,6 +13,7 @@ export default function DriverDutyPage() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [broadcastRequests, setBroadcastRequests] = useState([]);
 
   // Real-time Telemetry State
   const [isBroadcasting, setIsBroadcasting] = useState(false);
@@ -33,6 +34,7 @@ export default function DriverDutyPage() {
       const res = await fetch(`/api/driver/duty?driver_id=${activeDriver.id}`);
       const data = await res.json();
       setTrip(data.active_trip);
+      setBroadcastRequests(data.broadcast_requests || []);
       setChatMessages(data.chat_messages || []);
     } catch (err) {
       console.error(err);
@@ -136,13 +138,17 @@ export default function DriverDutyPage() {
     return () => clearInterval(interval);
   }, [activeDriver, fetchTrip]);
 
-  const handleAction = async (action) => {
+  const handleAction = async (action, reqId = null) => {
     setActionLoading(true);
     try {
       const res = await fetch('/api/driver/accept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request_id: trip.request_id, action }),
+        body: JSON.stringify({ 
+          request_id: reqId || trip.request_id, 
+          action,
+          driver_id: activeDriver.id 
+        }),
       });
       const result = await res.json();
       if (result.success) {
@@ -220,22 +226,60 @@ export default function DriverDutyPage() {
         {/* Left Panel: Details & Actions */}
         <div className="track-sidebar">
           {!trip ? (
-            <div className="glass p-6 border-l-4 border-l-blue-500 shadow-2xl" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-              <div className="animate-float">
-                <Radio size={48} style={{ color: 'var(--blue)', marginBottom: 16 }} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
+              <div className="glass p-6 border-l-4 border-l-blue-500 shadow-2xl" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                <div className="animate-float">
+                  <Radio size={48} style={{ color: 'var(--blue)', marginBottom: 16 }} />
+                </div>
+                <h3 style={{ fontSize: 20, fontWeight: 800 }}>Scanning for Dispatch...</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>You are on the standby list. Emergency requests will appear here instantly.</p>
+                
+                <div style={{ marginTop: 24, width: '100%' }}>
+                  <button 
+                    onClick={isBroadcasting ? stopBroadcasting : startBroadcasting}
+                    className={`btn ${isBroadcasting ? 'btn-secondary' : 'btn-primary'}`}
+                    style={{ width: '100%', height: 44, borderRadius: 12, fontSize: 12, fontWeight: 800, background: isBroadcasting ? 'rgba(255,45,85,0.1)' : 'var(--blue)', borderColor: isBroadcasting ? 'var(--red)' : 'var(--blue)', color: isBroadcasting ? 'var(--red)' : '#fff' }}
+                  >
+                    {isBroadcasting ? '🛑 STOP LOCATION BROADCAST' : '📡 START LOCATION BROADCAST'}
+                  </button>
+                </div>
               </div>
-              <h3 style={{ fontSize: 20, fontWeight: 800 }}>Scanning for Dispatch...</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>You are on the standby list. Emergency requests will appear here instantly.</p>
-              
-              <div style={{ marginTop: 32, width: '100%' }}>
-                <button 
-                  onClick={isBroadcasting ? stopBroadcasting : startBroadcasting}
-                  className={`btn ${isBroadcasting ? 'btn-secondary' : 'btn-primary'}`}
-                  style={{ width: '100%', height: 48, borderRadius: 12, fontSize: 13, fontWeight: 800, background: isBroadcasting ? 'rgba(255,45,85,0.1)' : 'var(--blue)', borderColor: isBroadcasting ? 'var(--red)' : 'var(--blue)', color: isBroadcasting ? 'var(--red)' : '#fff' }}
-                >
-                  {isBroadcasting ? '🛑 STOP LOCATION BROADCAST' : '📡 START LOCATION BROADCAST'}
-                </button>
-              </div>
+
+              {/* Broadcasts Section */}
+              {broadcastRequests.length > 0 && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--orange)' }}>
+                    <div className="live-dot" style={{ background: 'var(--orange)' }} />
+                    <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1 }}>INCOMING MISSION BROADCASTS ({broadcastRequests.length})</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', maxHeight: '400px', paddingRight: 4 }}>
+                    {broadcastRequests.map((req) => (
+                      <div key={req.request_id} className="glass p-4 border-l-4 border-l-orange-500 hover:bg-white/5 transition-colors" style={{ borderRadius: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 800 }}>REQUEST ID</div>
+                            <div style={{ fontSize: 14, fontWeight: 800 }}>#{req.request_id}</div>
+                          </div>
+                          <SeverityBadge level={req.severity_level} />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                          <MapPin size={14} style={{ color: 'var(--red)' }} />
+                          <div style={{ fontSize: 12, fontWeight: 600 }}>{req.patient_name} • {req.patient_lat.toFixed(4)}, {req.patient_lon.toFixed(4)}</div>
+                        </div>
+                        <button 
+                          onClick={() => handleAction('Accept', req.request_id)}
+                          disabled={actionLoading}
+                          className="btn btn-primary"
+                          style={{ width: '100%', height: 40, borderRadius: 10, fontSize: 13, fontWeight: 800, background: 'var(--orange)', borderColor: 'var(--orange)' }}
+                        >
+                          {actionLoading ? 'CLAIMING...' : 'CLAIM MISSION'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <>

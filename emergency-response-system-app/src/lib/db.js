@@ -134,7 +134,7 @@ export function suggestSeverity(description = '') {
 function activeTripRows({ driverId, onlyActive = true } = {}) {
   // Get all active/pending emergency requests
   const activeRequests = mockData.emergencyRequests.filter((req) => 
-    !onlyActive || ['Pending', 'Active', 'En Route', 'Picked Up', 'Arrived'].includes(req.status)
+    !onlyActive || ['Pending', 'Broadcast', 'Active', 'En Route', 'Picked Up', 'Arrived'].includes(req.status)
   );
 
   return activeRequests
@@ -243,6 +243,19 @@ function handleMockQuery(text, params = []) {
 
   if (sql.includes('fn_automated_dispatch')) {
     return result([{ result: dispatchRequest(params[0]) }]);
+  }
+
+  if (sql.startsWith('insert into trip_logs')) {
+    const trip = {
+      trip_id: params[0],
+      vehicle_id: params[1],
+      driver_id: params[2],
+      hospital_id: params[3],
+      dispatcher_id: params[4],
+      time_dispatched: new Date().toISOString(),
+    };
+    mockData.tripLogs.unshift(trip);
+    return result([trip]);
   }
 
   if (sql.startsWith('insert into patients')) {

@@ -6,20 +6,21 @@ export async function POST(request) {
     const { request_id, dispatcher_id = 1 } = await request.json();
     console.error(`Dispatching request ${request_id}...`);
     
-    // Call the automated dispatch function
-    const result = await query('SELECT fn_automated_dispatch($1, $2) as result', [request_id, dispatcher_id]);
-    const message = result.rows[0].result;
+    // Update status to Broadcast - all on-duty drivers will now see this request
+    const result = await query(`
+      UPDATE Emergency_Requests 
+      SET Status = 'Broadcast' 
+      WHERE Request_ID = $1 
+      RETURNING *
+    `, [request_id]);
     
-    console.error(`Dispatch result: ${message}`);
-    
-    // Check for success - the SQL returns "SUCCESS: ..."
-    const isSuccess = message.toLowerCase().includes('success');
+    if (result.rowCount === 0) {
+      return NextResponse.json({ success: false, message: 'Request not found' }, { status: 404 });
+    }
     
     return NextResponse.json({ 
-      success: isSuccess, 
-      message: message 
-    }, { 
-      status: isSuccess ? 200 : 400 
+      success: true, 
+      message: 'MISSION BROADCASTED: All available units notified.' 
     });
     
   } catch (error) {

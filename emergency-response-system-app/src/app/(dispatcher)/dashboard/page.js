@@ -236,7 +236,7 @@ export default function DashboardPage() {
                           onClick={() => handleDispatch(row.request_id)}
                           disabled={dispatching === row.request_id}>
                           <Zap size={14} />
-                          {dispatching === row.request_id ? 'Dispatching...' : 'Dispatch'}
+                          {dispatching === row.request_id ? 'Broadcasting...' : 'Dispatch Mission'}
                         </button>
                       )}
                       <button className="btn btn-ghost btn-sm" onClick={() => {

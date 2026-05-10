@@ -6,35 +6,40 @@ export async function GET(request) {
   const driver_id = searchParams.get('driver_id');
 
   try {
-    const res = await query(`
-      SELECT 
-        tl.trip_id,
-        tl.time_dispatched,
-        er.request_id,
-        er.patient_id,
-        er.pickup_coords,
-        ST_X(er.pickup_coords::geometry) as patient_lon,
-        ST_Y(er.pickup_coords::geometry) as patient_lat,
-        er.severity_level,
-        er.status as request_status,
-        p.name as patient_name,
-        p.phone as patient_phone,
-        p.blood_type,
-        h.name as hospital_name,
-        ST_X(h.location_coords::geometry) as hospital_lon,
-        ST_Y(h.location_coords::geometry) as hospital_lat,
-        a.license_plate
-      FROM trip_logs tl
-      JOIN emergency_requests er ON tl.trip_id = er.request_id
-      JOIN patients p ON er.patient_id = p.patient_id
-      JOIN hospitals h ON tl.hospital_id = h.hospital_id
-      JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
-      WHERE tl.driver_id = $1 AND er.status IN ('Pending', 'Active', 'En Route', 'Picked Up', 'Arrived')
-      ORDER BY tl.time_dispatched DESC
-      LIMIT 1
-    `, [driver_id || 1]);
+    const [activeTripRes, broadcastRes] = await Promise.all([
+      query(`
+        SELECT 
+          tl.trip_id, tl.time_dispatched, er.request_id, er.patient_id,
+          ST_X(er.pickup_coords::geometry) as patient_lon,
+          ST_Y(er.pickup_coords::geometry) as patient_lat,
+          er.severity_level, er.status as request_status,
+          p.name as patient_name, p.phone as patient_phone, p.blood_type,
+          h.name as hospital_name,
+          ST_X(h.location_coords::geometry) as hospital_lon,
+          ST_Y(h.location_coords::geometry) as hospital_lat,
+          a.license_plate
+        FROM trip_logs tl
+        JOIN emergency_requests er ON tl.trip_id = er.request_id
+        JOIN patients p ON er.patient_id = p.patient_id
+        JOIN hospitals h ON tl.hospital_id = h.hospital_id
+        JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
+        WHERE tl.driver_id = $1 AND er.status IN ('Active', 'En Route', 'Picked Up', 'Arrived')
+        LIMIT 1
+      `, [driver_id]),
+      query(`
+        SELECT 
+          er.request_id, ST_X(er.pickup_coords::geometry) as patient_lon,
+          ST_Y(er.pickup_coords::geometry) as patient_lat,
+          er.severity_level, er.status as request_status,
+          p.name as patient_name
+        FROM emergency_requests er
+        JOIN patients p ON er.patient_id = p.patient_id
+        WHERE er.status = 'Broadcast'
+        ORDER BY er.timestamp_created DESC
+      `)
+    ]);
 
-    const trip = res.rows[0] || null;
+    const trip = activeTripRes.rows[0] || null;
     let chatMessages = [];
     if (trip) {
       const chatRes = await query('SELECT * FROM chat_messages WHERE trip_id = $1 ORDER BY timestamp ASC', [trip.trip_id]);
@@ -43,6 +48,7 @@ export async function GET(request) {
 
     return NextResponse.json({ 
       active_trip: trip,
+      broadcast_requests: broadcastRes.rows,
       chat_messages: chatMessages
     });
   } catch (error) {
