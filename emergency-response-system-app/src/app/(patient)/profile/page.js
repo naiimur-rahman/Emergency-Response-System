@@ -168,124 +168,105 @@ export default function PatientProfile() {
 
         <div className="section-card">
           <div className="section-header">
-            <h3><Activity size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Medical Records</h3>
-          </div>
-          <div style={{ padding: 20 }}>
-            <div className="form-group">
-              <label className="form-label">Blood Type</label>
-              <select className="form-input form-select" value={profile.blood_type || ''} onChange={e => setProfile({...profile, blood_type: e.target.value})}>
-                <option value="A+">A+</option><option value="A-">A-</option>
-                <option value="B+">B+</option><option value="B-">B-</option>
-                <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                <option value="O+">O+</option><option value="O-">O-</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Pre-existing Conditions</label>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
-                Click to toggle conditions on/off. Select all that apply.
-              </p>
-              
-              {CONDITION_GROUPS.map((group) => (
-                <div key={group.label}>
-                  <div className="condition-group-label">{group.label}</div>
-                  <div className="condition-grid">
-                    {group.conditions.map((condition) => {
-                      const isSelected = (profile.conditions || []).includes(condition);
-                      return (
-                        <div
-                          key={condition}
-                          className={`condition-chip ${isSelected ? `selected ${group.severity}` : ''}`}
-                          onClick={() => toggleCondition(condition)}
-                        >
-                          {isSelected && <CheckCircle size={12} />}
-                          {condition}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-
-              {(profile.conditions || []).length > 0 && (
-                <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,45,85,0.06)', border: '1px solid rgba(255,45,85,0.15)', fontSize: 12, color: 'var(--text-secondary)' }}>
-                  <strong style={{ color: 'var(--red)' }}>{(profile.conditions || []).length}</strong> condition{(profile.conditions || []).length > 1 ? 's' : ''} selected: {(profile.conditions || []).join(', ')}
-                </div>
-              )}
-            </div>
-
-            <div className="form-group" style={{ marginTop: 20 }}>
-              <label className="form-label">Primary Medical Requirement (For Auto-Dispatch)</label>
-              <select 
-                className="form-input form-select" 
-                value={profile.primary_specialization || ''} 
-                onChange={e => setProfile({...profile, primary_specialization: e.target.value})} 
-              >
-                <option value="">No Special Requirement (General)</option>
-                <option value="Cardiology">Cardiology (Heart)</option>
-                <option value="Neurology">Neurology (Brain/Stroke)</option>
-                <option value="Orthopedics">Orthopedics (Bones)</option>
-                <option value="Trauma Surgery">Trauma Surgery</option>
-                <option value="Burn Unit">Burn Unit</option>
-                <option value="Obstetrics">Obstetrics (Maternity)</option>
-                <option value="Pediatrics">Pediatrics (Children)</option>
-                <option value="Oncology">Oncology (Cancer)</option>
-              </select>
-              <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8 }}>
-                * Selecting a requirement ensures you are auto-routed to a hospital specializing in this field.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="content-grid" style={{ gridTemplateColumns: '1fr', marginTop: 28 }}>
-        <div className="section-card">
-          <div className="section-header">
             <h3><Phone size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Emergency Contacts</h3>
           </div>
           <div style={{ padding: 20 }}>
             {contacts.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginBottom: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
                 {contacts.map(contact => (
-                  <div key={contact.contact_id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={contact.contact_id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px' }}>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 700 }}>{contact.contact_name}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
-                        {contact.relationship && <span style={{ marginRight: 8 }}>{contact.relationship} • </span>}
-                        {contact.phone}
-                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{contact.contact_name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{contact.relationship} • {contact.phone}</div>
                     </div>
-                    <button className="btn-icon" onClick={() => handleDeleteContact(contact.contact_id)} style={{ color: 'var(--red)', borderColor: 'rgba(255,45,85,0.2)' }}>
-                      <Trash2 size={16} />
+                    <button className="btn-icon" onClick={() => handleDeleteContact(contact.contact_id)} style={{ color: 'var(--red)', width: 32, height: 32 }}>
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)' }}>
-                No emergency contacts added yet.
-              </div>
+              <div style={{ textAlign: 'center', padding: '10px 0', color: 'var(--text-muted)', fontSize: 13 }}>No contacts.</div>
             )}
-
-            <div className="glass p-4 mt-4" style={{ border: '1px solid var(--border-accent)' }}>
-              <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Add New Contact</h4>
-              <form className="form-row" onSubmit={handleAddContact} style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-                <div style={{ flex: 1 }}>
-                  <label className="form-label">Name</label>
-                  <input required className="form-input" value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} placeholder="Full Name" />
+            <div className="glass p-3" style={{ border: '1px solid var(--border-accent)', borderRadius: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Quick Add</div>
+              <form onSubmit={handleAddContact} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input required className="form-input btn-sm" value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} placeholder="Name" />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="form-input btn-sm" value={newContact.relationship} onChange={e => setNewContact({...newContact, relationship: e.target.value})} placeholder="Relation" />
+                  <input required className="form-input btn-sm" value={newContact.phone} onChange={e => setNewContact({...newContact, phone: e.target.value})} placeholder="Phone" />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label className="form-label">Relationship</label>
-                  <input className="form-input" value={newContact.relationship} onChange={e => setNewContact({...newContact, relationship: e.target.value})} placeholder="e.g. Brother" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label className="form-label">Phone</label>
-                  <input required className="form-input" value={newContact.phone} onChange={e => setNewContact({...newContact, phone: e.target.value})} placeholder="Phone Number" />
-                </div>
-                <button type="submit" className="btn btn-primary" style={{ height: 40 }}><Plus size={16} /> Add</button>
+                <button type="submit" className="btn btn-primary btn-sm" style={{ width: '100%' }}><Plus size={14} /> Add Contact</button>
               </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="content-grid" style={{ gridTemplateColumns: '1fr', marginTop: 24 }}>
+        <div className="section-card">
+          <div className="section-header">
+            <h3><Activity size={16} style={{ display: 'inline', verticalAlign: -3, marginRight: 8 }} />Medical Records & History</h3>
+          </div>
+          <div style={{ padding: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+              <div className="form-group">
+                <label className="form-label">Blood Type</label>
+                <select className="form-input form-select" value={profile.blood_type || ''} onChange={e => setProfile({...profile, blood_type: e.target.value})}>
+                  <option value="A+">A+</option><option value="A-">A-</option>
+                  <option value="B+">B+</option><option value="B-">B-</option>
+                  <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                  <option value="O+">O+</option><option value="O-">O-</option>
+                </select>
+
+                <div className="form-group" style={{ marginTop: 24 }}>
+                  <label className="form-label">Primary Medical Requirement</label>
+                  <select 
+                    className="form-input form-select" 
+                    value={profile.primary_specialization || ''} 
+                    onChange={e => setProfile({...profile, primary_specialization: e.target.value})} 
+                  >
+                    <option value="">No Special Requirement (General)</option>
+                    <option value="Cardiology">Cardiology (Heart)</option>
+                    <option value="Neurology">Neurology (Brain/Stroke)</option>
+                    <option value="Orthopedics">Orthopedics (Bones)</option>
+                    <option value="Trauma Surgery">Trauma Surgery</option>
+                    <option value="Burn Unit">Burn Unit</option>
+                    <option value="Obstetrics">Obstetrics (Maternity)</option>
+                    <option value="Pediatrics">Pediatrics (Children)</option>
+                    <option value="Oncology">Oncology (Cancer)</option>
+                  </select>
+                  <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8 }}>
+                    * Used for intelligent hospital routing during dispatch.
+                  </p>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Pre-existing Conditions</label>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>Select all that apply.</p>
+                <div style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: 10 }}>
+                  {CONDITION_GROUPS.map((group) => (
+                    <div key={group.label} style={{ marginBottom: 16 }}>
+                      <div className="condition-group-label">{group.label}</div>
+                      <div className="condition-grid">
+                        {group.conditions.map((condition) => {
+                          const isSelected = (profile.conditions || []).includes(condition);
+                          return (
+                            <div
+                              key={condition}
+                              className={`condition-chip ${isSelected ? `selected ${group.severity}` : ''}`}
+                              onClick={() => toggleCondition(condition)}
+                            >
+                              {condition}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
