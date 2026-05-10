@@ -71,13 +71,13 @@ export default function PortalPage() {
     <div className="portal-page">
       <style>{`
         .portal-page {
-          height: 100vh; display: flex; flex-direction: column;
-          align-items: center; justify-content: center; padding: 24px;
+          min-height: 100vh; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; padding: 40px 24px;
           background: var(--bg-primary);
           background-image: 
             radial-gradient(circle at 2px 2px, var(--border-subtle) 1px, transparent 0);
           background-size: 32px 32px;
-          position: relative; overflow: hidden;
+          position: relative; overflow-y: auto; overflow-x: hidden;
         }
         .portal-page::before {
           content: ''; position: absolute; top: -10%; left: -10%; width: 40%; height: 40%;
@@ -191,9 +191,10 @@ export default function PortalPage() {
         .portal-footer b { color: var(--red); }
 
         @media (max-width: 640px) {
-          .portal-grid { grid-template-columns: 1fr; }
-          .portal-header h1 { font-size: 36px; }
-          .portal-page { padding: 80px 20px 40px; }
+          .portal-grid { grid-template-columns: 1fr; gap: 12px; }
+          .portal-header h1 { font-size: 32px; }
+          .portal-page { padding: 60px 16px 40px; justify-content: flex-start; }
+          .portal-header { margin-bottom: 24px; }
         }
       `}</style>
 
