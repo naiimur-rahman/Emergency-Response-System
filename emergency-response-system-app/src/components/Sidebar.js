@@ -24,15 +24,15 @@ export default function Sidebar() {
             <Activity size={20} />
           </div>
           <div className="sidebar-brand">
-            <h1>Emergency Response System</h1>
-            <span>Dispatch Control</span>
+            <h1 style={{ background: 'linear-gradient(135deg, var(--blue), var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>NEXUS RESPONSE</h1>
+            <span style={{ color: 'var(--blue)' }}>Dispatch Control</span>
           </div>
         </div>
         <nav className="sidebar-nav">
           <Link href="/sos" className={`nav-link sos-link ${pathname === '/sos' ? 'active' : ''}`}
-            style={{ background: 'rgba(255,45,85,0.12)', borderLeft: '3px solid var(--red)', color: 'var(--red)', fontWeight: 700, marginBottom: 8 }}>
+            style={{ background: 'var(--red-dim)', border: '1px solid var(--red-glow)', color: 'var(--red)', fontWeight: 700, marginBottom: 8, boxShadow: 'inset 0 0 12px rgba(255,0,85,0.1)' }}>
             <Siren size={20} />
-            <span className="nav-label">🚨 SOS</span>
+            <span className="nav-label">🚨 SOS OVERRIDE</span>
           </Link>
           {navItems.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} className={`nav-link ${pathname === href ? 'active' : ''}`}>

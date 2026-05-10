@@ -11,9 +11,9 @@ const ICONS = {
 };
 
 const COLORS = {
-  success: { bg: 'rgba(48,209,88,0.12)', border: 'rgba(48,209,88,0.4)', color: '#30d158' },
-  error: { bg: 'rgba(255,45,85,0.12)', border: 'rgba(255,45,85,0.4)', color: '#ff2d55' },
-  info: { bg: 'rgba(10,132,255,0.12)', border: 'rgba(10,132,255,0.4)', color: '#0a84ff' },
+  success: { bg: 'var(--green-dim)', border: 'rgba(0,255,136,0.4)', color: 'var(--green)' },
+  error: { bg: 'var(--red-dim)', border: 'rgba(255,0,85,0.4)', color: 'var(--red)' },
+  info: { bg: 'var(--blue-dim)', border: 'rgba(0,240,255,0.4)', color: 'var(--blue)' },
 };
 
 function ToastItem({ toast, onDismiss }) {
@@ -35,7 +35,9 @@ function ToastItem({ toast, onDismiss }) {
       style={{
         background: colors.bg,
         border: `1px solid ${colors.border}`,
-        backdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(30px)',
+        WebkitBackdropFilter: 'blur(30px)',
+        boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${colors.bg}`,
       }}
     >
       <Icon size={18} style={{ color: colors.color, flexShrink: 0 }} />
