@@ -180,7 +180,7 @@ export default function DriverDutyPage() {
           <h2 style={{ fontSize: 32, fontWeight: 800, background: 'linear-gradient(to right, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Active Duty
           </h2>
-          <p className="page-header-sub">Nexus Real-Time Dispatch System</p>
+          <p className="page-header-sub">Emergency Real-Time Dispatch System</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className={`glass px-4 py-2 flex items-center gap-2 ${isBroadcasting ? 'border-green-500/50' : ''}`}>
@@ -329,7 +329,7 @@ export default function DriverDutyPage() {
               <div className="glass" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', minHeight: 250, border: 'none', marginTop: 16 }}>
                 <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <MessageCircle size={16} style={{ color: 'var(--blue)' }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>Nexus Dispatch Chat</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>System Dispatch Chat</span>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {chatMessages.map((m, i) => (

@@ -24,7 +24,7 @@ export default function Sidebar() {
             <Activity size={20} />
           </div>
           <div className="sidebar-brand">
-            <h1 style={{ background: 'linear-gradient(135deg, var(--blue), var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>NEXUS RESPONSE</h1>
+            <h1 style={{ background: 'linear-gradient(135deg, var(--blue), var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Emergency Response System</h1>
             <span style={{ color: 'var(--blue)' }}>Dispatch Control</span>
           </div>
         </div>

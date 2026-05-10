@@ -180,7 +180,7 @@ export default function PatientTrackPage() {
              {/* Live Connection Tag */}
              <div className="glass px-3 py-1.5 flex items-center gap-2" style={{ position: 'absolute', bottom: 24, left: 24, zIndex: 1000 }}>
                 <div className={`w-2 h-2 rounded-full ${realtimeMarker ? 'bg-green-500 animate-pulse' : 'bg-slate-500'}`} />
-                <span style={{ fontSize: 10, fontWeight: 800 }}>{realtimeMarker ? 'LIVE NEXUS LINK' : 'ESTABLISHING LINK...'}</span>
+                <span style={{ fontSize: 10, fontWeight: 800 }}>{realtimeMarker ? 'LIVE SYSTEM LINK' : 'ESTABLISHING LINK...'}</span>
              </div>
           </div>
 

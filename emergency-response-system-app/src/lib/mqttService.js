@@ -15,7 +15,7 @@ class MqttService {
     this.callbacks = new Set();
   }
 
-  connect(clientId = `nexus-${Math.random().toString(16).substr(2, 8)}`) {
+  connect(clientId = `ers-${Math.random().toString(16).substr(2, 8)}`) {
     if (this.client || !CONFIG.host) {
       if (!CONFIG.host) console.warn('MQTT Connection skipped: NEXT_PUBLIC_MQTT_HOST is missing.');
       return;
@@ -32,7 +32,7 @@ class MqttService {
     this.client = client;
 
     client.on('connect', () => {
-      console.log('📡 MQTT Connected to Nexus Hive');
+      console.log('📡 MQTT Connected to System Hive');
       this.isConnected = true;
       client.subscribe(CONFIG.topic);
     });
