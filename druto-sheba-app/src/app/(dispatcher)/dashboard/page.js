@@ -108,7 +108,7 @@ export default function DashboardPage() {
       await fetchData();
     };
     init();
-    const interval = setInterval(fetchData, 3000);
+    const interval = setInterval(fetchData, 15000); // Poll every 15 seconds instead of 3
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -328,6 +328,8 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+           
+
             <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <input 
                 type="text" 

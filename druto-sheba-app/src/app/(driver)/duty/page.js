@@ -80,7 +80,7 @@ export default function DriverDutyPage() {
         }
       },
       (err) => console.error(err),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
     );
   }, [activeDriver]);
 
@@ -134,7 +134,7 @@ export default function DriverDutyPage() {
       await fetchTrip();
     };
     init();
-    const interval = setInterval(fetchTrip, 5000);
+    const interval = setInterval(fetchTrip, 15000); // Poll every 15 seconds
     return () => clearInterval(interval);
   }, [activeDriver, fetchTrip]);
 
@@ -336,9 +336,9 @@ export default function DriverDutyPage() {
                 </div>
 
                 {/* Telemetry Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 
                   <div className="glass-dark p-3 rounded-xl text-center">
-                    <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Speed</p>
+                    <
                     <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue)' }}>{speed.toFixed(1)}<span style={{ fontSize: 10, marginLeft: 2 }}>km/h</span></p>
                   </div>
                   <div className="glass-dark p-3 rounded-xl text-center">
