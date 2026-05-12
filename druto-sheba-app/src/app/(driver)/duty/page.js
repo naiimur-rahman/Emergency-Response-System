@@ -336,9 +336,9 @@ export default function DriverDutyPage() {
                 </div>
 
                 {/* Telemetry Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 24 }}>
                   <div className="glass-dark p-3 rounded-xl text-center">
-                    <
+                    <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Speed</p>
                     <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue)' }}>{speed.toFixed(1)}<span style={{ fontSize: 10, marginLeft: 2 }}>km/h</span></p>
                   </div>
                   <div className="glass-dark p-3 rounded-xl text-center">
