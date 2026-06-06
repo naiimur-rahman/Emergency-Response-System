@@ -99,7 +99,7 @@ export async function POST(request) {
 
     if (primarySpecialization) {
       hospitalQuery = `
-        SELECT h.hospital_id, h.name, h.type,
+        SELECT h.hospital_id, h.name, h.type, h.general_beds, h.icu_beds,
           ST_Y(h.location_coords::geometry) AS lat, ST_X(h.location_coords::geometry) AS lon,
           ROUND(ST_Distance(h.location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
           EXISTS(SELECT 1 FROM hospital_specializations hs JOIN specializations s ON hs.spec_id = s.spec_id WHERE hs.hospital_id = h.hospital_id AND s.spec_name = $3) AS spec_match,
@@ -112,7 +112,7 @@ export async function POST(request) {
       hospitalParams = [lon, lat, primarySpecialization];
     } else {
       hospitalQuery = `
-        SELECT h.hospital_id, h.name, h.type,
+        SELECT h.hospital_id, h.name, h.type, h.general_beds, h.icu_beds,
           ST_Y(h.location_coords::geometry) AS lat, ST_X(h.location_coords::geometry) AS lon,
           ROUND(ST_Distance(h.location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
           false AS spec_match,
@@ -174,7 +174,9 @@ export async function POST(request) {
         eta_minutes: Math.max(3, Math.round(distanceKm * 4)), // Assuming ~15 km/h in Dhaka traffic
         estimated_fare: Math.round(baseFare + (distanceKm * perKmRate) + severityCharge),
         spec_match: h.spec_match === 1 || h.spec_match === true,
-        specializations: h.specializations || []
+        specializations: h.specializations || [],
+        general_beds: h.general_beds,
+        icu_beds: h.icu_beds
       };
     });
 

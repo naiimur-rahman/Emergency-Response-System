@@ -525,6 +525,11 @@ export default function SOSPage() {
                             <span key={s} style={{ fontSize: 10, background: 'var(--bg-primary)', color: 'var(--text-primary)', padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-accent)', fontWeight: 600, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>{s}</span>
                           ))}
                         </div>
+                        
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 8, display: 'flex', gap: 12 }}>
+                          <span>🛏️ General: <span style={{ color: h.general_beds > 0 ? 'var(--green)' : 'var(--red)' }}>{h.general_beds}</span></span>
+                          <span>🏥 ICU: <span style={{ color: h.icu_beds > 0 ? 'var(--green)' : 'var(--red)' }}>{h.icu_beds}</span></span>
+                        </div>
   
                         <div style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600, display: 'flex', gap: 12, alignItems: 'center' }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Navigation size={12} /> {h.distance_km} km</span>
