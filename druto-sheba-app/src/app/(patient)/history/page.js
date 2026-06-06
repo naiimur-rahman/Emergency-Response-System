@@ -14,6 +14,9 @@ export default function PatientHistoryPage() {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [ratingData, setRatingData] = useState({ rating: 5, comments: '' });
+  
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [selectedInvoiceTrip, setSelectedInvoiceTrip] = useState(null);
 
   const handleOpenRating = (trip) => {
     setSelectedTrip(trip);
@@ -31,6 +34,7 @@ export default function PatientHistoryPage() {
       if (res.ok) {
         toast('Thank you for your feedback!', 'success');
         setShowRatingModal(false);
+        setHistory(prev => prev.map(t => t.id === selectedTrip.id ? { ...t, hasRating: true } : t));
       } else {
         toast('Failed to submit rating.', 'error');
       }
@@ -80,7 +84,7 @@ export default function PatientHistoryPage() {
                </div>
                <div>
                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 6 }}>
-                    <h3 style={{ margin: 0, fontSize: 18 }}>Trip #{trip.id}</h3>
+                    <h3 style={{ margin: 0, fontSize: 18 }}>Trip #{trip.id || 'Req'}</h3>
                     <SeverityBadge level={trip.severity} />
                  </div>
                  <div style={{ display: 'flex', gap: 16, color: 'var(--text-secondary)', fontSize: 13 }}>
@@ -97,21 +101,30 @@ export default function PatientHistoryPage() {
                </div>
                 <button 
                   className={`btn btn-sm ${trip.hasRating ? 'btn-ghost' : 'btn-primary'}`} 
-                  onClick={() => !trip.hasRating && handleOpenRating(trip)} 
-                  disabled={trip.hasRating}
+                  onClick={() => !trip.hasRating && trip.status === 'Resolved' && handleOpenRating(trip)} 
+                  disabled={trip.hasRating || trip.status !== 'Resolved'}
                   style={{ 
                     padding: '8px 16px', 
-                    background: trip.hasRating ? 'rgba(255,255,255,0.05)' : 'var(--blue)', 
-                    color: trip.hasRating ? 'var(--text-muted)' : 'white',
-                    opacity: trip.hasRating ? 0.7 : 1,
-                    cursor: trip.hasRating ? 'default' : 'pointer'
+                    background: trip.hasRating || trip.status !== 'Resolved' ? 'rgba(255,255,255,0.05)' : 'var(--blue)', 
+                    color: trip.hasRating || trip.status !== 'Resolved' ? 'var(--text-muted)' : 'white',
+                    opacity: trip.hasRating || trip.status !== 'Resolved' ? 0.7 : 1,
+                    cursor: trip.hasRating || trip.status !== 'Resolved' ? 'not-allowed' : 'pointer'
                   }} 
-                  title={trip.hasRating ? 'Feedback submitted' : 'Leave Review'}
+                  title={trip.status !== 'Resolved' ? 'Trip not completed yet' : (trip.hasRating ? 'Feedback submitted' : 'Leave Review')}
                 >
                   <Star size={16} fill={trip.hasRating ? 'var(--yellow)' : 'none'} stroke={trip.hasRating ? 'var(--yellow)' : 'currentColor'} /> 
                   {trip.hasRating ? 'Rated' : 'Rate Trip'}
                 </button>
-               <button className="btn btn-secondary btn-sm" style={{ padding: '8px 16px' }} title="Download Invoice">
+               <button 
+                 className="btn btn-secondary btn-sm" 
+                 style={{ padding: '8px 16px', opacity: trip.fare === 'Pending' ? 0.5 : 1, cursor: trip.fare === 'Pending' ? 'not-allowed' : 'pointer' }} 
+                 disabled={trip.fare === 'Pending'}
+                 title={trip.fare === 'Pending' ? "Invoice not generated yet" : "Preview Invoice"}
+                 onClick={() => {
+                   setSelectedInvoiceTrip(trip);
+                   setShowInvoiceModal(true);
+                 }}
+               >
                  <Download size={16} /> Invoice
                </button>
             </div>
@@ -159,6 +172,47 @@ export default function PatientHistoryPage() {
             />
           </div>
         </div>
+      </Modal>
+
+      <Modal 
+        isOpen={showInvoiceModal} 
+        onClose={() => setShowInvoiceModal(false)} 
+        title={`Invoice #INV-${selectedInvoiceTrip?.id}`} 
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setShowInvoiceModal(false)}>Close</button>
+            <button className="btn btn-primary" onClick={() => {
+              toast('Invoice downloaded successfully', 'success');
+              setShowInvoiceModal(false);
+            }}>
+              <Download size={16} /> Download PDF
+            </button>
+          </>
+        }
+      >
+        {selectedInvoiceTrip && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ padding: 24, border: '1px dashed var(--border-accent)', borderRadius: 12, background: 'var(--bg-secondary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Date:</span>
+                <span style={{ fontWeight: 600 }}>{selectedInvoiceTrip.date}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Patient:</span>
+                <span style={{ fontWeight: 600 }}>{activePatient?.name}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Destination:</span>
+                <span style={{ fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>{selectedInvoiceTrip.hospital}</span>
+              </div>
+              <hr style={{ border: 'none', borderTop: '1px dashed var(--border-subtle)', margin: '16px 0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 16, fontWeight: 700 }}>Total Amount:</span>
+                <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)' }}>{selectedInvoiceTrip.fare}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
 
     </div>

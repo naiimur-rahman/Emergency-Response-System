@@ -1,8 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Truck, BedDouble, Users, Zap, RefreshCw, Clock, MessageCircle, Send, X } from 'lucide-react';
+import { AlertTriangle, Truck, BedDouble, Users, Zap, RefreshCw, Clock, MessageCircle, Send, X, CloudLightning, Navigation, Map as MapIcon } from 'lucide-react';
 import { SeverityBadge, StatusBadge } from '@/components/Badges';
 import { useToast } from '@/components/Toast';
+import dynamic from 'next/dynamic';
+import mqttService from '@/lib/mqttService';
+
+const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 const TrendGraph = ({ trend }) => {
   if (!trend || trend.length === 0) return null;
@@ -66,13 +70,47 @@ const SpecializationDistribution = ({ stats }) => {
   );
 };
 
-export default function DashboardPage() {
+export default function DispatcherDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(null);
   const [activeChatTrip, setActiveChatTrip] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
+  const [mapModal, setMapModal] = useState({ open: false, title: '', pickupCoords: null, realtimeMarker: null, driver_id: null });
   const toast = useToast();
+
+  // MQTT Connection for real-time tracking in the Map Modal
+  useEffect(() => {
+    if (!mapModal.open || !mapModal.driver_id) return;
+
+    mqttService.connect(`dispatcher-${Math.random().toString(16).substr(2, 6)}`);
+    
+    const unsubscribe = mqttService.subscribe((data) => {
+      if (data.id === `ambulance-${mapModal.driver_id}`) {
+        if (data.status === 'offline') {
+          setMapModal(prev => ({ ...prev, realtimeMarker: null }));
+        } else {
+          setMapModal(prev => ({
+            ...prev,
+            realtimeMarker: {
+              ...prev.realtimeMarker,
+              lat: data.lat,
+              lng: data.lng,
+              speed: data.speed,
+              acc: data.acc
+            }
+          }));
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      mqttService.disconnect();
+    };
+  }, [mapModal.open, mapModal.driver_id]);
+
+  const [advisoryActive, setAdvisoryActive] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -149,10 +187,33 @@ export default function DashboardPage() {
           <h2>Command Center</h2>
           <p className="page-header-sub">Real-time dispatch overview — Dhaka Metropolitan</p>
         </div>
-        <button className="btn btn-secondary" onClick={() => { setLoading(true); fetchData(); }}>
-          <RefreshCw size={16} /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className={`btn btn-sm ${advisoryActive ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setAdvisoryActive(!advisoryActive)} style={{ background: advisoryActive ? 'var(--orange)' : 'transparent', color: advisoryActive ? '#fff' : 'var(--orange)', borderColor: 'var(--orange)' }}>
+            <CloudLightning size={14} /> Simulate Advisory
+          </button>
+          <button className="btn btn-secondary" onClick={() => { setLoading(true); fetchData(); }}>
+            <RefreshCw size={16} /> Refresh
+          </button>
+        </div>
       </div>
+
+      {advisoryActive && (
+        <div className="glass" style={{ padding: '16px 24px', marginBottom: 24, borderLeft: '4px solid var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: 'slideIn 0.3s ease-out' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+             <div style={{ width: 40, height: 40, borderRadius: 20, background: 'rgba(249,115,22,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <AlertTriangle size={20} color="var(--orange)" />
+             </div>
+             <div>
+               <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--orange)' }}>ACTIVE SYSTEM ADVISORY: Severe Monsoon Rain</h4>
+               <p style={{ margin: '4px 0 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>Expect +15m delays on average dispatch routes. Drivers advised to reduce speeds.</p>
+             </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+             <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 800 }}>ETA IMPACT CALCULATION</div>
+             <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--red)' }}>+15% Transit Time</div>
+          </div>
+        </div>
+      )}
 
       <div className="stats-grid">
         <div className="stat-card red">
@@ -226,11 +287,11 @@ export default function DashboardPage() {
             </thead>
             <tbody>
               {data?.activeView?.map((row) => (
-                <tr key={row.request_id || row.id}>
+                <tr key={row.request_id || row.id} className={row.severity_level === 'Critical' ? 'row-glow-critical' : row.severity_level === 'High' ? 'row-glow-high' : ''}>
                   <td style={{ fontWeight: 600 }}>#{row.request_id}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{row.patient_name}</div>
-                    <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
                       <select 
                         className="form-input btn-sm" 
                         style={{ fontSize: 10, padding: '2px 8px', width: 'auto', background: 'rgba(255,255,255,0.05)' }}
@@ -253,12 +314,62 @@ export default function DashboardPage() {
                           💡 Suggest: {row.suggested_spec}
                         </span>
                       )}
+                      
+                      {row.patient_lat && row.patient_lon && (
+                        <button 
+                          onClick={() => setMapModal({
+                            open: true,
+                            title: `Location: ${row.patient_name}`,
+                            pickupCoords: { lat: row.patient_lat, lon: row.patient_lon },
+                            driver_id: row.driver_id,
+                            realtimeMarker: row.ambulance_lat && row.ambulance_lon ? {
+                              lat: row.ambulance_lat,
+                              lng: row.ambulance_lon,
+                              id: row.assigned_ambulance,
+                              title: `Ambulance ${row.assigned_ambulance}`
+                            } : null
+                          })}
+                          style={{ fontSize: 11, color: 'var(--blue)', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 2, fontWeight: 500, background: 'rgba(10,132,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}
+                          title="View Live Location"
+                        >
+                          <Navigation size={12} /> Map
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td><span className="badge badge-critical" style={{ fontSize: 11 }}>{row.blood_type}</span></td>
                   <td><SeverityBadge level={row.severity_level} /></td>
                   <td><StatusBadge status={row.request_status} /></td>
-                  <td>{row.assigned_ambulance || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
+                  <td>
+                    {row.assigned_ambulance ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontWeight: 600 }}>{row.assigned_ambulance}</span>
+                        {row.driver_name && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{row.driver_name}</span>}
+                        {row.ambulance_lat && row.ambulance_lon && (
+                          <button 
+                            onClick={() => setMapModal({
+                              open: true,
+                              title: `Location: Ambulance ${row.assigned_ambulance}`,
+                              pickupCoords: { lat: row.patient_lat, lon: row.patient_lon },
+                              driver_id: row.driver_id,
+                              realtimeMarker: {
+                                lat: row.ambulance_lat,
+                                lng: row.ambulance_lon,
+                                id: row.assigned_ambulance,
+                                title: `Ambulance ${row.assigned_ambulance}`
+                              }
+                            })}
+                            style={{ fontSize: 11, color: 'var(--orange, #f97316)', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 2, fontWeight: 500, background: 'rgba(249,115,22,0.1)', padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}
+                            title="View Ambulance Location"
+                          >
+                            <Navigation size={12} /> Map
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>—</span>
+                    )}
+                  </td>
                   <td>
                     {row.destination_hospital || <span style={{ color: 'var(--text-muted)' }}>—</span>}
                     {row.hospital_type && (
@@ -397,6 +508,26 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {mapModal.open && (
+        <div className="modal-overlay" style={{ display: 'flex', zIndex: 9999 }} onClick={(e) => { if (e.target.className.includes('modal-overlay')) setMapModal({ ...mapModal, open: false }) }}>
+          <div className="modal-content" style={{ width: '90vw', maxWidth: '1200px', height: '85vh', padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><MapIcon size={20} /> {mapModal.title}</h3>
+              <button className="btn-ghost" style={{ padding: 4 }} onClick={() => setMapModal({ ...mapModal, open: false })}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <MapView 
+                pickupCoords={mapModal.pickupCoords} 
+                realtimeMarker={mapModal.realtimeMarker}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

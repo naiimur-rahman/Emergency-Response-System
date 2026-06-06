@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Activity, BarChart3, ShieldAlert, Map, TrendingUp, Star, MessageSquare, Clock } from 'lucide-react';
+import { Activity, BarChart3, ShieldAlert, Map, TrendingUp, Star, MessageSquare, Clock, Server, Wifi, Cpu, Database } from 'lucide-react';
 
 const CostTrendGraph = ({ data }) => {
   if (!data || data.length === 0) return null;
@@ -94,6 +94,57 @@ const SpecDistChart = ({ data }) => {
   );
 };
 
+const SystemHealthMonitor = () => {
+  const [health, setHealth] = useState(null);
+
+  useEffect(() => {
+    const fetchHealth = () => fetch('/api/admin/health').then(r => r.json()).then(setHealth).catch(() => {});
+    fetchHealth();
+    const int = setInterval(fetchHealth, 10000);
+    return () => clearInterval(int);
+  }, []);
+
+  if (!health) return null;
+
+  return (
+    <div className="section-card" style={{ marginBottom: 24, background: 'linear-gradient(90deg, rgba(10,132,255,0.05) 0%, rgba(10,132,255,0) 100%)', borderLeft: '4px solid var(--blue)' }}>
+      <div className="section-header" style={{ padding: '16px 24px', borderBottom: 'none' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Server size={18} color="var(--blue)" /> Live System Health</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}>
+             <span className="pulse-dot" style={{ background: health.status === 'Healthy' ? 'var(--green)' : 'var(--red)' }} />
+             {health.status}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Updated: {new Date(health.timestamp).toLocaleTimeString()}</div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, padding: '0 24px 20px' }}>
+        <div style={{ padding: 16, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
+          <Wifi size={24} color="var(--green)" opacity={0.8} />
+          <div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Active Connections</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{health.activeConnections}</div>
+          </div>
+        </div>
+        <div style={{ padding: 16, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
+          <Cpu size={24} color="var(--orange)" opacity={0.8} />
+          <div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Server Uptime</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{Math.floor(health.uptime / 3600)}h {Math.floor((health.uptime % 3600) / 60)}m</div>
+          </div>
+        </div>
+        <div style={{ padding: 16, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
+          <Database size={24} color="var(--blue)" opacity={0.8} />
+          <div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>DB Latency</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: health.latency < 500 ? 'var(--text-primary)' : 'var(--red)' }}>{health.latency}ms</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function AnalyticsPage() {
   const emptyData = {
     hospitalRank: [], zoneAnalysis: [], maintenanceStats: [],
@@ -126,6 +177,8 @@ export default function AnalyticsPage() {
           <p className="page-header-sub">Advanced insights powered by PostGIS & Window Functions</p>
         </div>
       </div>
+
+      <SystemHealthMonitor />
 
       <div className="stats-grid" style={{ marginBottom: 24 }}>
         <div className="stat-card">
@@ -297,7 +350,7 @@ export default function AnalyticsPage() {
             <h3><MessageSquare size={16} /> Recent Patient Feedback</h3>
           </div>
           <div className="section-body">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, padding: 24 }}>
               {data?.recentReviews?.map((r, i) => (
                 <div key={i} className="glass" style={{ padding: 20, borderRadius: 16, border: '1px solid var(--border-subtle)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>

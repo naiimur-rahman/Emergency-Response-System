@@ -43,7 +43,7 @@ export async function POST(request) {
 export async function PATCH(request) {
   try {
     const data = await request.json();
-    const { patient_id, name, phone, blood_type, address, primary_specialization, conditions } = data;
+    const { patient_id, name, phone, blood_type, address, primary_specialization, allergies, conditions } = data;
     const targetId = patient_id || data.id;
 
     if (!targetId) {
@@ -53,9 +53,14 @@ export async function PATCH(request) {
     // Update Patients table
     const updateResult = await query(
       `UPDATE patients 
-       SET name = $1, phone = $2, blood_type = $3, address = $4, primary_specialization = $5 
+       SET name = COALESCE($1, name),
+           phone = COALESCE($2, phone),
+           blood_type = COALESCE($3, blood_type),
+           address = COALESCE($4, address),
+           primary_specialization = COALESCE($5, primary_specialization),
+           allergies = COALESCE($7, allergies)
        WHERE patient_id = $6::integer`,
-      [name, phone, blood_type, address, primary_specialization, targetId]
+      [name, phone, blood_type, address, primary_specialization, targetId, allergies]
     );
 
     if (updateResult.rowCount === 0) {
@@ -63,14 +68,16 @@ export async function PATCH(request) {
     }
 
     // Update conditions
-    await query(`DELETE FROM patient_conditions WHERE patient_id = $1::integer`, [targetId]);
-    
-    if (Array.isArray(conditions) && conditions.length > 0) {
-      for (const condition of conditions) {
-        await query(
-          `INSERT INTO patient_conditions (patient_id, condition_name) VALUES ($1::integer, $2)`,
-          [targetId, condition]
-        );
+    if (Array.isArray(conditions)) {
+      await query(`DELETE FROM patient_conditions WHERE patient_id = $1::integer`, [targetId]);
+      
+      if (conditions.length > 0) {
+        for (const condition of conditions) {
+          await query(
+            `INSERT INTO patient_conditions (patient_id, condition_name) VALUES ($1::integer, $2)`,
+            [targetId, condition]
+          );
+        }
       }
     }
 
@@ -80,4 +87,3 @@ export async function PATCH(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

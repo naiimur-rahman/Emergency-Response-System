@@ -27,48 +27,45 @@ TRUNCATE TABLE
     Audit_Log
 RESTART IDENTITY CASCADE;
 
--- 1. Core Hospitals (Seed)
+-- 1. Core Hospitals (Govt)
 INSERT INTO Hospitals (Name, Location_Coords, General_Beds, ICU_Beds, Type) VALUES 
-('Dhaka Medical College', ST_SetSRID(ST_MakePoint(90.3973998, 23.72564), 4326), 500, 20, 'Government'),
-('Square Hospital Panthapath', ST_SetSRID(ST_MakePoint(90.3815598, 23.7528438), 4326), 250, 15, 'Private'),
-('Evercare Hospital Bashundhara', ST_SetSRID(ST_MakePoint(90.4313219, 23.8102668), 4326), 300, 25, 'Private');
-
--- 2. Expanded Hospitals (Govt)
-INSERT INTO hospitals (name, location_coords, general_beds, icu_beds, type) VALUES
-('BSMMU (PG Hospital)', ST_SetSRID(ST_MakePoint(90.39329, 23.738572), 4326), 1500, 150, 'Government'),
-('Kurmitola General Hospital', ST_SetSRID(ST_MakePoint(90.4093822, 23.8191987), 4326), 500, 30, 'Government'),
-('Shaheed Suhrawardy Hospital', ST_SetSRID(ST_MakePoint(90.371375, 23.7692378), 4326), 800, 40, 'Government'),
-('NICVD (Heart Institute)', ST_SetSRID(ST_MakePoint(90.3696999, 23.7704768), 4326), 450, 60, 'Government'),
-('National Institute of Cancer', ST_SetSRID(ST_MakePoint(90.4094593, 23.7782321), 4326), 300, 20, 'Government'),
-('Sir Salimullah Medical College (Mitford)', ST_SetSRID(ST_MakePoint(90.4012507, 23.7111967), 4326), 900, 50, 'Government'),
-('NITOR (Orthopaedic Hospital)', ST_SetSRID(ST_MakePoint(90.3703256, 23.7736036), 4326), 1000, 60, 'Government'),
-('National Institute of Neurosciences (NINS)', ST_SetSRID(ST_MakePoint(90.3707896, 23.7761345), 4326), 450, 100, 'Government'),
-('National Institute of Kidney Diseases (NIKDU)', ST_SetSRID(ST_MakePoint(90.368676, 23.7716087), 4326), 300, 40, 'Government'),
-('Mugda Medical College and Hospital', ST_SetSRID(ST_MakePoint(90.4301631, 23.731981), 4326), 500, 50, 'Government'),
-('BIRDEM General Hospital', ST_SetSRID(ST_MakePoint(90.3938372, 23.7389228), 4326), 700, 80, 'Government'),
-('Dhaka Shishu (Children) Hospital', ST_SetSRID(ST_MakePoint(90.3693358, 23.7729305), 4326), 650, 70, 'Government'),
+('Dhaka Medical College', ST_SetSRID(ST_MakePoint(90.3973998, 23.72564), 4326), 500, 50, 'Government'),
+('Dhaka Shishu (Children) Hospital', ST_SetSRID(ST_MakePoint(90.3693358, 23.7729305), 4326), 400, 30, 'Government'),
 ('Infectious Diseases Hospital (IDH)', ST_SetSRID(ST_MakePoint(90.4058473, 23.7761064), 4326), 200, 10, 'Government'),
+('Kurmitola General Hospital', ST_SetSRID(ST_MakePoint(90.4093822, 23.8191987), 4326), 500, 30, 'Government'),
+('Mugda Medical College and Hospital', ST_SetSRID(ST_MakePoint(90.4301631, 23.731981), 4326), 500, 50, 'Government'),
+('Kuwait Bangladesh Friendship Hospital', ST_SetSRID(ST_MakePoint(90.4036312, 23.8706354), 4326), 200, 30, 'Government'),
+('National Institute of Cancer', ST_SetSRID(ST_MakePoint(90.4094593, 23.7782321), 4326), 300, 20, 'Government'),
+('National Institute of Kidney Diseases (NIKDU)', ST_SetSRID(ST_MakePoint(90.368676, 23.7716087), 4326), 300, 40, 'Government'),
+('National Institute of Neurosciences (NINS)', ST_SetSRID(ST_MakePoint(90.3707896, 23.7761345), 4326), 450, 100, 'Government'),
 ('National Institute of Ophthalmology', ST_SetSRID(ST_MakePoint(90.3696606, 23.7742998), 4326), 250, 15, 'Government'),
-('Kuwait Bangladesh Friendship Hospital', ST_SetSRID(ST_MakePoint(90.4036312, 23.8706354), 4326), 200, 30, 'Government')
+('NICVD (Heart Institute)', ST_SetSRID(ST_MakePoint(90.3696999, 23.7704768), 4326), 450, 60, 'Government'),
+('NITOR (Orthopaedic Hospital)', ST_SetSRID(ST_MakePoint(90.3703256, 23.7736036), 4326), 1000, 60, 'Government'),
+('Shaheed Suhrawardy Hospital', ST_SetSRID(ST_MakePoint(90.371375, 23.7692378), 4326), 800, 40, 'Government'),
+('Sir Salimullah Medical College (Mitford)', ST_SetSRID(ST_MakePoint(90.4012507, 23.7111967), 4326), 900, 50, 'Government'),
+('BSMMU (PG Hospital)', ST_SetSRID(ST_MakePoint(90.39329, 23.738572), 4326), 1500, 150, 'Government'),
+('BIRDEM General Hospital', ST_SetSRID(ST_MakePoint(90.3938372, 23.7389228), 4326), 700, 80, 'Government')
 ON CONFLICT DO NOTHING;
 
--- 3. Expanded Hospitals (Private)
+-- 2. Hospitals (Private)
 INSERT INTO hospitals (name, location_coords, general_beds, icu_beds, type) VALUES
-('United Hospital Gulshan', ST_SetSRID(ST_MakePoint(90.4154048, 23.8050557), 4326), 500, 80, 'Private'),
-('LabAid Dhanmondi', ST_SetSRID(ST_MakePoint(90.3836682, 23.7417264), 4326), 300, 50, 'Private'),
-('Ibne Sina Kalyanpur', ST_SetSRID(ST_MakePoint(90.3618028, 23.7783273), 4326), 250, 30, 'Private'),
-('BRB Hospital Panthapath', ST_SetSRID(ST_MakePoint(90.3855489, 23.7522514), 4326), 400, 45, 'Private'),
-('Popular Diagnostic Centre', ST_SetSRID(ST_MakePoint(90.4123524, 23.7411436), 4326), 100, 10, 'Private'),
-('Asgar Ali Hospital', ST_SetSRID(ST_MakePoint(90.4230341, 23.7075876), 4326), 250, 40, 'Private'),
-('Green Life Hospital', ST_SetSRID(ST_MakePoint(90.3857066, 23.7466132), 4326), 300, 45, 'Private'),
-('Anwar Khan Modern Hospital', ST_SetSRID(ST_MakePoint(90.3822133, 23.7451679), 4326), 400, 50, 'Private'),
-('Central Hospital Ltd', ST_SetSRID(ST_MakePoint(90.3841359, 23.7433793), 4326), 200, 30, 'Private'),
-('Bangladesh Specialized Hospital', ST_SetSRID(ST_MakePoint(90.3630434, 23.7763525), 4326), 350, 60, 'Private'),
-('Impulse Hospital', ST_SetSRID(ST_MakePoint(90.3990674, 23.7678558), 4326), 250, 35, 'Private'),
-('Universal Medical College Hospital', ST_SetSRID(ST_MakePoint(90.3956724, 23.7761687), 4326), 200, 25, 'Private'),
 ('AMZ Hospital Badda', ST_SetSRID(ST_MakePoint(90.4260183, 23.7842676), 4326), 150, 20, 'Private'),
+('Anwar Khan Modern Hospital', ST_SetSRID(ST_MakePoint(90.3822133, 23.7451679), 4326), 400, 50, 'Private'),
+('Bangladesh Specialized Hospital', ST_SetSRID(ST_MakePoint(90.3630434, 23.7763525), 4326), 350, 60, 'Private'),
+('BRB Hospital Panthapath', ST_SetSRID(ST_MakePoint(90.3855489, 23.7522514), 4326), 400, 45, 'Private'),
+('Central Hospital Ltd', ST_SetSRID(ST_MakePoint(90.3841359, 23.7433793), 4326), 200, 30, 'Private'),
 ('Comfort Hospital', ST_SetSRID(ST_MakePoint(90.3862398, 23.7491851), 4326), 100, 15, 'Private'),
-('Japan East West Medical College', ST_SetSRID(ST_MakePoint(90.3769537, 23.8941445), 4326), 300, 40, 'Private')
+('Evercare Hospital Bashundhara', ST_SetSRID(ST_MakePoint(90.4313219, 23.8102668), 4326), 300, 25, 'Private'),
+('Green Life Hospital', ST_SetSRID(ST_MakePoint(90.3857066, 23.7466132), 4326), 300, 45, 'Private'),
+('Ibne Sina Kalyanpur', ST_SetSRID(ST_MakePoint(90.3618028, 23.7783273), 4326), 250, 30, 'Private'),
+('Impulse Hospital', ST_SetSRID(ST_MakePoint(90.3990674, 23.7678558), 4326), 250, 35, 'Private'),
+('Japan East West Medical College', ST_SetSRID(ST_MakePoint(90.3769537, 23.8941445), 4326), 300, 40, 'Private'),
+('LabAid Dhanmondi', ST_SetSRID(ST_MakePoint(90.3836682, 23.7417264), 4326), 300, 50, 'Private'),
+('Popular Diagnostic Centre', ST_SetSRID(ST_MakePoint(90.4123524, 23.7411436), 4326), 100, 10, 'Private'),
+('Square Hospital Panthapath', ST_SetSRID(ST_MakePoint(90.3815598, 23.7528438), 4326), 250, 15, 'Private'),
+('United Hospital Gulshan', ST_SetSRID(ST_MakePoint(90.4154048, 23.8050557), 4326), 500, 80, 'Private'),
+('Universal Medical College Hospital', ST_SetSRID(ST_MakePoint(90.3956724, 23.7761687), 4326), 200, 25, 'Private'),
+('Asgar Ali Hospital', ST_SetSRID(ST_MakePoint(90.4230341, 23.7075876), 4326), 250, 40, 'Private')
 ON CONFLICT DO NOTHING;
 
 -- 4. Dispatch Zones (Dhaka areas)

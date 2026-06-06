@@ -319,7 +319,7 @@ export default function FleetPage() {
             )}
           </div>
           
-          <div className="glass p-4" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'end' }}>
+          <div className="glass" style={{ padding: 16, display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'end' }}>
             <div>
               <label className="form-label" style={{ fontSize: 10 }}>New Item</label>
               <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} value={invForm.item_name} onChange={e => setInvForm({...invForm, item_name: e.target.value})} placeholder="e.g. Oxygen" />

@@ -188,7 +188,7 @@ export default function PatientProfile() {
             ) : (
               <div style={{ textAlign: 'center', padding: '10px 0', color: 'var(--text-muted)', fontSize: 13 }}>No contacts.</div>
             )}
-            <div className="glass p-3" style={{ border: '1px solid var(--border-accent)', borderRadius: 12 }}>
+            <div className="glass" style={{ padding: 12, border: '1px solid var(--border-accent)', borderRadius: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Quick Add</div>
               <form onSubmit={handleAddContact} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <input required className="form-input btn-sm" value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} placeholder="Name" />
@@ -218,6 +218,17 @@ export default function PatientProfile() {
                   <option value="AB+">AB+</option><option value="AB-">AB-</option>
                   <option value="O+">O+</option><option value="O-">O-</option>
                 </select>
+
+                <div className="form-group" style={{ marginTop: 24 }}>
+                  <label className="form-label">Allergies</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    value={profile.allergies || ''}
+                    onChange={e => setProfile({...profile, allergies: e.target.value})}
+                    placeholder="e.g. Penicillin, latex, food allergies"
+                  />
+                </div>
 
                 <div className="form-group" style={{ marginTop: 24 }}>
                   <label className="form-label">Primary Medical Requirement</label>

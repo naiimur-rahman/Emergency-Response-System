@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { lat, lon, name, phone, blood_type, severity = 'Critical', patient_id, hospital_id } = await request.json();
+    const { lat, lon, name, phone, blood_type, severity = 'Critical', emergency_type = 'General', requested_for = 'Self', patient_id, hospital_id } = await request.json();
 
     if (!hospital_id) {
        return NextResponse.json({ error: 'Hospital ID required for dispatch' }, { status: 400 });
@@ -30,10 +30,10 @@ export async function POST(request) {
 
     // Step 2: Create emergency request
     const reqResult = await query(
-      `INSERT INTO emergency_requests (patient_id, pickup_coords, severity_level, status)
-       VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, 'Pending')
+      `INSERT INTO emergency_requests (patient_id, pickup_coords, severity_level, emergency_type, requested_for, status)
+       VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, 'Broadcast')
        RETURNING request_id`,
-      [patientId, lon, lat, severity]
+      [patientId, lon, lat, severity, emergency_type, requested_for]
     );
     const requestId = reqResult.rows[0].request_id;
 
@@ -45,36 +45,23 @@ export async function POST(request) {
     const hospital = hospitalInfo.rows[0];
     const distanceKm = hospital ? (parseFloat(hospital.distance_m) / 1000) : 0;
 
-    // Step 4: Dispatch via fn_automated_dispatch
+    // Under Broadcast Model, we just return the successful request ID and Hospital.
     let dispatched = false;
-    let dispatchMessage = 'Waiting for dispatcher...';
+    let dispatchMessage = 'Broadcasting to all available units...';
     let finalHospital = hospital ? hospital.name : 'Unknown';
     let finalAmbulance = 'Searching...';
 
-    try {
-      const dispatchResult = await query('SELECT fn_automated_dispatch($1, $2, $3) as result', [requestId, 1, hospital_id]);
-      dispatchMessage = dispatchResult.rows[0].result;
-      dispatched = dispatchMessage.startsWith('DISPATCH SUCCESS');
-      
-      if (dispatched) {
-        const actualTrip = await query(`
-          SELECT a.license_plate
-          FROM trip_logs tl
-          JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
-          WHERE tl.trip_id = $1
-        `, [requestId]);
-        
-        if (actualTrip.rows.length > 0) {
-          finalAmbulance = actualTrip.rows[0].license_plate;
-        }
-      }
-    } catch (e) {
-      dispatchMessage = 'Auto-dispatch failed: ' + e.message;
+    const pricingRes = await query("SELECT base_fare, per_km_charge, critical_surcharge FROM pricing_config LIMIT 1");
+    let baseFare = 500;
+    let perKmRate = 25;
+    let criticalSurchargeAmount = 500;
+    if (pricingRes.rows.length > 0) {
+      baseFare = Number(pricingRes.rows[0].base_fare) || 500;
+      perKmRate = Number(pricingRes.rows[0].per_km_charge) || 25;
+      criticalSurchargeAmount = Number(pricingRes.rows[0].critical_surcharge) || 500;
     }
-
-    const baseFare = 500;
-    const perKmRate = 25;
-    const severityCharge = severity === 'Critical' ? 500 : severity === 'High' ? 300 : 0;
+    const highSurchargeAmount = Math.round(criticalSurchargeAmount * 0.6);
+    const severityCharge = severity === 'Critical' ? criticalSurchargeAmount : severity === 'High' ? highSurchargeAmount : 0;
 
     return NextResponse.json({
       success: true,

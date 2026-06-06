@@ -1,8 +1,8 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, User, ArrowLeftRight, ChevronUp, UserPlus, Check, Truck, Droplet } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Home, User, ArrowLeftRight, ChevronUp, UserPlus, Check, Truck, Droplet, LogOut } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 import CreateUserModal from './CreateUserModal';
 
@@ -13,6 +13,16 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
   const [createType, setCreateType] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/');
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -275,6 +285,11 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
           <Link href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
             <ArrowLeftRight size={14} /> Switch Portal
           </Link>
+          { (portalName === 'Admin Portal' || portalName === 'Dispatcher Portal') && (
+            <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 8, color: '#ef4444', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginTop: 'auto' }}>
+              <LogOut size={14} /> Logout
+            </button>
+          )}
         </div>
       </aside>
 

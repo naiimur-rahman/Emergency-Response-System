@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Navigation, PhoneCall, Truck, AlertTriangle, Building2, CheckCircle, Clock, MessageCircle, Send, Radio, MapPin, Gauge } from 'lucide-react';
+import { Navigation, PhoneCall, Truck, AlertTriangle, Building2, CheckCircle, Clock, MessageCircle, Send, Radio, MapPin, Gauge, PackageCheck, Save } from 'lucide-react';
 import MapView from '@/components/MapView';
 import { SeverityBadge } from '@/components/Badges';
 import { useUser } from '@/lib/UserContext';
@@ -14,6 +14,9 @@ export default function DriverDutyPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [broadcastRequests, setBroadcastRequests] = useState([]);
+  const [shiftSummary, setShiftSummary] = useState(null);
+  const [equipmentLog, setEquipmentLog] = useState({ oxygen: 75, defibrillator: 'Ready', supplies: 'Stocked' });
+  const [equipmentSaving, setEquipmentSaving] = useState(false);
 
   // Real-time Telemetry State
   const [isBroadcasting, setIsBroadcasting] = useState(false);
@@ -21,6 +24,8 @@ export default function DriverDutyPage() {
   const [accuracy, setAccuracy] = useState(0);
   const [uptime, setUptime] = useState('00:00');
   const [realtimeMarker, setRealtimeMarker] = useState(null);
+  const [panicLoading, setPanicLoading] = useState(false);
+  const panicTimer = useRef(null);
 
   const watchId = useRef(null);
   const tripStartTime = useRef(null);
@@ -31,11 +36,16 @@ export default function DriverDutyPage() {
   const fetchTrip = useCallback(async () => {
     if (!activeDriver?.id) return;
     try {
-      const res = await fetch(`/api/driver/duty?driver_id=${activeDriver.id}`);
+      const [res, shiftRes] = await Promise.all([
+        fetch(`/api/driver/duty?driver_id=${activeDriver.id}`),
+        fetch(`/api/driver/shift-log?driver_id=${activeDriver.id}`)
+      ]);
       const data = await res.json();
+      const shiftData = await shiftRes.json();
       setTrip(data.active_trip);
       setBroadcastRequests(data.broadcast_requests || []);
       setChatMessages(data.chat_messages || []);
+      if (!shiftData.error) setShiftSummary(shiftData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -78,11 +88,20 @@ export default function DriverDutyPage() {
           });
           lastSentTime.current = now;
         }
+
+        // Persist to database every 10 seconds to ensure stale locations are updated
+        if (now - (window.lastDbUpdate || 0) > 10000 && trip?.license_plate) {
+          fetch('/api/driver/location', {
+            method: 'POST',
+            body: JSON.stringify({ vehicle_id: trip.license_plate, lat: latitude, lng: longitude })
+          }).catch(err => console.error(err));
+          window.lastDbUpdate = now;
+        }
       },
       (err) => console.error(err),
       { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
     );
-  }, [activeDriver]);
+  }, [activeDriver, trip]);
 
   const stopBroadcasting = useCallback(() => {
     setIsBroadcasting(false);
@@ -168,6 +187,66 @@ export default function DriverDutyPage() {
     }
   };
 
+  const updateDriverStatus = async (shift_status) => {
+    setActionLoading(true);
+    try {
+      await fetch('/api/drivers', { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ driver_id: activeDriver.id, shift_status }) 
+      });
+      window.location.reload();
+    } catch (e) {
+      alert('Failed to update status');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const saveEquipmentLog = async () => {
+    const vehicleId = trip?.vehicle_id || 1;
+    setEquipmentSaving(true);
+    try {
+      const items = [
+        { item_name: 'Oxygen Level (%)', quantity: Number(equipmentLog.oxygen) || 0 },
+        { item_name: `Defibrillator - ${equipmentLog.defibrillator}`, quantity: equipmentLog.defibrillator === 'Ready' ? 1 : 0 },
+        { item_name: `Basic Supplies - ${equipmentLog.supplies}`, quantity: equipmentLog.supplies === 'Stocked' ? 1 : 0 },
+      ];
+      await Promise.all(items.map((item) => fetch('/api/ambulances/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehicle_id: vehicleId, ...item }),
+      })));
+      alert('Equipment checklist saved.');
+    } catch {
+      alert('Failed to save equipment checklist.');
+    } finally {
+      setEquipmentSaving(false);
+    }
+  };
+
+  const handlePanicPress = async () => {
+    if (activeDriver?.status === 'EMERGENCY_SOS') return;
+    
+    if (!window.confirm("URGENT: Trigger SOS Emergency Protocol? This will instantly alert all dispatchers.")) {
+      return;
+    }
+    
+    setPanicLoading(true);
+    try {
+      await fetch('/api/driver/panic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver_id: activeDriver.id, location: 'Current GPS Location' })
+      });
+      window.location.reload();
+    } catch (err) {
+      alert('Panic signal failed to send.');
+    } finally {
+      setPanicLoading(false);
+    }
+  };
+
   if (!activeDriver) return null;
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
 
@@ -189,34 +268,50 @@ export default function DriverDutyPage() {
           <p className="page-header-sub">Emergency Real-Time Dispatch</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className={`glass px-4 py-2 flex items-center gap-2 ${isBroadcasting ? 'border-green-500/50' : ''}`}>
-            <div className={`w-2 h-2 rounded-full ${isBroadcasting ? 'bg-green-500 animate-pulse' : 'bg-slate-500'}`} />
+          <div className="glass" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, borderColor: isBroadcasting ? 'var(--green)' : 'var(--border-accent)' }}>
+            <div style={{ width: 8, height: 8, borderRadius: 4, background: isBroadcasting ? 'var(--green)' : 'var(--text-muted)' }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: isBroadcasting ? 'var(--green)' : 'var(--text-muted)' }}>
               {isBroadcasting ? 'LIVE BROADCASTING' : 'READY'}
             </span>
           </div>
-          <button 
-            onClick={async () => {
-              setActionLoading(true);
-              const newStatus = activeDriver?.status === 'On_Duty' ? 'Off_Duty' : 'On_Duty';
-              try {
-                await fetch('/api/drivers', { 
-                  method: 'PATCH', 
-                  headers: { 'Content-Type': 'application/json' }, 
-                  body: JSON.stringify({ driver_id: activeDriver.id, shift_status: newStatus }) 
-                });
-                window.location.reload();
-              } catch (e) {
-                alert('Failed to update status');
-              } finally {
-                setActionLoading(false);
-              }
-            }}
-            disabled={actionLoading}
-            className={`btn ${activeDriver?.status === 'On_Duty' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ borderRadius: 20, fontSize: 12, padding: '8px 20px', minWidth: 120, boxShadow: activeDriver?.status === 'On_Duty' ? '0 0 20px rgba(255,45,85,0.3)' : 'none' }}
+          <select
+            className="form-input form-select"
+            value={activeDriver?.status || 'Offline'}
+            onChange={e => updateDriverStatus(e.target.value)}
+            disabled={actionLoading || activeDriver?.status === 'EMERGENCY_SOS'}
+            style={{ width: 150, height: 38, borderRadius: 20, fontSize: 12, fontWeight: 800 }}
           >
-            {actionLoading ? '...' : (activeDriver?.status === 'On_Duty' ? '🟢 ONLINE' : '⚪ OFFLINE')}
+            <option value="Available">Available</option>
+            <option value="Dispatched">Dispatched</option>
+            <option value="On_Trip">On-Trip</option>
+            <option value="Offline">Offline</option>
+            <option value="On_Duty">On Duty</option>
+            <option value="Off_Duty">Off Duty</option>
+          </select>
+          
+          <button
+            onClick={handlePanicPress}
+            disabled={panicLoading}
+            style={{
+               background: activeDriver?.status === 'EMERGENCY_SOS' ? 'var(--red)' : 'rgba(255,45,85,0.1)',
+               border: `1px solid var(--red)`,
+               color: activeDriver?.status === 'EMERGENCY_SOS' ? '#fff' : 'var(--red)',
+               padding: '8px 16px',
+               borderRadius: 20,
+               fontSize: 12,
+               fontWeight: 800,
+               display: 'flex',
+               alignItems: 'center',
+               gap: 6,
+               cursor: 'pointer',
+               boxShadow: activeDriver?.status === 'EMERGENCY_SOS' ? '0 0 30px var(--red)' : 'none',
+               transition: 'all 0.2s',
+               animation: activeDriver?.status === 'EMERGENCY_SOS' ? 'pulse 1s infinite' : 'none'
+            }}
+            title="Hold for 1.5 seconds to trigger SOS"
+          >
+             <AlertTriangle size={14} />
+             {panicLoading ? '...' : (activeDriver?.status === 'EMERGENCY_SOS' ? 'SOS ACTIVE' : 'SOS PANIC')}
           </button>
         </div>
       </div>
@@ -227,25 +322,8 @@ export default function DriverDutyPage() {
         <div className="track-sidebar">
           {!trip ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
-              <div className="glass p-6 border-l-4 border-l-blue-500 shadow-2xl" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-                <div className="animate-float">
-                  <Radio size={48} style={{ color: 'var(--blue)', marginBottom: 16 }} />
-                </div>
-                <h3 style={{ fontSize: 20, fontWeight: 800 }}>Scanning for Dispatch...</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>You are on the standby list. Emergency requests will appear here instantly.</p>
-                
-                <div style={{ marginTop: 24, width: '100%' }}>
-                  <button 
-                    onClick={isBroadcasting ? stopBroadcasting : startBroadcasting}
-                    className={`btn ${isBroadcasting ? 'btn-secondary' : 'btn-primary'}`}
-                    style={{ width: '100%', height: 44, borderRadius: 12, fontSize: 12, fontWeight: 800, background: isBroadcasting ? 'rgba(255,45,85,0.1)' : 'var(--blue)', borderColor: isBroadcasting ? 'var(--red)' : 'var(--blue)', color: isBroadcasting ? 'var(--red)' : '#fff' }}
-                  >
-                    {isBroadcasting ? '🛑 STOP LOCATION BROADCAST' : '📡 START LOCATION BROADCAST'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Broadcasts Section */}
+              
+              {/* Broadcasts Section (MOVED TO TOP) */}
               {broadcastRequests.length > 0 && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--orange)' }}>
@@ -255,7 +333,7 @@ export default function DriverDutyPage() {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', maxHeight: '400px', paddingRight: 4 }}>
                     {broadcastRequests.map((req) => (
-                      <div key={req.request_id} className="glass p-4 border-l-4 border-l-orange-500 hover:bg-white/5 transition-colors" style={{ borderRadius: 12 }}>
+                      <div key={req.request_id} className="glass" style={{ padding: 16, borderLeft: '4px solid var(--orange)', transition: 'background-color 0.2s', borderRadius: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                           <div>
                             <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 800 }}>REQUEST ID</div>
@@ -280,11 +358,72 @@ export default function DriverDutyPage() {
                   </div>
                 </div>
               )}
+              <div className="glass" style={{ padding: 24, borderLeft: '4px solid var(--blue)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                <div className="animate-float">
+                  <Radio size={48} style={{ color: 'var(--blue)', marginBottom: 16 }} />
+                </div>
+                <h3 style={{ fontSize: 20, fontWeight: 800 }}>Scanning for Dispatch...</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>You are on the standby list. Emergency requests will appear here instantly.</p>
+                
+                <div style={{ marginTop: 24, width: '100%' }}>
+                  <button 
+                    onClick={isBroadcasting ? stopBroadcasting : startBroadcasting}
+                    className={`btn ${isBroadcasting ? 'btn-secondary' : 'btn-primary'}`}
+                    style={{ width: '100%', height: 44, borderRadius: 12, fontSize: 12, fontWeight: 800, background: isBroadcasting ? 'rgba(255,45,85,0.1)' : 'var(--blue)', borderColor: isBroadcasting ? 'var(--red)' : 'var(--blue)', color: isBroadcasting ? 'var(--red)' : '#fff' }}
+                  >
+                    {isBroadcasting ? '🛑 STOP LOCATION BROADCAST' : '📡 START LOCATION BROADCAST'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="glass" style={{ padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                  <PackageCheck size={16} style={{ color: 'var(--green)' }} />
+                  <h4 style={{ fontSize: 13, fontWeight: 800 }}>Start-Shift Equipment</h4>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 800 }}>Oxygen Level: {equipmentLog.oxygen}%</label>
+                  <input type="range" min="0" max="100" value={equipmentLog.oxygen} onChange={e => setEquipmentLog({ ...equipmentLog, oxygen: e.target.value })} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <select className="form-input form-select" value={equipmentLog.defibrillator} onChange={e => setEquipmentLog({ ...equipmentLog, defibrillator: e.target.value })}>
+                      <option value="Ready">Defib Ready</option>
+                      <option value="Needs Service">Defib Service</option>
+                    </select>
+                    <select className="form-input form-select" value={equipmentLog.supplies} onChange={e => setEquipmentLog({ ...equipmentLog, supplies: e.target.value })}>
+                      <option value="Stocked">Supplies Stocked</option>
+                      <option value="Low">Supplies Low</option>
+                    </select>
+                  </div>
+                  <button className="btn btn-primary" onClick={saveEquipmentLog} disabled={equipmentSaving} style={{ width: '100%', height: 38, borderRadius: 10 }}>
+                    <Save size={14} /> {equipmentSaving ? 'Saving...' : 'Save Checklist'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="glass" style={{ padding: 20 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 800, marginBottom: 14 }}>Current Shift</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  <div style={{ background: 'rgba(10, 132, 255, 0.1)', border: '1px solid rgba(10, 132, 255, 0.2)', padding: 12, borderRadius: 10, textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--blue)' }}>{shiftSummary?.hours_worked || 0}</div>
+                    <div style={{ fontSize: 9, color: 'var(--blue)', opacity: 0.8, fontWeight: 800 }}>HOURS</div>
+                  </div>
+                  <div style={{ background: 'rgba(52, 199, 89, 0.1)', border: '1px solid rgba(52, 199, 89, 0.2)', padding: 12, borderRadius: 10, textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--green)' }}>{shiftSummary?.trips_completed || 0}</div>
+                    <div style={{ fontSize: 9, color: 'var(--green)', opacity: 0.8, fontWeight: 800 }}>TRIPS</div>
+                  </div>
+                  <div style={{ background: 'rgba(255, 149, 0, 0.1)', border: '1px solid rgba(255, 149, 0, 0.2)', padding: 12, borderRadius: 10, textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--orange)' }}>৳{shiftSummary?.estimated_earnings || 0}</div>
+                    <div style={{ fontSize: 9, color: 'var(--orange)', opacity: 0.8, fontWeight: 800 }}>EARNED</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Broadcasts section moved to top */}
             </div>
           ) : (
             <>
               {/* Trip Card */}
-              <div className="glass p-6 border-l-4 border-l-orange-500 shadow-2xl">
+              <div className="glass" style={{ padding: 24, borderLeft: '4px solid var(--orange)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                   <div>
                     <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--orange)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
@@ -322,10 +461,10 @@ export default function DriverDutyPage() {
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         {trip.request_status === 'En Route' && (
-                          <button onClick={() => handleAction('Picked')} className="btn btn-secondary" style={{ height: 48, borderRadius: 12, fontWeight: 700, borderColor: 'var(--orange)', color: 'var(--orange)' }}>PICKED UP</button>
+                          <button onClick={() => handleAction('ArrivedPatient')} className="btn btn-secondary" style={{ height: 48, borderRadius: 12, fontWeight: 700, borderColor: 'var(--orange)', color: 'var(--orange)' }}>ARRIVED AT PATIENT</button>
                         )}
                         {trip.request_status === 'Picked Up' && (
-                          <button onClick={() => handleAction('Arrived')} className="btn btn-secondary" style={{ height: 48, borderRadius: 12, fontWeight: 700, borderColor: 'var(--blue)', color: 'var(--blue)' }}>ARRIVED</button>
+                          <button onClick={() => handleAction('EnRouteHospital')} className="btn btn-secondary" style={{ height: 48, borderRadius: 12, fontWeight: 700, borderColor: 'var(--blue)', color: 'var(--blue)' }}>EN ROUTE HOSPITAL</button>
                         )}
                         {trip.request_status === 'Arrived' && (
                           <button onClick={() => handleAction('Complete')} className="btn btn-primary" style={{ height: 48, borderRadius: 12, fontWeight: 700, background: 'var(--green)', borderColor: 'var(--green)', gridColumn: 'span 2' }}>COMPLETE MISSION</button>
@@ -352,6 +491,19 @@ export default function DriverDutyPage() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <AlertTriangle size={20} style={{ color: 'var(--orange)' }} />
+                    <div>
+                      <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>PATIENT PROFILE</label>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{trip.patient_name} · {trip.blood_type || 'N/A'} · {trip.emergency_type || 'General'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                        For: {trip.requested_for || 'Self'} · Allergies: {trip.allergies || 'None reported'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        Conditions: {(trip.conditions || []).join(', ') || 'None reported'}
+                      </div>
+                    </div>
+                  </div>
                   <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <MapPin size={20} style={{ color: 'var(--red)' }} />
                     <div>
@@ -412,7 +564,7 @@ export default function DriverDutyPage() {
               
               {/* Map Overlay Stats */}
               <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24, zIndex: 1000, display: 'flex', gap: 12 }}>
-                <div className="glass p-4 flex-1 flex items-center gap-4 shadow-2xl">
+                <div className="glass" style={{ flex: 1, padding: 16, display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                     <div style={{ width: 48, height: 48, borderRadius: 24, background: 'rgba(249,115,22,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--orange)' }}>
                         <Gauge size={24} />
                     </div>
@@ -421,7 +573,7 @@ export default function DriverDutyPage() {
                         <div style={{ fontSize: 24, fontWeight: 900 }}>{speed.toFixed(1)} <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>km/h</span></div>
                     </div>
                 </div>
-                <div className="glass p-4 flex-1 flex items-center gap-4 shadow-2xl">
+                <div className="glass" style={{ flex: 1, padding: 16, display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                     <div style={{ width: 48, height: 48, borderRadius: 24, background: 'rgba(10,132,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--blue)' }}>
                         <Navigation size={24} />
                     </div>
@@ -435,14 +587,14 @@ export default function DriverDutyPage() {
               </div>
 
               {/* Status Badge Over Map */}
-              <div className="glass px-4 py-2" style={{ position: 'absolute', top: 24, left: 24, zIndex: 1000, fontWeight: 800, fontSize: 12, color: 'var(--yellow)', border: '1px solid var(--yellow-glow)' }}>
+              <div className="glass" style={{ padding: '8px 16px', position: 'absolute', top: 24, left: 24, zIndex: 1000, fontWeight: 800, fontSize: 12, color: 'var(--yellow)', border: '1px solid var(--yellow-glow)' }}>
                 DISPATCHED: UNIT {trip.license_plate}
               </div>
             </>
           ) : (
             <>
               <MapView realtimeMarker={realtimeMarker} />
-              <div className="glass px-4 py-2" style={{ position: 'absolute', top: 24, left: 24, zIndex: 1000, fontWeight: 800, fontSize: 12, color: 'var(--blue)', border: '1px solid var(--blue-glow)' }}>
+              <div className="glass" style={{ padding: '8px 16px', position: 'absolute', top: 24, left: 24, zIndex: 1000, fontWeight: 800, fontSize: 12, color: 'var(--blue)', border: '1px solid var(--blue-glow)' }}>
                 STANDBY POSITION
               </div>
             </>
@@ -453,4 +605,3 @@ export default function DriverDutyPage() {
     </div>
   );
 }
-

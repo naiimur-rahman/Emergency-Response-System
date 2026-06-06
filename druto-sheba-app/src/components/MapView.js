@@ -53,7 +53,7 @@ function AutoRecenter({ position, shouldFollow, useMap }) {
       const bounds = map.getBounds();
       const viewHeightLat = bounds.getNorth() - bounds.getSouth();
       const zoom = map.getZoom();
-      const offsetFactor = zoom > 16 ? 0.15 : 0.25;
+      const offsetFactor = zoom > 16 ? 0.30 : 0.38;
       const offsetLat = position.lat - (viewHeightLat * offsetFactor);
       const centerPos = [offsetLat, position.lon];
 
@@ -78,7 +78,7 @@ function AutoRecenter({ position, shouldFollow, useMap }) {
           const bounds = map.getBounds();
           const viewHeightLat = bounds.getNorth() - bounds.getSouth();
           const zoom = map.getZoom();
-          const offsetFactor = zoom > 16 ? 0.15 : 0.25;
+          const offsetFactor = zoom > 16 ? 0.30 : 0.38;
           const offsetLat = position.lat - (viewHeightLat * offsetFactor);
           const target = [offsetLat, position.lon];
 
@@ -113,7 +113,8 @@ export default function MapView({
   requestStatus = 'Pending', 
   realtimeMarker = null,
   onHospitalClick = null,
-  selectedHospitalId = null
+  selectedHospitalId = null,
+  onPickupDrag = null
 }) {
   const [MapComponents, setMapComponents] = useState(null);
   const [followAmbulance, setFollowAmbulance] = useState(true);
@@ -456,36 +457,50 @@ export default function MapView({
         )}
 
         {/* Hospital markers */}
-        {hospitals.map((h) => (
-          <Marker 
-            key={h.hospital_id} 
-            position={[h.lat, h.lon]} 
-            icon={h.type === 'Government' ? govtHospitalIcon : hospitalIcon}
-            eventHandlers={{
-              click: () => onHospitalClick?.(h)
-            }}
-          >
-            <Popup>
-              <div class="popup-title">🏥 {h.name}</div>
-              <div class="popup-sub">{h.type || 'Private'} Hospital</div>
-              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                <span class="popup-badge" style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158' }}>
-                  🛏️ General: {h.general_beds}
-                </span>
-                <span class="popup-badge" style={{ background: 'rgba(255,45,85,0.15)', color: '#ff2d55' }}>
-                  ❤️ ICU: {h.icu_beds}
-                </span>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {hospitals.map((h) => {
+          if (h.lat == null || h.lon == null) return null;
+          return (
+            <Marker 
+              key={h.hospital_id} 
+              position={[h.lat, h.lon]} 
+              icon={h.type === 'Government' ? govtHospitalIcon : hospitalIcon}
+              eventHandlers={{
+                click: () => onHospitalClick?.(h)
+              }}
+            >
+              <Popup>
+                <div class="popup-title">🏥 {h.name}</div>
+                <div class="popup-sub">{h.type || 'Private'} Hospital</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  <span class="popup-badge" style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158' }}>
+                    🛏️ General: {h.general_beds}
+                  </span>
+                  <span class="popup-badge" style={{ background: 'rgba(255,45,85,0.15)', color: '#ff2d55' }}>
+                    ❤️ ICU: {h.icu_beds}
+                  </span>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
 
         {/* Patient pickup marker */}
-        {pickupCoords && (
-          <Marker position={[pickupCoords.lat, pickupCoords.lon]} icon={emergencyIcon}>
+        {pickupCoords && pickupCoords.lat != null && pickupCoords.lon != null && (
+          <Marker 
+            position={[pickupCoords.lat, pickupCoords.lon]} 
+            icon={emergencyIcon}
+            draggable={!!onPickupDrag}
+            eventHandlers={onPickupDrag ? {
+              dragend: (e) => {
+                const marker = e.target;
+                const position = marker.getLatLng();
+                onPickupDrag({ lat: position.lat, lon: position.lng });
+              }
+            } : undefined}
+          >
             <Popup>
               <div class="popup-title">📍 Emergency Pickup</div>
-              <div class="popup-sub">Patient Location</div>
+              <div class="popup-sub">{onPickupDrag ? 'Drag to change location' : 'Patient Location'}</div>
               <div class="popup-badge" style={{ background: 'rgba(255,45,85,0.15)', color: '#ff2d55' }}>
                 🆘 {requestStatus}
               </div>

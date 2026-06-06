@@ -9,10 +9,10 @@ export async function POST(request) {
     // Update status to Broadcast - all on-duty drivers will now see this request
     const result = await query(`
       UPDATE Emergency_Requests 
-      SET Status = 'Broadcast' 
-      WHERE Request_ID = $1 
+      SET Status = $1 
+      WHERE Request_ID = $2 
       RETURNING *
-    `, [request_id]);
+    `, ['Broadcast', request_id]);
     
     if (result.rowCount === 0) {
       return NextResponse.json({ success: false, message: 'Request not found' }, { status: 404 });

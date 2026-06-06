@@ -18,7 +18,7 @@ envConfig.split('\n').forEach(line => {
 
 const pool = new Pool({
   connectionString: env.PG_CONNECTION_STRING,
-  ssl: { rejectUnauthorized: false }
+  ssl: env.PG_CONNECTION_STRING.includes('localhost') ? false : { rejectUnauthorized: false }
 });
 
 async function runFile(filename) {

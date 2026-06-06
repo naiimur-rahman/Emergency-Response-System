@@ -21,7 +21,11 @@ export async function GET() {
            WHERE patient_id = v.patient_id LIMIT 1) as emergency_contact
         FROM active_dashboard_view v
         LEFT JOIN patient_conditions pc ON v.patient_id = pc.patient_id
-        GROUP BY v.request_id, v.patient_id, v.patient_name, v.blood_type, v.severity_level, v.request_status, v.assigned_ambulance, v.destination_hospital, v.hospital_type
+        GROUP BY v.request_id, v.patient_id, v.patient_name, v.blood_type, v.allergies,
+                 v.primary_specialization, v.patient_lon, v.patient_lat, v.severity_level,
+                 v.emergency_type, v.requested_for, v.timestamp_created, v.request_status,
+                 v.assigned_ambulance, v.destination_hospital, v.hospital_type,
+                 v.ambulance_lon, v.ambulance_lat, v.driver_id, v.driver_name
         ORDER BY 
           CASE v.severity_level 
             WHEN 'Critical' THEN 1 
@@ -51,9 +55,14 @@ export async function GET() {
              FROM emergency_requests 
              WHERE timestamp_created > NOW() - INTERVAL '7 days'
              GROUP BY day ORDER BY MIN(timestamp_created) ASC`),
-      query(`SELECT COALESCE(primary_specialization, 'General Care') as spec, COUNT(*) as count 
-             FROM emergency_requests 
-             GROUP BY spec ORDER BY count DESC`),
+      query(`
+        SELECT COALESCE(p.primary_specialization, 'General Care') as spec, COUNT(*) as count 
+        FROM emergency_requests er
+        JOIN patients p ON er.patient_id = p.patient_id
+        GROUP BY p.primary_specialization 
+        ORDER BY count DESC 
+        LIMIT 5
+      `),
     ]);
 
     const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips, chatMessages, responseStats, hotspotStats, trendStats, specStats] = results;

@@ -99,7 +99,7 @@ export async function POST(request) {
 
     if (primarySpecialization) {
       hospitalQuery = `
-        SELECT h.hospital_id, h.name,
+        SELECT h.hospital_id, h.name, h.type,
           ST_Y(h.location_coords::geometry) AS lat, ST_X(h.location_coords::geometry) AS lon,
           ROUND(ST_Distance(h.location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
           EXISTS(SELECT 1 FROM hospital_specializations hs JOIN specializations s ON hs.spec_id = s.spec_id WHERE hs.hospital_id = h.hospital_id AND s.spec_name = $3) AS spec_match,
@@ -112,7 +112,7 @@ export async function POST(request) {
       hospitalParams = [lon, lat, primarySpecialization];
     } else {
       hospitalQuery = `
-        SELECT h.hospital_id, h.name,
+        SELECT h.hospital_id, h.name, h.type,
           ST_Y(h.location_coords::geometry) AS lat, ST_X(h.location_coords::geometry) AS lon,
           ROUND(ST_Distance(h.location_coords::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography)::numeric, 0) AS distance_m,
           false AS spec_match,
@@ -128,9 +128,17 @@ export async function POST(request) {
     const hospitals = await query(hospitalQuery, hospitalParams);
 
     // Calculate ETA and Fare
-    const baseFare = 500;
-    const perKmRate = 25;
-    const severityCharge = severity === 'Critical' ? 500 : severity === 'High' ? 300 : 0;
+    const pricingRes = await query("SELECT base_fare, per_km_charge, critical_surcharge FROM pricing_config LIMIT 1");
+    let baseFare = 500;
+    let perKmRate = 25;
+    let criticalSurchargeAmount = 500;
+    if (pricingRes.rows.length > 0) {
+      baseFare = Number(pricingRes.rows[0].base_fare) || 500;
+      perKmRate = Number(pricingRes.rows[0].per_km_charge) || 25;
+      criticalSurchargeAmount = Number(pricingRes.rows[0].critical_surcharge) || 500;
+    }
+    const highSurchargeAmount = Math.round(criticalSurchargeAmount * 0.6);
+    const severityCharge = severity === 'Critical' ? criticalSurchargeAmount : severity === 'High' ? highSurchargeAmount : 0;
 
     // Fetch real road distances from OSRM
     const coordsString = `${lon},${lat};` + hospitals.rows.map(h => `${h.lon},${h.lat}`).join(';');
@@ -159,8 +167,9 @@ export async function POST(request) {
       return {
         hospital_id: h.hospital_id,
         name: h.name,
-        lat: h.lat,
-        lon: h.lon,
+        type: h.type,
+        lat: Number(h.lat),
+        lon: Number(h.lon),
         distance_km: distanceKm.toFixed(2),
         eta_minutes: Math.max(3, Math.round(distanceKm * 4)), // Assuming ~15 km/h in Dhaka traffic
         estimated_fare: Math.round(baseFare + (distanceKm * perKmRate) + severityCharge),

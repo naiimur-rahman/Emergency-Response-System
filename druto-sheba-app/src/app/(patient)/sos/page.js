@@ -6,6 +6,13 @@ import dynamic from 'next/dynamic';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
+const INCIDENT_TYPES = {
+  Accident: 'High',
+  Cardiac: 'Critical',
+  Maternity: 'Critical',
+  General: 'Medium',
+};
+
 function getAccuratePosition(timeoutMs = 15000) {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
@@ -59,6 +66,10 @@ export default function SOSPage() {
   const [result, setResult] = useState(null);
   const [hospitals, setHospitals] = useState([]);
   const [severity, setSeverity] = useState('Critical');
+  const [incidentType, setIncidentType] = useState('Accident');
+  const [requestFor, setRequestFor] = useState('Self');
+  const [overrideLocation, setOverrideLocation] = useState(false);
+  const [manualCoords, setManualCoords] = useState({ lat: '', lon: '' });
   const [dispatchTimer, setDispatchTimer] = useState(0);
   const [profile, setProfile] = useState(null);
   const [selectedHospitalId, setSelectedHospitalId] = useState(null);
@@ -116,11 +127,24 @@ export default function SOSPage() {
     };
   }, []);
 
+  useEffect(() => {
+    setSeverity(INCIDENT_TYPES[incidentType] || 'Medium');
+  }, [incidentType]);
+
   const triggerSOS = async () => {
     setPhase('loading_recs');
     setLocationError(null);
 
-    let coords = location;
+    let coords = overrideLocation
+      ? { lat: Number(manualCoords.lat), lon: Number(manualCoords.lon) }
+      : location;
+
+    if (overrideLocation && (!Number.isFinite(coords.lat) || !Number.isFinite(coords.lon))) {
+      setLocationError('Enter valid coordinates for the dependent pickup location.');
+      setPhase('ready');
+      return;
+    }
+
     if (!coords || locationSource === 'ip') {
       const freshPos = await getAccuratePosition(12000);
       if (freshPos.source !== 'failed' && freshPos.source !== 'unavailable') {
@@ -136,7 +160,7 @@ export default function SOSPage() {
     }
 
     try {
-      const payload = { ...coords, severity, patient_id: activePatient?.id || null };
+      const payload = { ...coords, severity, emergency_type: incidentType, patient_id: activePatient?.id || null };
       const res = await fetch('/api/hospitals/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,8 +185,11 @@ export default function SOSPage() {
 
     try {
       const payload = {
-        lat: location.lat, lon: location.lon,
-        severity, hospital_id: hospitalId,
+        lat: overrideLocation ? Number(manualCoords.lat) : location.lat,
+        lon: overrideLocation ? Number(manualCoords.lon) : location.lon,
+        severity, emergency_type: incidentType,
+        requested_for: requestFor || 'Self',
+        hospital_id: hospitalId,
         patient_id: activePatient?.id || null,
         name: activePatient?.name || 'Unknown',
         phone: profile?.phone || '',
@@ -216,7 +243,7 @@ export default function SOSPage() {
         .ring-2 { width: 380px; height: 380px; animation-delay: 0.5s; }
         .ring-3 { width: 460px; height: 460px; animation-delay: 1s; }
         @keyframes ringPulse { 0% { opacity: 0.6; transform: scale(0.95); } 100% { opacity: 0; transform: scale(1.15); } }
-        .severity-row { display: flex; gap: 10px; }
+        .severity-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .sev-pill {
           padding: 10px 28px; border-radius: 24px; cursor: pointer; font-weight: 800; font-size: 13px;
           border: 2px solid var(--border-subtle); background: var(--bg-glass);
@@ -333,6 +360,31 @@ export default function SOSPage() {
         }
         .hospital-list-container::-webkit-scrollbar { width: 4px; }
         .hospital-list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .quick-field-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          width: 100%;
+        }
+        .override-toggle {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 14px;
+          border: 1px solid var(--border-accent);
+          border-radius: 12px;
+          background: var(--bg-primary);
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .override-toggle:hover {
+          border-color: var(--blue);
+        }
 
       `}</style>
 
@@ -342,18 +394,26 @@ export default function SOSPage() {
         <div className="map-background">
           <MapView 
             hospitals={phase === 'recommendations' ? hospitals : []} 
-            pickupCoords={location} 
+            pickupCoords={overrideLocation && manualCoords.lat ? {lat: Number(manualCoords.lat), lon: Number(manualCoords.lon)} : location} 
             requestStatus={phase === 'result' ? 'Dispatched' : 'Pending'}
             selectedHospitalId={selectedHospitalId}
             onHospitalClick={(h) => setSelectedHospitalId(h.hospital_id)}
+            isDraggable={overrideLocation}
+            onPickupDrag={overrideLocation ? (c) => setManualCoords({ lat: c.lat, lon: c.lon }) : null}
           />
         </div>
 
         {/* Floating Top Indicator */}
         <div className="floating-top-card">
-          <div className={`gps-badge ${location ? (locationSource === 'gps' ? 'gps-locked' : 'gps-searching') : (gpsLoading ? 'gps-searching' : 'gps-error')}`} style={{ background: 'transparent', border: 'none', padding: 0 }}>
-            {gpsLoading ? <Loader2 size={13} className="animate-spin" /> : <MapPin size={13} />}
-            {gpsLoading ? 'Acquiring GPS...' : location ? `${locationSource.toUpperCase()} • ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}` : 'Location Unavailable'}
+          <div className={`gps-badge ${overrideLocation ? 'gps-locked' : location ? (locationSource === 'gps' ? 'gps-locked' : 'gps-searching') : (gpsLoading ? 'gps-searching' : 'gps-error')}`} style={{ background: 'transparent', border: 'none', padding: 0 }}>
+            {gpsLoading && !overrideLocation ? <Loader2 size={13} className="animate-spin" /> : <MapPin size={13} />}
+            {overrideLocation && manualCoords.lat 
+              ? `MANUAL • ${Number(manualCoords.lat).toFixed(4)}, ${Number(manualCoords.lon).toFixed(4)}` 
+              : gpsLoading 
+                ? 'Acquiring GPS...' 
+                : location 
+                  ? `${locationSource.toUpperCase()} • ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}` 
+                  : 'Location Unavailable'}
           </div>
         </div>
 
@@ -368,12 +428,49 @@ export default function SOSPage() {
               </div>
 
               <div className="severity-row">
-                {['Critical', 'High', 'Medium'].map(s => (
-                  <div key={s} className={`sev-pill ${severity === s ? `active-${s}` : ''}`} onClick={() => setSeverity(s)} style={{ padding: '8px 20px', fontSize: 12 }}>
-                    {s === 'Critical' ? '🔴' : s === 'High' ? '🟠' : '🔵'} {s}
+                {Object.keys(INCIDENT_TYPES).map(type => (
+                  <div key={type} className={`sev-pill ${incidentType === type ? `active-${INCIDENT_TYPES[type]}` : ''}`} onClick={() => setIncidentType(type)} style={{ padding: '8px 14px', fontSize: 12 }}>
+                    {type}
                   </div>
                 ))}
               </div>
+
+              <div className="quick-field-grid">
+                <input
+                  className="form-input"
+                  style={{ height: 42, fontSize: 13, background: 'var(--bg-primary)', border: '1px solid var(--border-accent)', borderRadius: 12, padding: '0 14px', fontWeight: 600, color: 'var(--text-primary)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
+                  value={requestFor}
+                  onChange={e => setRequestFor(e.target.value)}
+                  placeholder="Self / family member"
+                />
+                <select
+                  className="form-input form-select"
+                  style={{ height: 42, fontSize: 13, background: 'var(--bg-primary)', border: '1px solid var(--border-accent)', borderRadius: 12, padding: '0 14px', fontWeight: 600, color: 'var(--text-primary)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
+                  value={severity}
+                  onChange={e => setSeverity(e.target.value)}
+                >
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              <button type="button" className="override-toggle" onClick={() => {
+                if (!overrideLocation && location) {
+                  setManualCoords({ lat: location.lat, lon: location.lon });
+                }
+                setOverrideLocation(!overrideLocation);
+              }}>
+                <span>Request for another location</span>
+                <span style={{ color: overrideLocation ? 'var(--blue)' : 'var(--text-muted)' }}>{overrideLocation ? 'ON' : 'OFF'}</span>
+              </button>
+
+              {overrideLocation && (
+                <div style={{ background: 'var(--bg-primary)', padding: 12, borderRadius: 12, border: '1px solid var(--border-accent)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  👆 Drag the <span style={{color: 'var(--red)'}}>red emergency pin</span> on the map to set your exact pickup location.
+                </div>
+              )}
 
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '16px 0' }}>
                 <div className="sos-ring ring-1" style={{ width: 180, height: 180 }} />
@@ -412,20 +509,24 @@ export default function SOSPage() {
                       style={{ 
                         padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 12,
                         borderColor: selectedHospitalId === h.hospital_id ? 'var(--blue)' : 'var(--border-subtle)',
-                        background: selectedHospitalId === h.hospital_id ? 'rgba(10,132,255,0.05)' : 'var(--bg-card)'
+                        background: selectedHospitalId === h.hospital_id ? 'var(--bg-primary)' : 'var(--bg-card)',
+                        boxShadow: selectedHospitalId === h.hospital_id ? '0 4px 16px rgba(10,132,255,0.1)' : 'none'
                       }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 15, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {h.name} {h.spec_match && <span style={{ fontSize: 9, background: 'var(--green-dim)', color: 'var(--green)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, border: '1px solid rgba(0,255,136,0.2)' }}>MATCHED</span>}
+                        <div style={{ fontSize: 15, fontWeight: 900, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                          <span>{h.name}</span>
+                          {h.type === 'Government' && <span style={{ fontSize: 9, background: 'rgba(191,90,242,0.1)', color: 'var(--purple)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, border: '1px solid rgba(191,90,242,0.2)' }}>🏛️ GOVT</span>}
+                          {h.type === 'Private' && <span style={{ fontSize: 9, background: 'rgba(10,132,255,0.1)', color: 'var(--blue)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, border: '1px solid rgba(10,132,255,0.2)' }}>🏥 PRIVATE</span>}
+                          {h.spec_match && <span style={{ fontSize: 9, background: 'var(--green-dim)', color: 'var(--green)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, border: '1px solid rgba(0,255,136,0.2)' }}>MATCHED</span>}
                         </div>
                         
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, margin: '8px 0' }}>
                           {h.specializations?.slice(0, 3).map(s => (
-                            <span key={s} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>{s}</span>
+                            <span key={s} style={{ fontSize: 10, background: 'var(--bg-primary)', color: 'var(--text-primary)', padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-accent)', fontWeight: 600, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>{s}</span>
                           ))}
                         </div>
   
-                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600, display: 'flex', gap: 12, alignItems: 'center' }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Navigation size={12} /> {h.distance_km} km</span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} /> {h.eta_minutes} min</span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--yellow)', fontWeight: 800 }}>৳{h.estimated_fare}</span>
@@ -439,7 +540,7 @@ export default function SOSPage() {
                   ))}
                 </div>
               </div>
-              <button className="btn btn-secondary" style={{ width: '100%', marginTop: 12, height: 40, fontSize: 12 }} onClick={() => setPhase('ready')}>Cancel Request</button>
+              <button style={{ width: '100%', marginTop: 12, height: 44, fontSize: 13, fontWeight: 700, borderRadius: 12, background: 'var(--bg-primary)', color: 'var(--red)', border: '1px solid rgba(255, 45, 85, 0.3)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' }} onClick={() => setPhase('ready')}>Cancel Request</button>
             </div>
           )}
 

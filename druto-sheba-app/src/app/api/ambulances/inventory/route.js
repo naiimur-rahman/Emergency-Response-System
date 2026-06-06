@@ -1,26 +1,26 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { query } from '@/lib/db';
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const vehicle_id = searchParams.get('vehicle_id');
 
   try {
-    let query = `
-      SELECT vi.*, a.License_Plate, a.Unit_Type
+    let sql = `
+      SELECT vi.*, a.License_Plate
       FROM Vehicle_Inventory vi
-      JOIN Ambulance_Units a ON vi.Vehicle_ID = a.Vehicle_ID
+      JOIN Ambulances a ON vi.Vehicle_ID = a.Vehicle_ID
     `;
     const params = [];
 
     if (vehicle_id) {
-      query += ` WHERE vi.Vehicle_ID = $1`;
+      sql += ` WHERE vi.Vehicle_ID = $1`;
       params.push(vehicle_id);
     }
     
-    query += ` ORDER BY vi.Expiry_Date ASC`;
+    sql += ` ORDER BY vi.Expiry_Date ASC`;
     
-    const result = await db.query(query, params);
+    const result = await query(sql, params);
     return NextResponse.json(result.rows);
   } catch (err) {
     console.error('Error fetching inventory:', err);
@@ -36,14 +36,14 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const query = `
+    const sql = `
       INSERT INTO Vehicle_Inventory (Vehicle_ID, Item_Name, Quantity, Expiry_Date)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
     const values = [vehicle_id, item_name, quantity, expiry_date || null];
     
-    const result = await db.query(query, values);
+    const result = await query(sql, values);
     return NextResponse.json({ success: true, item: result.rows[0] });
   } catch (err) {
     console.error('Error adding inventory item:', err);
@@ -60,8 +60,8 @@ export async function DELETE(req) {
   }
 
   try {
-    const query = `DELETE FROM Vehicle_Inventory WHERE Inventory_ID = $1 RETURNING *`;
-    const result = await db.query(query, [inventory_id]);
+    const sql = `DELETE FROM Vehicle_Inventory WHERE Inventory_ID = $1 RETURNING *`;
+    const result = await query(sql, [inventory_id]);
     if (result.rowCount === 0) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }

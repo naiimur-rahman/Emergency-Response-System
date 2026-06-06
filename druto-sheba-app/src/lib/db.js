@@ -6,6 +6,7 @@ const forceDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 try {
   if (!forceDemoMode && !global.pgPool && (process.env.PG_CONNECTION_STRING || process.env.PG_HOST)) {
+    console.log('CONNECTING TO DB: ', process.env.PG_CONNECTION_STRING || process.env.PG_DATABASE);
     const ssl = process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : undefined;
     global.pgPool = process.env.PG_CONNECTION_STRING
       ? new Pool({
@@ -107,6 +108,19 @@ function getRequest(requestId) {
   return mockData.emergencyRequests.find((r) => Number(r.request_id) === Number(requestId));
 }
 
+function addAudit(tableName, operation, recordId, summary, changedBy = 'demo-user') {
+  if (!mockData.auditLogs) mockData.auditLogs = [];
+  mockData.auditLogs.unshift({
+    audit_id: Math.max(...mockData.auditLogs.map((a) => a.audit_id || 0), 0) + 1,
+    table_name: tableName,
+    operation,
+    record_id: Number(recordId) || 0,
+    changed_by: changedBy,
+    changed_at: new Date().toISOString(),
+    summary,
+  });
+}
+
 function countBy(rows, key) {
   return rows.reduce((acc, row) => {
     const value = row[key];
@@ -155,6 +169,9 @@ function activeTripRows({ driverId, onlyActive = true } = {}) {
       const ambulance = trip ? getAmbulance(trip.vehicle_id) : null;
       const driver = trip ? getDriver(trip.driver_id) : null;
 
+      const bill = trip ? (mockData.billing || []).find((b) => String(b.trip_id) === String(trip.trip_id)) : null;
+      const feedback = trip ? (mockData.tripFeedback || []).find((f) => String(f.trip_id) === String(trip.trip_id)) : null;
+
       return {
         ...trip,
         request_id: request.request_id,
@@ -168,6 +185,10 @@ function activeTripRows({ driverId, onlyActive = true } = {}) {
         patient_name: patient?.name,
         patient_phone: patient?.phone,
         blood_type: patient?.blood_type,
+        allergies: patient?.allergies,
+        conditions: patient?.conditions || [],
+        emergency_type: request.emergency_type || 'General',
+        requested_for: request.requested_for || 'Self',
         hospital_name: hospital?.name,
         hospital_type: hospital?.type,
         hospital_lon: hospital?.lon,
@@ -176,6 +197,8 @@ function activeTripRows({ driverId, onlyActive = true } = {}) {
         assigned_ambulance: ambulance?.license_plate,
         destination_hospital: hospital?.name,
         driver_name: driver?.name,
+        total_amount: bill?.total_amount || null,
+        has_rating: feedback ? 1 : 0,
       };
     })
     .filter((row) => !driverId || Number(row.driver_id) === Number(driverId))
@@ -257,6 +280,7 @@ function handleMockQuery(text, params = []) {
   if (sql.startsWith('insert into trip_logs')) {
     const trip = {
       trip_id: params[0],
+      request_id: params[0], // Add request_id here since activeTripRows searches by it
       vehicle_id: params[1],
       driver_id: params[2],
       hospital_id: params[3],
@@ -274,10 +298,25 @@ function handleMockQuery(text, params = []) {
       name: params[0],
       phone: params[1],
       blood_type: params[2],
+      allergies: params[3] || '',
       conditions: [],
     };
     mockData.patients.push(patient);
+    addAudit('Patients', 'INSERT', patient.patient_id, `Patient ${patient.name} registered`);
     return result([patient]);
+  }
+
+  if (sql.startsWith('insert into staff_users')) {
+    const user = {
+      user_id: Math.max(...(mockData.staffUsers || []).map((u) => u.user_id), 0) + 1,
+      username: params[0],
+      password_hash: params[1],
+      role: params[2],
+      created_at: new Date().toISOString(),
+    };
+    if (!mockData.staffUsers) mockData.staffUsers = [];
+    mockData.staffUsers.push(user);
+    return result([user]);
   }
 
   if (sql.startsWith('insert into emergency_requests')) {
@@ -292,10 +331,13 @@ function handleMockQuery(text, params = []) {
       lng: params[1],
       severity_level: params[3],
       severity: params[3],
+      emergency_type: params[4] || 'General',
+      requested_for: params[5] || 'Self',
       status: 'Pending',
       timestamp_created: new Date().toISOString(),
     };
     mockData.emergencyRequests.push(request);
+    addAudit('Emergency_Requests', 'INSERT', request.request_id, `Emergency request created for ${request.requested_for}`);
     return result([request]);
   }
 
@@ -337,8 +379,11 @@ function handleMockQuery(text, params = []) {
       license_plate: params[0],
       equipment_level: params[1],
       current_status: 'Available',
+      hub: params[2] || 'Central Hub',
+      next_service_date: params[3] || null,
     };
     mockData.ambulances.push(ambulance);
+    addAudit('Ambulances', 'INSERT', ambulance.vehicle_id, `${ambulance.license_plate} registered`);
     return result([ambulance]);
   }
 
@@ -379,11 +424,60 @@ function handleMockQuery(text, params = []) {
     return result([feedback]);
   }
 
+  if (sql.startsWith('insert into patient_conditions')) {
+    const patient = getPatient(params[0]);
+    if (patient) {
+      if (!patient.conditions) patient.conditions = [];
+      if (!patient.conditions.includes(params[1])) patient.conditions.push(params[1]);
+    }
+    return result(patient ? [{ patient_id: params[0], condition_name: params[1] }] : []);
+  }
+
+  if (sql.startsWith('insert into vehicle_inventory')) {
+    const item = {
+      inventory_id: Math.max(...mockData.vehicleInventory.map((i) => i.inventory_id || 0), 0) + 1,
+      vehicle_id: params[0],
+      item_name: params[1],
+      quantity: Number(params[2] || 0),
+      expiry_date: params[3] || null,
+      last_restocked: new Date().toISOString(),
+    };
+    mockData.vehicleInventory.push(item);
+    addAudit('Vehicle_Inventory', 'INSERT', item.inventory_id, `${item.item_name} logged for vehicle ${item.vehicle_id}`);
+    return result([item]);
+  }
+
+  if (sql.startsWith('delete from patient_conditions')) {
+    const patient = getPatient(params[0]);
+    if (patient) patient.conditions = [];
+    return result([]);
+  }
+
+  if (sql.startsWith('delete from vehicle_inventory')) {
+    const index = mockData.vehicleInventory.findIndex((i) => Number(i.inventory_id) === Number(params[0]));
+    return result(index >= 0 ? [mockData.vehicleInventory.splice(index, 1)[0]] : []);
+  }
+
+  if (sql.startsWith('update patients')) {
+    const patient = getPatient(params[5]);
+    if (patient) {
+      patient.name = params[0] ?? patient.name;
+      patient.phone = params[1] ?? patient.phone;
+      patient.blood_type = params[2] ?? patient.blood_type;
+      patient.address = params[3] ?? patient.address;
+      patient.primary_specialization = params[4] ?? patient.primary_specialization;
+      patient.allergies = params[6] ?? patient.allergies;
+      addAudit('Patients', 'UPDATE', patient.patient_id, `Medical profile updated for ${patient.name}`);
+    }
+    return result(patient ? [patient] : []);
+  }
+
   if (sql.startsWith('update emergency_requests')) {
     const request = getRequest(params[1]);
     if (request) {
       const oldStatus = request.status;
       request.status = params[0];
+      if (params[2] !== undefined) request.severity_level = params[2] || request.severity_level;
       
       // Simulate resource release in mock mode
       if ((params[0] === 'Resolved' || params[0] === 'Cancelled') && oldStatus !== 'Resolved' && oldStatus !== 'Cancelled') {
@@ -396,13 +490,20 @@ function handleMockQuery(text, params = []) {
           }
         }
       }
+      addAudit('Emergency_Requests', 'UPDATE', request.request_id, `Status changed from ${oldStatus} to ${request.status}`);
     }
     return result(request ? [request] : []);
   }
 
   if (sql.startsWith('update ambulances')) {
     const ambulance = getAmbulance(params[1]);
-    if (ambulance) ambulance.current_status = params[0] || 'Available';
+    if (ambulance) {
+      ambulance.current_status = params[0] || 'Available';
+      if (params[2] !== undefined) ambulance.equipment_level = params[2] || ambulance.equipment_level;
+      if (params[3] !== undefined) ambulance.hub = params[3] || ambulance.hub;
+      if (params[4] !== undefined) ambulance.next_service_date = params[4] || ambulance.next_service_date;
+      addAudit('Ambulances', 'UPDATE', ambulance.vehicle_id, `${ambulance.license_plate} updated`);
+    }
     return result(ambulance ? [ambulance] : []);
   }
 
@@ -411,8 +512,19 @@ function handleMockQuery(text, params = []) {
     if (driver) {
       driver.shift_status = params[0];
       driver.status = params[0];
+      addAudit('Drivers', 'UPDATE', driver.driver_id, `${driver.name} status changed to ${params[0]}`);
     }
     return result(driver ? [driver] : []);
+  }
+
+  if (sql.startsWith('update staff_users')) {
+    const user = (mockData.staffUsers || []).find((u) => Number(u.user_id) === Number(params[2]));
+    if (user) {
+      user.role = params[0] || user.role;
+      if (params[1] !== undefined) user.blocked = params[1];
+      addAudit('Staff_Users', 'UPDATE', user.user_id, `${user.username} role/status updated`);
+    }
+    return result(user ? [user] : []);
   }
 
   if (sql.startsWith('update hospitals')) {
@@ -422,6 +534,16 @@ function handleMockQuery(text, params = []) {
       hospital.icu_beds = params[1];
     }
     return result(hospital ? [hospital] : []);
+  }
+
+  if (sql.startsWith('update trip_logs')) {
+    const trip = mockData.tripLogs.find((t) => String(t.trip_id) === String(params[0]) || String(t.request_id) === String(params[0]));
+    if (trip) {
+      if (sql.includes('time_arrived_scene')) trip.time_arrived_scene = trip.time_arrived_scene || new Date().toISOString();
+      if (sql.includes('time_reached_hospital')) trip.time_reached_hospital = trip.time_reached_hospital || new Date().toISOString();
+      addAudit('Trip_Logs', 'UPDATE', trip.trip_id, `Trip timestamp updated`);
+    }
+    return result(trip ? [trip] : []);
   }
 
   if (sql.startsWith('update maintenance_logs')) {
@@ -445,6 +567,11 @@ function handleMockQuery(text, params = []) {
     return result(index >= 0 ? [mockData.ambulances.splice(index, 1)[0]] : []);
   }
 
+  if (sql.startsWith('delete from staff_users')) {
+    const index = (mockData.staffUsers || []).findIndex((u) => Number(u.user_id) === Number(params[0]));
+    return result(index >= 0 ? [mockData.staffUsers.splice(index, 1)[0]] : []);
+  }
+
   if (sql.includes('from active_dashboard_view')) {
     return result(activeTripRows().map((row) => {
       const patient = getPatient(row.patient_id);
@@ -460,9 +587,15 @@ function handleMockQuery(text, params = []) {
 
   if (sql.includes('from trip_logs')) {
     const rows = activeTripRows({ driverId: sql.includes('where tl.driver_id') ? params[0] : null, onlyActive: false });
-    if (sql.includes("er.status = 'resolved'")) return result(rows.filter((r) => r.request_status === 'Resolved'));
-    if (sql.includes("er.status in ('pending'")) return result(rows.filter((r) => ['Pending', 'Active', 'En Route', 'Picked Up', 'Arrived'].includes(r.request_status)));
-    return result(rows);
+    
+    let filteredRows = rows;
+    if (sql.includes('er.patient_id = $1')) {
+      filteredRows = filteredRows.filter(r => Number(r.patient_id) === Number(params[0]));
+    }
+    
+    if (sql.includes("er.status = 'resolved'")) return result(filteredRows.filter((r) => r.request_status === 'Resolved'));
+    if (sql.includes("er.status in ('active'")) return result(filteredRows.filter((r) => ['Pending', 'Active', 'En Route', 'Picked Up', 'Arrived'].includes(r.request_status)));
+    return result(filteredRows);
   }
 
   if (sql.includes('from billing')) {
@@ -478,11 +611,15 @@ function handleMockQuery(text, params = []) {
   }
 
   if (sql.includes('from vehicle_inventory')) {
-    return result(mockData.vehicleInventory.map((item) => ({
+    const rows = mockData.vehicleInventory.map((item) => ({
       ...item,
       license_plate: getAmbulance(item.vehicle_id)?.license_plate,
       status: item.quantity <= 2 ? 'LOW' : 'OK',
-    })));
+    }));
+    if (sql.includes('where vi.vehicle_id') || sql.includes('where vehicle_id')) {
+      return result(rows.filter((item) => Number(item.vehicle_id) === Number(params[0])));
+    }
+    return result(rows);
   }
 
   if (sql.includes('from dispatch_zones')) {
@@ -498,7 +635,16 @@ function handleMockQuery(text, params = []) {
       const active = mockData.emergencyRequests.filter((r) => ['Pending', 'Active'].includes(r.status));
       return result([{ total: active.length, pending: active.filter((r) => r.status === 'Pending').length, active: active.filter((r) => r.status === 'Active').length }]);
     }
-    return result(mockData.emergencyRequests.map((request) => ({ ...request, ...getPatient(request.patient_id) })));
+    
+    let filteredRequests = [...mockData.emergencyRequests];
+    if (sql.includes("status = 'broadcast'")) {
+      filteredRequests = filteredRequests.filter((r) => r.status === 'Broadcast');
+    }
+    if (sql.includes("cast(request_id as text) = $1") || sql.includes("request_id = $1")) {
+      filteredRequests = filteredRequests.filter((r) => String(r.request_id) === String(params[0]));
+    }
+    
+    return result(filteredRequests.map((request) => ({ ...request, ...getPatient(request.patient_id) })));
   }
 
   if (sql.includes('from ambulances')) {
@@ -538,14 +684,49 @@ function handleMockQuery(text, params = []) {
         .map((h, index) => ({ name: h.name, icu_beds: h.icu_beds, general_beds: h.general_beds, icu_rank: index + 1 })));
     }
     if (sql.includes('distance_m')) {
-      return result([{ ...mockData.hospitals[0], distance_m: 4200 }]);
+      const lon = Number(params[0]);
+      const lat = Number(params[1]);
+      
+      const rad = Math.PI / 180;
+      const calcDist = (lat1, lon1, lat2, lon2) => {
+        const a = 0.5 - Math.cos((lat2 - lat1) * rad)/2 + 
+                  Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * 
+                  (1 - Math.cos((lon2 - lon1) * rad))/2;
+        return 12742 * 1000 * Math.asin(Math.sqrt(a)); 
+      };
+
+      const specQuery = params[2]; // If 3 params, the 3rd is the specialization
+      
+      const sorted = [...mockData.hospitals].map((h) => ({ 
+        ...h, 
+        distance_m: Math.round(calcDist(lat, lon, h.lat, h.lon)),
+        spec_match: specQuery ? (h.specializations || []).includes(specQuery) : false,
+        specializations: h.specializations || ['Emergency', 'General']
+      }));
+      
+      sorted.sort((a, b) => {
+        if (a.spec_match && !b.spec_match) return -1;
+        if (!a.spec_match && b.spec_match) return 1;
+        return a.distance_m - b.distance_m;
+      });
+
+      return result(sorted.slice(0, 5));
     }
     return result(mockData.hospitals);
   }
 
   if (sql.includes('from patients')) {
     if (sql.includes('where phone')) return result(mockData.patients.filter((p) => p.phone === params[0]));
+    if (sql.includes('where p.patient_id')) return result(mockData.patients.filter((p) => Number(p.patient_id) === Number(params[0])));
     return result(mockData.patients);
+  }
+
+  if (sql.includes('from staff_users')) {
+    if (sql.includes('where username')) {
+      const u = (mockData.staffUsers || []).find(u => u.username === params[0]);
+      return result(u ? [u] : []);
+    }
+    return result(mockData.staffUsers || []);
   }
 
   if (sql.includes('from specializations')) {
@@ -557,6 +738,10 @@ function handleMockQuery(text, params = []) {
       (a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0)
     );
     return result(rows);
+  }
+
+  if (sql.includes('from audit_log')) {
+    return result([...(mockData.auditLogs || [])].sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at)));
   }
 
   return result([]);

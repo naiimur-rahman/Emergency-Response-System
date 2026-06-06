@@ -17,6 +17,10 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+ALTER TYPE equipment_lvl ADD VALUE IF NOT EXISTS 'Basic Life Support';
+ALTER TYPE equipment_lvl ADD VALUE IF NOT EXISTS 'Advanced Life Support';
+ALTER TYPE equipment_lvl ADD VALUE IF NOT EXISTS 'ICU Support';
+
 DO $$ BEGIN
     CREATE TYPE vehicle_status AS ENUM ('Available', 'Dispatched', 'Maintenance', 'Maintenance_Required');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -26,6 +30,11 @@ DO $$ BEGIN
     CREATE TYPE shift_status AS ENUM ('On_Duty', 'Off_Duty');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+ALTER TYPE shift_status ADD VALUE IF NOT EXISTS 'Available';
+ALTER TYPE shift_status ADD VALUE IF NOT EXISTS 'Dispatched';
+ALTER TYPE shift_status ADD VALUE IF NOT EXISTS 'On_Trip';
+ALTER TYPE shift_status ADD VALUE IF NOT EXISTS 'Offline';
 
 DO $$ BEGIN
     CREATE TYPE severity_lvl AS ENUM ('Low', 'Medium', 'High', 'Critical');
@@ -52,6 +61,8 @@ CREATE TABLE IF NOT EXISTS Patients (
     Primary_Specialization VARCHAR(100)
 );
 
+ALTER TABLE Patients ADD COLUMN IF NOT EXISTS Allergies TEXT;
+
 CREATE TABLE IF NOT EXISTS Patient_Conditions (
     Record_ID SERIAL PRIMARY KEY,
     Patient_ID INT NOT NULL REFERENCES Patients(Patient_ID) ON DELETE CASCADE,
@@ -75,6 +86,10 @@ CREATE TABLE IF NOT EXISTS Ambulances (
     Trips_Since_Maintenance INT DEFAULT 0
 );
 
+ALTER TABLE Ambulances ADD COLUMN IF NOT EXISTS Hub VARCHAR(100) DEFAULT 'Central Hub';
+ALTER TABLE Ambulances ADD COLUMN IF NOT EXISTS Next_Service_Date DATE;
+ALTER TABLE Ambulances ADD COLUMN IF NOT EXISTS Current_Location GEOMETRY(Point, 4326);
+
 CREATE TABLE IF NOT EXISTS Drivers (
     Driver_ID SERIAL PRIMARY KEY,
     Name VARCHAR(100) NOT NULL,
@@ -82,11 +97,23 @@ CREATE TABLE IF NOT EXISTS Drivers (
     Shift_Status shift_status DEFAULT 'Off_Duty'
 );
 
+ALTER TABLE Drivers ADD COLUMN IF NOT EXISTS Phone VARCHAR(20) DEFAULT '+8801711223344';
+
 CREATE TABLE IF NOT EXISTS Dispatchers (
     Dispatcher_ID SERIAL PRIMARY KEY,
     Name VARCHAR(100) NOT NULL,
     Shift_Time VARCHAR(50) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS Staff_Users (
+    User_ID SERIAL PRIMARY KEY,
+    Username VARCHAR(50) UNIQUE NOT NULL,
+    Password_Hash TEXT NOT NULL,
+    Role VARCHAR(20) NOT NULL CHECK (Role IN ('Admin', 'Dispatcher')),
+    Created_At TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE Staff_Users ADD COLUMN IF NOT EXISTS Blocked BOOLEAN DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS Emergency_Requests (
     Request_ID VARCHAR(20) PRIMARY KEY DEFAULT generate_emergency_id(),
@@ -96,6 +123,22 @@ CREATE TABLE IF NOT EXISTS Emergency_Requests (
     Timestamp_Created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     Status req_status DEFAULT 'Pending'
 );
+
+ALTER TABLE Emergency_Requests ADD COLUMN IF NOT EXISTS Emergency_Type VARCHAR(100) DEFAULT 'General';
+ALTER TABLE Emergency_Requests ADD COLUMN IF NOT EXISTS Requested_For VARCHAR(100) DEFAULT 'Self';
+
+CREATE TABLE IF NOT EXISTS Pricing_Config (
+    Config_ID INT PRIMARY KEY DEFAULT 1,
+    Base_Fare DECIMAL(10,2) NOT NULL DEFAULT 500.00,
+    Per_KM_Charge DECIMAL(10,2) NOT NULL DEFAULT 25.00,
+    Night_Multiplier DECIMAL(5,2) NOT NULL DEFAULT 1.35,
+    Critical_Surcharge DECIMAL(10,2) NOT NULL DEFAULT 500.00,
+    Updated_At TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO Pricing_Config (Config_ID)
+VALUES (1)
+ON CONFLICT (Config_ID) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS Trip_Logs (
     Trip_ID VARCHAR(20) PRIMARY KEY REFERENCES Emergency_Requests(Request_ID) ON DELETE CASCADE,
@@ -111,15 +154,24 @@ CREATE TABLE IF NOT EXISTS Trip_Logs (
 -- 2. THE ENGINE (Views & Triggers)
 CREATE OR REPLACE VIEW Active_Dashboard_View AS
 SELECT 
-    er.Request_ID, er.Patient_ID, p.Name AS Patient_Name, p.Blood_Type, er.Severity_Level,
+    er.Request_ID, er.Patient_ID, p.Name AS Patient_Name, p.Blood_Type, p.Allergies,
+    p.Primary_Specialization,
+    ST_X(er.Pickup_Coords::geometry) AS Patient_Lon,
+    ST_Y(er.Pickup_Coords::geometry) AS Patient_Lat,
+    er.Severity_Level, er.Emergency_Type, er.Requested_For, er.Timestamp_Created,
     er.Status AS Request_Status, a.License_Plate AS Assigned_Ambulance,
-    h.Name AS Destination_Hospital, h.Type AS Hospital_Type
+    h.Name AS Destination_Hospital, h.Type AS Hospital_Type,
+    ST_X(a.Current_Location::geometry) AS Ambulance_Lon,
+    ST_Y(a.Current_Location::geometry) AS Ambulance_Lat,
+    tl.Driver_ID AS Driver_ID,
+    d.Name AS Driver_Name
 FROM Emergency_Requests er
 JOIN Patients p ON er.Patient_ID = p.Patient_ID
 LEFT JOIN Trip_Logs tl ON er.Request_ID = tl.Trip_ID
 LEFT JOIN Ambulances a ON tl.Vehicle_ID = a.Vehicle_ID
 LEFT JOIN Hospitals h ON tl.Hospital_ID = h.Hospital_ID
-WHERE er.Status IN ('Pending', 'Active', 'En Route', 'Picked Up', 'Arrived');
+LEFT JOIN Drivers d ON tl.Driver_ID = d.Driver_ID
+WHERE er.Status IN ('Broadcast', 'Pending', 'Active', 'En Route', 'Picked Up', 'Arrived');
 
 -- AI Severity Predictor (Database side)
 CREATE OR REPLACE FUNCTION trg_predict_severity() RETURNS TRIGGER AS $$
@@ -562,4 +614,3 @@ BEGIN
     RETURN 'DISPATCH SUCCESS: ' || v_Ambulance_Plate || ' assigned to ' || v_Hospital_Name;
 END;
 $function$;
-

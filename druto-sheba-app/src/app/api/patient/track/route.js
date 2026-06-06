@@ -20,12 +20,15 @@ export async function GET() {
         h.name as hospital_name,
         ST_X(h.location_coords::geometry) as hospital_lon,
         ST_Y(h.location_coords::geometry) as hospital_lat,
-        a.license_plate
+        a.license_plate,
+        d.name as driver_name,
+        d.phone as driver_phone
       FROM trip_logs tl
       JOIN emergency_requests er ON tl.trip_id = er.request_id
       JOIN patients p ON er.patient_id = p.patient_id
       JOIN hospitals h ON tl.hospital_id = h.hospital_id
       JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
+      LEFT JOIN drivers d ON tl.driver_id = d.driver_id
       WHERE er.status IN ('Pending', 'Active', 'En Route', 'Picked Up', 'Arrived')
       ORDER BY tl.time_dispatched DESC
       LIMIT 1

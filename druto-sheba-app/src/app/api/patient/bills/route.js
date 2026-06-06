@@ -32,3 +32,22 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function POST(request) {
+  try {
+    const { billId } = await request.json();
+    if (!billId) {
+      return NextResponse.json({ error: 'Bill ID is required' }, { status: 400 });
+    }
+
+    await query(`
+      UPDATE Billing
+      SET Payment_Status = 'Paid'
+      WHERE Bill_ID = $1
+    `, [billId]);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

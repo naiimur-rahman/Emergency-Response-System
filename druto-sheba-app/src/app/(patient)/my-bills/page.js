@@ -30,14 +30,26 @@ export default function PatientBills() {
     return () => clearInterval(interval);
   }, [fetchBills]);
 
-  const handlePay = (billId) => {
+  const handlePay = async (billId) => {
     setPaying(billId);
-    // Simulate payment processing
-    setTimeout(() => {
-      setBills(bills.map(b => b.bill_id === billId ? { ...b, payment_status: 'Paid' } : b));
+    try {
+      const r = await fetch('/api/patient/bills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billId })
+      });
+      if (r.ok) {
+        setBills(bills.map(b => b.bill_id === billId ? { ...b, payment_status: 'Paid' } : b));
+        toast('Payment processed successfully!', 'success', { title: 'Payment Complete' });
+      } else {
+        toast('Failed to process payment', 'error', { title: 'Payment Error' });
+      }
+    } catch (err) {
+      console.error(err);
+      toast('Payment failed.', 'error', { title: 'Payment Error' });
+    } finally {
       setPaying(null);
-      toast('Payment processed successfully!', 'success', { title: 'Payment Complete' });
-    }, 1500);
+    }
   };
 
   if (!activePatient) return null;

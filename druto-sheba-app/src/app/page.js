@@ -766,15 +766,31 @@ export default function HomePage() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <div className="status-pulse">
-              <div className="pulse-dot" />
-              <span className="status-text">System Online • Dhaka Metro</span>
-            </div>
-
-            <div className="hero-kicker">
-              <Zap size={14} fill="currentColor" />
-              Response Time Optimized
-            </div>
+            <motion.div 
+              className="live-dispatch-badge"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 16px',
+                background: 'var(--bg-glass)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '30px',
+                marginBottom: '32px',
+                boxShadow: '0 4px 20px rgba(239, 68, 68, 0.15)',
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              <motion.div 
+                animate={{ opacity: [1, 0.4, 1] }} 
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--red)', boxShadow: '0 0 10px var(--red)' }} 
+              />
+              <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--red)' }}>Live Dispatch Mode</span>
+            </motion.div>
 
             <h2 className="hero-title" style={{ minHeight: '2.2em' }}>
               Every Second <br />

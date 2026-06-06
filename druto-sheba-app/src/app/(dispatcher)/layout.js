@@ -1,9 +1,10 @@
 'use client';
 import PortalSidebar from '@/components/PortalSidebar';
-import { LayoutDashboard, AlertTriangle, Truck, Clock, Radio } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, Truck, Clock, Radio, Route } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/operations', label: 'Operations', icon: Route },
   { href: '/requests', label: 'Emergencies', icon: AlertTriangle },
   { href: '/fleet', label: 'Fleet', icon: Truck },
   { href: '/trips', label: 'Trip Logs', icon: Clock },

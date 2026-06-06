@@ -9,6 +9,7 @@ export default function PatientTrackPage() {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [realtimeMarker, setRealtimeMarker] = useState(null);
+  const [showDriverModal, setShowDriverModal] = useState(false);
 
   const fetchTrip = useCallback(async () => {
     try {
@@ -90,7 +91,7 @@ export default function PatientTrackPage() {
           {/* Left Panel: Details */}
           <div className="track-sidebar">
             
-            <div className="glass p-6 border-l-4 border-l-red-500 shadow-2xl">
+            <div className="glass" style={{ padding: 24, borderLeft: '4px solid var(--red)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                 <div>
                   <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--red)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
@@ -98,19 +99,19 @@ export default function PatientTrackPage() {
                      trip.request_status === 'En Route' ? 'Unit Is Arriving' :
                      trip.request_status === 'Picked Up' ? 'Transporting' : 'Arrived'}
                   </span>
-                  <h3 style={{ fontSize: 32, fontWeight: 900, marginTop: 4 }}>Trip #{trip.trip_id}</h3>
+                  <h3 style={{ fontSize: 32, fontWeight: 900, marginTop: 4 }}>Trip #{trip.trip_id || trip.request_id || 'Req'}</h3>
                 </div>
                 <SeverityBadge level={trip.severity_level} />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-                <div className="glass-dark p-4 rounded-xl flex items-center gap-4">
-                  <div style={{ width: 48, height: 48, borderRadius: 24, background: 'rgba(255,214,10,0.1)', display: 'flex', alignItems: 'center', justifyCenter: 'center', color: 'var(--yellow)', paddingLeft: 12 }}>
+                <div style={{ padding: 16, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 16, background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 24, background: 'rgba(255,149,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--yellow)', flexShrink: 0 }}>
                     <Truck size={24} />
                   </div>
                   <div>
                     <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>AMBULANCE ID</label>
-                    <div style={{ fontSize: 18, fontWeight: 800 }}>{trip.license_plate}</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{trip.license_plate || 'Unassigned'}</div>
                   </div>
                 </div>
 
@@ -125,27 +126,61 @@ export default function PatientTrackPage() {
                 </div>
               </div>
 
-              <button className="btn btn-primary" style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 800, boxShadow: '0 10px 20px rgba(255,45,85,0.2)' }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ width: '100%', height: 56, borderRadius: 16, fontSize: 16, fontWeight: 800, boxShadow: '0 10px 20px rgba(255,45,85,0.2)' }}
+                onClick={() => {
+                  if (trip.driver_name) {
+                    setShowDriverModal(true);
+                  } else {
+                    alert('Driver has not been assigned yet.');
+                  }
+                }}
+              >
                  <PhoneCall size={18} /> CONTACT DRIVER
               </button>
+              
+              {showDriverModal && (
+                <div style={{ marginTop: 16, padding: 16, background: 'rgba(255,255,255,0.05)', borderRadius: 16, border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <h4 style={{ fontSize: 14, fontWeight: 800 }}>Driver Information</h4>
+                    <button onClick={() => setShowDriverModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>Close</button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 20, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}>
+                        {trip.driver_name?.charAt(0) || 'D'}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 800 }}>{trip.driver_name}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Assigned First Responder</div>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 8, padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1 }}>{trip.driver_phone || 'N/A'}</div>
+                      <a href={`tel:${trip.driver_phone}`} className="btn btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: 12, borderRadius: 20 }}>Call Now</a>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Telemetry Status */}
-            <div className="glass p-5">
+            <div className="glass" style={{ padding: 20 }}>
               <h4 style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>Driver Telemetry</h4>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                 <div className="glass-dark p-3 rounded-xl flex items-center gap-3">
+                 <div style={{ padding: 12, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
                     <Gauge size={16} style={{ color: 'var(--blue)' }} />
                     <div>
                       <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>SPEED</div>
-                      <div style={{ fontSize: 14, fontWeight: 800 }}>{realtimeMarker?.speed || '0.0'} km/h</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{realtimeMarker?.speed || '0.0'} km/h</div>
                     </div>
                  </div>
-                 <div className="glass-dark p-3 rounded-xl flex items-center gap-3">
+                 <div style={{ padding: 12, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
                     <Radio size={16} style={{ color: 'var(--green)' }} />
                     <div>
                       <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>SIGNAL</div>
-                      <div style={{ fontSize: 14, fontWeight: 800 }}>{realtimeMarker ? 'EXCELLENT' : 'CONNECTING'}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{realtimeMarker ? 'EXCELLENT' : 'CONNECTING'}</div>
                     </div>
                  </div>
               </div>
@@ -162,7 +197,7 @@ export default function PatientTrackPage() {
              />
              
              {/* Map Status Overlay */}
-             <div className="glass p-5" style={{ position: 'absolute', top: 24, left: 24, right: 24, zIndex: 1000, display: 'flex', alignItems: 'center', gap: 16 }}>
+             <div className="glass" style={{ padding: 20, position: 'absolute', top: 24, left: 24, right: 24, zIndex: 1000, display: 'flex', alignItems: 'center', gap: 16 }}>
                  <div className="animate-pulse" style={{ width: 48, height: 48, borderRadius: 24, background: 'rgba(255,45,85,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--red)' }}>
                     <Navigation size={24} />
                  </div>
@@ -178,8 +213,8 @@ export default function PatientTrackPage() {
              </div>
 
              {/* Live Connection Tag */}
-             <div className="glass px-3 py-1.5 flex items-center gap-2" style={{ position: 'absolute', bottom: 24, left: 24, zIndex: 1000 }}>
-                <div className={`w-2 h-2 rounded-full ${realtimeMarker ? 'bg-green-500 animate-pulse' : 'bg-slate-500'}`} />
+             <div className="glass" style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8, position: 'absolute', bottom: 24, left: 24, zIndex: 1000 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 4, background: realtimeMarker ? 'var(--green)' : 'var(--text-muted)' }} />
                 <span style={{ fontSize: 10, fontWeight: 800 }}>{realtimeMarker ? 'LIVE SYSTEM LINK' : 'ESTABLISHING LINK...'}</span>
              </div>
           </div>
