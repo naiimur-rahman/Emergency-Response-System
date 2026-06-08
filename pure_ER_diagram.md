@@ -1,4 +1,4 @@
-```mermaid
+
 erDiagram
     Patients {
         SERIAL Patient_ID PK
@@ -197,4 +197,3 @@ erDiagram
 
     Trip_Logs ||--|| Billing : "generates"
     Trip_Logs ||--o| Trip_Feedback : "reviewed in"
-```
