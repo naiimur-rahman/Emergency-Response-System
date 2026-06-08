@@ -46,6 +46,23 @@ export default function DriverDutyPage() {
       setBroadcastRequests(data.broadcast_requests || []);
       setChatMessages(data.chat_messages || []);
       if (!shiftData.error) setShiftSummary(shiftData);
+      
+      const vehicleId = data.active_trip?.vehicle_id || 1;
+      const invRes = await fetch(`/api/ambulances/inventory?vehicle_id=${vehicleId}`);
+      if (invRes.ok) {
+        const invData = await invRes.json();
+        if (invData && invData.length > 0) {
+          const oxy = invData.find(i => i.item_name === 'Oxygen Level (%)');
+          const defib = invData.find(i => i.item_name === 'Defibrillator');
+          const supp = invData.find(i => i.item_name === 'Basic Supplies');
+          
+          setEquipmentLog(prev => ({
+            oxygen: oxy ? oxy.quantity : prev.oxygen,
+            defibrillator: defib ? (defib.quantity > 0 ? 'Ready' : 'Needs Service') : prev.defibrillator,
+            supplies: supp ? (supp.quantity > 0 ? 'Stocked' : 'Low') : prev.supplies
+          }));
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -209,8 +226,8 @@ export default function DriverDutyPage() {
     try {
       const items = [
         { item_name: 'Oxygen Level (%)', quantity: Number(equipmentLog.oxygen) || 0 },
-        { item_name: `Defibrillator - ${equipmentLog.defibrillator}`, quantity: equipmentLog.defibrillator === 'Ready' ? 1 : 0 },
-        { item_name: `Basic Supplies - ${equipmentLog.supplies}`, quantity: equipmentLog.supplies === 'Stocked' ? 1 : 0 },
+        { item_name: 'Defibrillator', quantity: equipmentLog.defibrillator === 'Ready' ? 1 : 0 },
+        { item_name: 'Basic Supplies', quantity: equipmentLog.supplies === 'Stocked' ? 1 : 0 },
       ];
       await Promise.all(items.map((item) => fetch('/api/ambulances/inventory', {
         method: 'POST',
