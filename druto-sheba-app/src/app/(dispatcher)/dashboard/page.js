@@ -510,7 +510,7 @@ export default function DispatcherDashboard() {
       )}
 
       {mapModal.open && (
-        <div className="modal-overlay" style={{ display: 'flex', zIndex: 9999 }} onClick={(e) => { if (e.target.className.includes('modal-overlay')) setMapModal({ ...mapModal, open: false }) }}>
+        <div className="modal-overlay" style={{ display: 'flex', zIndex: 9999 }} onClick={(e) => { if (typeof e.target.className === 'string' && e.target.className.includes('modal-overlay')) setMapModal({ ...mapModal, open: false }) }}>
           <div className="modal-content" style={{ width: '90vw', maxWidth: '1200px', height: '85vh', padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div className="modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><MapIcon size={20} /> {mapModal.title}</h3>

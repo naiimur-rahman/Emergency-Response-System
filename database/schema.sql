@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS Trip_Logs (
     Time_Reached_Hospital TIMESTAMP NULL
 );
 
--- 2. THE ENGINE (Views & Triggers)
+-- 2. Views & Triggers
 CREATE OR REPLACE VIEW Active_Dashboard_View AS
 SELECT 
     er.Request_ID, er.Patient_ID, p.Name AS Patient_Name, p.Blood_Type, p.Allergies,
@@ -173,7 +173,7 @@ LEFT JOIN Hospitals h ON tl.Hospital_ID = h.Hospital_ID
 LEFT JOIN Drivers d ON tl.Driver_ID = d.Driver_ID
 WHERE er.Status IN ('Broadcast', 'Pending', 'Active', 'En Route', 'Picked Up', 'Arrived');
 
--- AI Severity Predictor (Database side)
+-- Severity Predictor (Database side)
 CREATE OR REPLACE FUNCTION trg_predict_severity() RETURNS TRIGGER AS $$
 DECLARE
     v_Condition VARCHAR;
@@ -293,7 +293,7 @@ DROP TRIGGER IF EXISTS After_Request_Resolved ON Emergency_Requests;
 CREATE TRIGGER After_Request_Resolved
 AFTER UPDATE ON Emergency_Requests FOR EACH ROW EXECUTE FUNCTION trg_release_resources();
 
--- Automated Dispatch Algorithm (Champion Version)
+-- Automated Dispatch Algorithm
 CREATE OR REPLACE FUNCTION fn_Automated_Dispatch(p_Request_ID VARCHAR(20), p_Dispatcher_ID INT) RETURNS TEXT AS $$
 DECLARE
     v_Patient_Coords GEOMETRY; v_Severity severity_lvl; v_Patient_ID INT; 
@@ -481,7 +481,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_analytics_mv_date ON emergency_analytics_m
 -- =========================================================================
 -- DRUTO SHEBA - DATABASE SCHEMA UPDATE (v2.0)
 -- Purpose: Fixes dispatch logic, adds communication tables, and enhances
---          resource allocation intelligence.
+--          resource allocation.
 -- =========================================================================
 
 -- 1. COMMUNICATION LAYER
@@ -496,7 +496,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 
 -- 2. ENHANCED AUTOMATED DISPATCH PROCEDURE
--- This function intelligently matches patients to the best possible resources.
+-- This function matches patients to the best possible resources.
 -- Includes support for manual hospital override and specialization mapping.
 DROP FUNCTION IF EXISTS public.fn_automated_dispatch(varchar, integer);
 CREATE OR REPLACE FUNCTION public.fn_automated_dispatch(p_request_id varchar(20), p_dispatcher_id integer, p_hospital_id integer DEFAULT NULL)

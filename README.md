@@ -14,7 +14,7 @@
 
 ### 2. 📻 Dispatcher Dashboard (`/dashboard`)
 *   **Command Center**: Live feed of all active emergencies and fleet status.
-*   **Intelligent Dispatch**: Automated specialization-aware matching (e.g., Cardiac cases → Cardiology specialized hospitals).
+*   **Automated Dispatch**: Matches patients to specialized hospitals (e.g., Cardiac cases → Cardiology specialized hospitals).
 *   **Manual Override**: Ability to manually select hospitals based on real-time bed availability.
 
 ### 3. 🗺️ Driver App (`/duty`)

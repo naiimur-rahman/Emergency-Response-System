@@ -17,7 +17,7 @@ This guide explains how to use the different portals within the Druto Sheba Emer
 *   **Goal**: Monitor the city and manage missions.
 *   **Actions**:
     1.  **Requests Tab**: View incoming "Pending" requests.
-    2.  **Dispatch**: Click "Auto-Dispatch" to let the AI find the best hospital/ambulance, or select a specific hospital from the dropdown for a manual override.
+    2.  **Dispatch**: Click "Auto-Dispatch" to find the best hospital/ambulance, or select a specific hospital from the dropdown for a manual override.
     3.  **Active Feed**: Monitor ongoing trips and read the automated system logs.
     4.  **Fleet Tab**: View all ambulances and their current maintenance status.
 

@@ -248,7 +248,7 @@ export default function PatientProfile() {
                     <option value="Oncology">Oncology (Cancer)</option>
                   </select>
                   <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8 }}>
-                    * Used for intelligent hospital routing during dispatch.
+                    * Used for hospital routing during dispatch.
                   </p>
                 </div>
               </div>

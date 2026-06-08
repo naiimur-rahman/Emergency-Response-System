@@ -18,7 +18,7 @@ The system leverages **PostgreSQL** with the **PostGIS** extension to handle com
 
 ---
 
-## 2. Intelligent Dispatch Algorithm (`fn_automated_dispatch`)
+## 2. Automated Dispatch Algorithm (`fn_automated_dispatch`)
 
 The heart of the system is a PL/pgSQL function that handles resource allocation in a single ACID-compliant transaction.
 
@@ -59,6 +59,5 @@ The `chat_messages` table stores all system-generated and dispatcher-to-driver c
 *   **Timezone Enforcement**: All timestamps are handled via `Asia/Dhaka` timezone at the database level to ensure cross-portal consistency.
 
 ---
-**Technical Lead: Antigravity AI**  
 **Version: 2.0.0**  
 **Build Date: May 2026**

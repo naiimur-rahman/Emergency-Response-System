@@ -59,7 +59,7 @@ const serviceLinks = [
 const metrics = [
   { value: '24/7', label: 'Coverage' },
   { value: '< 60s', label: 'Response' },
-  { value: 'Live', label: 'Telemetry' },
+  { value: 'Live', label: 'Tracking' },
 ];
 
 export default function HomePage() {
@@ -806,7 +806,7 @@ export default function HomePage() {
             </h2>
 
             <p className="hero-copy">
-              Professional emergency ambulance dispatch with real-time GPS telemetry,
+              Professional emergency ambulance dispatch with real-time GPS tracking,
               hospital resource coordination, and instant SOS alerts.
             </p>
 
@@ -867,7 +867,7 @@ export default function HomePage() {
               
               <div style={{ position: 'absolute', top: '12px', left: '16px', display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.5 }}>
                 <div className="pulse-dot" style={{ width: '6px', height: '6px' }} />
-                <span style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-primary)' }}>Live Telemetry</span>
+                <span style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-primary)' }}>Live Tracking</span>
               </div>
 
               {/* Realistic City Route Path */}

@@ -130,7 +130,7 @@ function countBy(rows, key) {
 }
 
 /**
- * AI-powered suggestion for severity and specialization based on description
+ * Suggestion for severity and specialization based on description
  */
 export function suggestSeverity(description = '') {
   const text = description.toLowerCase();
