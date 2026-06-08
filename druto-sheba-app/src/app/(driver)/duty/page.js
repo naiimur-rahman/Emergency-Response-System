@@ -217,9 +217,9 @@ export default function DriverDutyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vehicle_id: vehicleId, ...item }),
       })));
-      alert('Equipment checklist saved.');
+      setTimeout(() => alert('Equipment checklist saved.'), 100);
     } catch {
-      alert('Failed to save equipment checklist.');
+      setTimeout(() => alert('Failed to save equipment checklist.'), 100);
     } finally {
       setEquipmentSaving(false);
     }

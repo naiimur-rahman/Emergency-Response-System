@@ -38,14 +38,17 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const sql = `
+    const sqlDelete = `DELETE FROM Vehicle_Inventory WHERE Vehicle_ID = $1 AND Item_Name = $2`;
+    await query(sqlDelete, [vehicle_id, item_name]);
+
+    const sqlInsert = `
       INSERT INTO Vehicle_Inventory (Vehicle_ID, Item_Name, Quantity, Expiry_Date)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
     const values = [vehicle_id, item_name, quantity, expiry_date || null];
     
-    const result = await query(sql, values);
+    const result = await query(sqlInsert, values);
     return NextResponse.json({ success: true, item: result.rows[0] });
   } catch (err) {
     console.error('Error adding inventory item:', err);
