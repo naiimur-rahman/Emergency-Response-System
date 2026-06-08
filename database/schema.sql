@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS Hospitals (
 
 CREATE TABLE IF NOT EXISTS Ambulances (
     Vehicle_ID SERIAL PRIMARY KEY,
-    License_Plate VARCHAR(20) UNIQUE NOT NULL,
+    License_Plate VARCHAR(50) UNIQUE NOT NULL,
     Equipment_Level equipment_lvl NOT NULL,
     Current_Status vehicle_status DEFAULT 'Available',
     Trips_Since_Maintenance INT DEFAULT 0

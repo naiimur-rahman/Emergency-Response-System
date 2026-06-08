@@ -90,27 +90,27 @@ ON CONFLICT DO NOTHING;
 
 -- 6. Ambulances
 INSERT INTO Ambulances (License_Plate, Equipment_Level, Current_Status) VALUES 
-('DHA-11-9922', 'Advanced', 'Available'),
-('DHK-METRO-AMB-101', 'Advanced', 'Available'),
-('DHK-METRO-AMB-204', 'Basic', 'Available'),
-('DHK-METRO-AMB-305', 'Advanced', 'Available'),
-('DHK-METRO-AMB-412', 'Basic', 'Available'),
-('DHK-METRO-AMB-500', 'Advanced', 'Available'),
-('DHK-METRO-AMB-618', 'Advanced', 'Available'),
-('DHK-METRO-AMB-722', 'Basic', 'Available'),
-('DHK-METRO-AMB-834', 'Advanced', 'Available'),
-('DHK-METRO-AMB-945', 'Basic', 'Available'),
-('DHK-METRO-AMB-010', 'Advanced', 'Available'),
-('DHK-METRO-AMB-111', 'Advanced', 'Available'),
-('DHK-METRO-AMB-222', 'Basic', 'Available'),
-('DHK-METRO-AMB-333', 'Advanced', 'Available'),
-('DHK-METRO-AMB-444', 'Basic', 'Available'),
-('DHK-METRO-AMB-555', 'Advanced', 'Available'),
-('DHK-METRO-AMB-666', 'Advanced', 'Available'),
-('DHK-METRO-AMB-777', 'Advanced', 'Available'),
-('DHK-METRO-AMB-888', 'Basic', 'Available'),
-('DHK-METRO-AMB-999', 'Advanced', 'Available'),
-('DHK-METRO-AMB-000', 'Advanced', 'Available')
+('DHAKA METRO-KHA 43-1718', 'Advanced', 'Available'),
+('DHAKA METRO-KHA 46-7940', 'Advanced', 'Available'),
+('DHAKA METRO-CHHA 94-9616', 'Basic', 'Available'),
+('DHAKA METRO-CHA 87-5128', 'Advanced', 'Available'),
+('DHAKA METRO-KHA 57-6251', 'Basic', 'Available'),
+('DHAKA METRO-GA 76-7474', 'Advanced', 'Available'),
+('DHAKA METRO-GHA 96-8859', 'Advanced', 'Available'),
+('DHAKA METRO-KA 15-8128', 'Basic', 'Available'),
+('DHAKA METRO-GA 80-2558', 'Advanced', 'Available'),
+('DHAKA METRO-KHA 80-1749', 'Basic', 'Available'),
+('DHAKA METRO-KA 70-7595', 'Advanced', 'Available'),
+('DHAKA METRO-KHA 44-4620', 'Advanced', 'Available'),
+('DHAKA METRO-GHA 64-6741', 'Basic', 'Available'),
+('DHAKA METRO-CHHA 69-4179', 'Advanced', 'Available'),
+('DHAKA METRO-GA 67-6602', 'Basic', 'Available'),
+('DHAKA METRO-GA 68-7190', 'Advanced', 'Available'),
+('DHAKA METRO-GHA 55-2448', 'Advanced', 'Available'),
+('DHAKA METRO-CHHA 39-6672', 'Advanced', 'Available'),
+('DHAKA METRO-KHA 76-5096', 'Basic', 'Available'),
+('DHAKA METRO-GA 78-2360', 'Advanced', 'Available'),
+('DHAKA METRO-GHA 77-7145', 'Advanced', 'Available')
 ON CONFLICT DO NOTHING;
 
 -- 7. Drivers
