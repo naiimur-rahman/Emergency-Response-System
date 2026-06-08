@@ -10,6 +10,8 @@ async function safeQuery(sql, params = []) {
   }
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const [users, ambulances, audit, pricing] = await Promise.all([
     safeQuery('SELECT user_id, username, role, created_at, blocked FROM staff_users ORDER BY user_id'),

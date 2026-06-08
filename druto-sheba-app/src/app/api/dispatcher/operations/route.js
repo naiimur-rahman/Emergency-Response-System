@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 
 const severityRank = { Critical: 1, High: 2, Medium: 3, Low: 4 };
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const [queue, ambulances, drivers, hospitals, audit] = await Promise.all([

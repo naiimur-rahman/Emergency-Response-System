@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const driver_id = searchParams.get('driver_id');
