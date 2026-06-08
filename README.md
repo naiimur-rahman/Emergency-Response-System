@@ -39,6 +39,16 @@
 
 ---
 
+## 📚 Documentation & Diagrams
+
+*   **[Technical Details](./technical_details.md)**: Deep dive into the technologies and frameworks used.
+*   **[Project Report Guide](./project_report_guide.md)**: Structured guide for writing a full academic or professional project report.
+*   **[ER Diagram](./pure_ER_diagram.md)**: Complete Entity-Relationship Diagram for all 20 database tables.
+*   **[Trigger Diagram](./trigger_diagram.txt)**: Flowchart of the automated dispatch and audit trigger chain.
+*   **[Enum Diagram](./enum_diagram.txt)**: Visual representation of all database enum types.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -70,17 +80,7 @@
     npm run dev
     ```
 
----
 
-## 🗄️ Database Management
-
-The project includes a unified management tool for database setup and population.
-
-*   **Full Reset & Seed**: `node database/run.js both`
-*   **Schema Update**: `node database/run.js schema`
-*   **Mock Data Population**: `node database/run.js seed`
-
-*Note: The system comes with a **Mega Seed** dataset containing 5,000+ records for realistic testing.*
 
 ---
 
@@ -91,7 +91,7 @@ The project includes a unified management tool for database setup and population
 ---
 
 ## 🛡️ License
-Built for the **UIU CSE DBMS Project Showcase (2026)**.
+This project is proprietary and developed as a modern Emergency Response System.
 
 ---
-**DHAKA METRO • SYSTEM V2.0 • 2026**
+**Druto Sheba (দ্রুত সেবা) • Next-Generation Emergency Response System**
