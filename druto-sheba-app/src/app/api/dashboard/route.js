@@ -65,9 +65,12 @@ export async function GET() {
         ORDER BY count DESC 
         LIMIT 5
       `),
+      query(`SELECT * FROM drivers`),
+      query(`SELECT * FROM ambulances`),
+      query(`SELECT * FROM hospitals`),
     ]);
 
-    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips, chatMessages, responseStats, hotspotStats, trendStats, specStats] = results;
+    const [activeRequests, fleetStatus, maintenanceStatus, bedStatus, driverStatus, dashboardView, recentTrips, chatMessages, responseStats, hotspotStats, trendStats, specStats, driversList, ambulancesList, hospitalsList] = results;
 
     const fleet = {};
     fleetStatus.rows.forEach(r => { fleet[r.current_status] = parseInt(r.count); });
@@ -109,6 +112,9 @@ export async function GET() {
       },
       trend: trend,
       specializationStats: specStats.rows,
+      drivers: driversList.rows,
+      ambulances: ambulancesList.rows,
+      hospitals: hospitalsList.rows,
     });
   } catch (error) {
     console.error('Dashboard API error:', error);
