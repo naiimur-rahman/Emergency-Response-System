@@ -1,0 +1,29 @@
+flowchart TD
+    A["Emergency Request Created"] --> B["TRIGGER: trg_audit_requests<br/>(INSERT to Audit_Log)"]
+    B --> C["fn_Automated_Dispatch()"]
+    C --> D["Lock rows with FOR UPDATE"]
+    D --> E["PostGIS: Find nearest ambulance"]
+    E --> F["PostGIS: ST_Distance to nearest hospital"]
+    F --> G["Resources Available?"]
+    G -->|No| H["DISPATCH FAILED"]
+    G -->|Yes| I["INSERT INTO Trip_Logs"]
+    I --> J["TRIGGER: trg_reserve_resources<br/>Ambulance to Dispatched<br/>ICU Beds -= 1"]
+    J --> K["UPDATE Request to Active"]
+    K --> L["TRIGGER: trg_audit_requests<br/>(UPDATE to Audit_Log)"]
+    L --> M["DISPATCH SUCCESS"]
+
+    N["Maintenance_Logs INSERT"] --> O["TRIGGER: trg_maintenance_status<br/>Ambulance to Maintenance"]
+    P["Maintenance completed"] --> Q["TRIGGER: trg_maintenance_status<br/>Ambulance to Available"]
+
+    R["Request to Resolved"] --> S["TRIGGER: trg_release_resources<br/>Ambulance to Available"]
+    S --> T["TRIGGER: trg_audit_requests<br/>(UPDATE to Audit_Log)"]
+
+    style A fill:#ff2d5533,stroke:#ff2d55
+    style H fill:#ff2d5533,stroke:#ff2d55
+    style M fill:#30d15833,stroke:#30d158
+    style J fill:#0a84ff33,stroke:#0a84ff
+    style L fill:#ffd60a33,stroke:#ffd60a
+    style B fill:#ffd60a33,stroke:#ffd60a
+    style O fill:#ff9f0a33,stroke:#ff9f0a
+    style Q fill:#30d15833,stroke:#30d158
+    style T fill:#ffd60a33,stroke:#ffd60a

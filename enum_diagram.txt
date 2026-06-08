@@ -1,0 +1,45 @@
+graph LR
+    subgraph equipment_lvl
+        E1["Basic"]
+        E2["Advanced"]
+    end
+
+    subgraph vehicle_status
+        V1["Available"]
+        V2["Dispatched"]
+        V3["Maintenance"]
+    end
+
+    subgraph shift_status
+        S1["On_Duty"]
+        S2["Off_Duty"]
+    end
+
+    subgraph severity_lvl
+        SV1["Low"]
+        SV2["Medium"]
+        SV3["High"]
+        SV4["Critical"]
+    end
+
+    subgraph req_status
+        R1["Pending"]
+        R2["Active"]
+        R5["En Route"]
+        R6["Picked Up"]
+        R7["Arrived"]
+        R3["Resolved"]
+        R4["Cancelled"]
+    end
+    
+    subgraph hospital_type
+        HT1["Government"]
+        HT2["Private"]
+    end
+
+    style equipment_lvl fill:#7c3aed22,stroke:#7c3aed
+    style vehicle_status fill:#0a84ff22,stroke:#0a84ff
+    style shift_status fill:#30d15822,stroke:#30d158
+    style severity_lvl fill:#ff2d5522,stroke:#ff2d55
+    style req_status fill:#ff9f0a22,stroke:#ff9f0a
+    style hospital_type fill:#0a84ff22,stroke:#0a84ff
