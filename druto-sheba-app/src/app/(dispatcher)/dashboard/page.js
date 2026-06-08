@@ -77,6 +77,7 @@ export default function DispatcherDashboard() {
   const [activeChatTrip, setActiveChatTrip] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
   const [mapModal, setMapModal] = useState({ open: false, title: '', pickupCoords: null, realtimeMarker: null, driver_id: null });
+  const [assignModal, setAssignModal] = useState({ open: false, request_id: null, driver_id: '', vehicle_id: '' });
   const toast = useToast();
 
   // MQTT Connection for real-time tracking in the Map Modal
@@ -149,6 +150,42 @@ export default function DispatcherDashboard() {
     const interval = setInterval(fetchData, 15000); // Poll every 15 seconds instead of 3
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  const handleManualAssignSubmit = async () => {
+    if (!assignModal.driver_id || !assignModal.vehicle_id) {
+      toast('Please select both a driver and an ambulance', 'error');
+      return;
+    }
+    
+    // We need a hospital ID. We can just pick the first available one since the dispatcher isn't picking it in the UI right now.
+    // Let's assume data.hospitals has them.
+    const hospital_id = data.stats?.hospitals?.[0]?.hospital_id || 1;
+
+    try {
+      const res = await fetch('/api/dispatcher/operations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          request_id: assignModal.request_id,
+          driver_id: assignModal.driver_id,
+          vehicle_id: assignModal.vehicle_id,
+          hospital_id: hospital_id,
+          dispatcher_id: 1
+        })
+      });
+      const result = await res.json();
+      
+      if (result.success) {
+        toast('Driver manually assigned successfully!', 'success');
+        setAssignModal({ open: false, request_id: null, driver_id: '', vehicle_id: '' });
+      } else {
+        toast(result.error || 'Failed to assign driver', 'error');
+      }
+      fetchData();
+    } catch (err) {
+      toast('Network error during assignment', 'error');
+    }
+  };
 
 
   const handleDispatch = async (requestId) => {
@@ -380,12 +417,11 @@ export default function DispatcherDashboard() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      {row.request_status === 'Pending' && (
+
+                      {row.request_status === 'Broadcast' && (
                         <button className="btn btn-primary btn-sm"
-                          onClick={() => handleDispatch(row.request_id)}
-                          disabled={dispatching === row.request_id}>
-                          <Zap size={14} />
-                          {dispatching === row.request_id ? 'Broadcasting...' : 'Dispatch Mission'}
+                          onClick={() => setAssignModal({ open: true, request_id: row.request_id, driver_id: '', vehicle_id: '' })}>
+                          Manual Assign
                         </button>
                       )}
                       <button className="btn btn-ghost btn-sm" onClick={() => {
@@ -523,6 +559,48 @@ export default function DispatcherDashboard() {
                 pickupCoords={mapModal.pickupCoords} 
                 realtimeMarker={mapModal.realtimeMarker}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {assignModal.open && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 400 }}>
+            <h3>Manual Driver Assignment</h3>
+            <p>Forcefully assign a specific driver to request #{assignModal.request_id}</p>
+            
+            <div style={{ marginTop: 16 }}>
+              <label style={{ display: 'block', marginBottom: 8 }}>Select Driver</label>
+              <select 
+                className="form-input" 
+                value={assignModal.driver_id}
+                onChange={e => setAssignModal({...assignModal, driver_id: e.target.value})}
+              >
+                <option value="">-- Choose a driver --</option>
+                {data.drivers?.filter(d => d.shift_status === 'On_Duty' || d.shift_status === 'Available').map(d => (
+                  <option key={d.driver_id} value={d.driver_id}>{d.name} ({d.shift_status})</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginTop: 16 }}>
+              <label style={{ display: 'block', marginBottom: 8 }}>Select Ambulance</label>
+              <select 
+                className="form-input" 
+                value={assignModal.vehicle_id}
+                onChange={e => setAssignModal({...assignModal, vehicle_id: e.target.value})}
+              >
+                <option value="">-- Choose an ambulance --</option>
+                {data.ambulances?.filter(a => a.current_status === 'Available').map(a => (
+                  <option key={a.vehicle_id} value={a.vehicle_id}>{a.license_plate} ({a.equipment_level})</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setAssignModal({ open: false, request_id: null, driver_id: '', vehicle_id: '' })}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleManualAssignSubmit}>Assign Mission</button>
             </div>
           </div>
         </div>

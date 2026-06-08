@@ -70,7 +70,7 @@ export async function POST(request) {
 
       const emergency = await client.query(`
         INSERT INTO emergency_requests (patient_id, pickup_coords, severity_level, emergency_type, requested_for, status)
-        VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, 'Pending')
+        VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, 'Broadcast')
         RETURNING *
       `, [patientId, lon, lat, severity, emergency_type, requested_for]);
 

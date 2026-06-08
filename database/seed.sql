@@ -118,10 +118,10 @@ INSERT INTO Drivers (Name, License_No, Shift_Status) VALUES
 ('Rahim Uddin', 'BD-DL-99384', 'On_Duty'),
 ('Karim Mia', 'BD-DL-22839', 'On_Duty'),
 ('Zahirul Islam', 'BD-DL-44556', 'Off_Duty'),
-('Mim Chowdhury', 'BD-DL-77120', 'On_Duty'),
+('Milon Chowdhury', 'BD-DL-77120', 'On_Duty'),
 ('Sabbir Ahmed', 'BD-DL-55221', 'On_Duty'),
 ('Farhan Kabir', 'BD-DL-66332', 'On_Duty'),
-('Nabila Islam', 'BD-DL-88443', 'Off_Duty'),
+('Naimul Islam', 'BD-DL-88443', 'Off_Duty'),
 ('Tanvir Hasan', 'BD-DL-11990', 'On_Duty'),
 ('Lutfur Rahman', 'BD-DL-44229', 'On_Duty'),
 ('Jasim Uddin', 'BD-DL-11223', 'On_Duty'),
@@ -361,7 +361,13 @@ LIMIT 1;-- ==========================================
 -- 1. Patients: Generate 500 patients
 INSERT INTO Patients (Name, Phone, Blood_Type)
 SELECT 
-    'Patient ' || i,
+        (ARRAY[
+        'Rahim Uddin', 'Karim Mia', 'Zahirul Islam', 'Sabbir Ahmed', 'Farhan Chowdhury',
+        'Nabila Akter', 'Rokeya Begum', 'Anika Khatun', 'Salma Rahman', 'Nusrat Jahan',
+        'Lutfur Rahman', 'Jasim Ahmed', 'Sumon Mia', 'Tanjina Akter', 'Fatima Begum',
+        'Abid Hasan', 'Sharif Islam', 'Ayesha Siddiqua', 'Khadija Akter', 'Shohel Rana',
+        'Sumaiya Tabassum', 'Sadia Afrin', 'Imran Hossain', 'Tariq Ali', 'Farhana Akter'
+    ])[floor(random() * 25) + 1],
     '01' || (100000000 + floor(random() * 900000000))::text,
     (ARRAY['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'])[floor(random() * 8) + 1]
 FROM generate_series(1, 500) s(i)
@@ -467,7 +473,12 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO Drivers (Name, License_No, Shift_Status)
 SELECT 
-    'Driver ' || i,
+        (ARRAY[
+        'Rahim Uddin', 'Karim Mia', 'Zahirul Islam', 'Sabbir Ahmed', 'Farhan Chowdhury',
+        'Lutfur Rahman', 'Jasim Ahmed', 'Sumon Mia', 'Abid Hasan', 'Sharif Islam',
+        'Shohel Rana', 'Mustafizur Rahman', 'Imran Hossain', 'Tariq Ali', 'Jamal Uddin',
+        'Kamal Hossain', 'Asif Ahmed', 'Shafiqul Islam', 'Arif Hossain', 'Mahbub Alam'
+    ])[floor(random() * 20) + 1],
     'BD-MEGA-' || (10000 + i),
     'Off_Duty'::shift_status
 FROM generate_series(1, 50) s(i)

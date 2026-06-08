@@ -23,6 +23,8 @@ export async function GET() {
         ST_X(h.location_coords::geometry) as hospital_lon,
         ST_Y(h.location_coords::geometry) as hospital_lat,
         a.license_plate,
+        ST_X(a.current_location::geometry) as ambulance_lon,
+        ST_Y(a.current_location::geometry) as ambulance_lat,
         d.name as driver_name,
         d.phone as driver_phone
       FROM trip_logs tl

@@ -112,6 +112,7 @@ export default function MapView({
   pickupCoords = null, 
   requestStatus = 'Pending', 
   realtimeMarker = null,
+  initialAmbulanceLocation = null,
   onHospitalClick = null,
   selectedHospitalId = null,
   onPickupDrag = null
@@ -232,7 +233,9 @@ export default function MapView({
       ? [hospitals[0].lat, hospitals[0].lon]
       : [23.7750, 90.4100];
 
-  const currentAmbulancePos = realtimeMarker ? [realtimeMarker.lat, realtimeMarker.lng] : null;
+  const currentAmbulancePos = realtimeMarker 
+    ? [realtimeMarker.lat, realtimeMarker.lng] 
+    : (initialAmbulanceLocation?.lat && initialAmbulanceLocation?.lon ? [initialAmbulanceLocation.lat, initialAmbulanceLocation.lon] : null);
 
   // Build route polyline points
   const routePoints = [];

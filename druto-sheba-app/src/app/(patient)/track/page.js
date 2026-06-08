@@ -194,6 +194,7 @@ export default function PatientTrackPage() {
                 hospitals={[{ hospital_id: 1, name: trip.hospital_name, lat: trip.hospital_lat, lon: trip.hospital_lon, general_beds: 'Destination', icu_beds: 'Secured' }]}
                 requestStatus={trip.request_status}
                 realtimeMarker={realtimeMarker}
+                initialAmbulanceLocation={{ lat: trip.ambulance_lat, lon: trip.ambulance_lon }}
              />
              
              {/* Map Status Overlay */}
