@@ -111,7 +111,8 @@ WHERE patient_id IN (
 **Speaker:** 
 "শুধু সাধারণ query নয়, আমরা database-এ **Advanced Features**-ও implement করেছি।
 - **Views:** Analytics dashboard-এর summary data fast load করার জন্য আমরা `emergency_analytics_mv` নামে একটা Materialized View তৈরি করেছি যা automatically calculate করে রাখে।
-- **Triggers:** আমাদের database-এ Postgres Triggers আছে। যেমন, যখন একটি নতুন emergency request insert হয়, তখন একটি automated trigger patient-এর history analyze করে severity level auto-predict করতে পারে।"
+- **Triggers:** আমাদের database-এ Postgres Triggers আছে। যেমন, যখন একটি নতুন emergency request insert হয়, তখন একটি automated trigger patient-এর history analyze করে severity level auto-predict করতে পারে।
+- **PostGIS Extension:** Spatial data অর্থাৎ live GPS tracking এবং closest ambulance খোঁজার জন্য আমরা PostGIS use করেছি যা `ST_SetSRID` এবং `ST_MakePoint`-এর মতো function দিয়ে coordinates handle করে।"
 
 ---
 
