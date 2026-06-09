@@ -419,7 +419,7 @@ input, select, textarea { font-family: inherit; }
   backdrop-filter: blur(8px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .table-header {
