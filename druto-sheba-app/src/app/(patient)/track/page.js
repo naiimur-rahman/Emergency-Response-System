@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { Navigation, PhoneCall, Truck, AlertTriangle, Building2, ShieldAlert, Radio, Gauge, MapPin } from 'lucide-react';
+import { Navigation, PhoneCall, Truck, AlertTriangle, Building2, ShieldAlert, Radio, Gauge, MapPin, MessageCircle, Send } from 'lucide-react';
 import MapView from '@/components/MapView';
 import { SeverityBadge } from '@/components/Badges';
 import mqttService from '@/lib/mqttService';
@@ -12,17 +12,37 @@ export default function PatientTrackPage() {
   const [realtimeMarker, setRealtimeMarker] = useState(null);
   const [showDriverModal, setShowDriverModal] = useState(false);
 
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+
   const fetchTrip = useCallback(async () => {
     try {
       const res = await fetch(`/api/patient/track?t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       setTrip(data.active_trip);
+      setChatMessages(data.chat_messages || []);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !trip) return;
+    try {
+      await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_id: trip.trip_id, text: newMessage, sender: `Patient (${trip.patient_name || 'Self'})` })
+      });
+      setNewMessage('');
+      fetchTrip();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     fetchTrip();
@@ -185,6 +205,35 @@ export default function PatientTrackPage() {
                     </div>
                  </div>
               </div>
+            </div>
+            {/* Chat with Dispatcher / Driver */}
+            <div className="glass" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', minHeight: 250, border: 'none', marginTop: 16 }}>
+              <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <MessageCircle size={16} style={{ color: 'var(--blue)' }} />
+                <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>Emergency Chat</span>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {chatMessages.map((m, i) => (
+                  <div key={i} style={{ alignSelf: m.sender.includes('Patient') ? 'flex-end' : 'flex-start', background: m.sender.includes('Patient') ? 'rgba(10,132,255,0.2)' : 'rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 16, maxWidth: '85%', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, opacity: 0.5, marginBottom: 4 }}>{m.sender.toUpperCase()}</div>
+                    <div style={{ fontSize: 13, lineHeight: 1.4 }}>{m.message_text}</div>
+                  </div>
+                ))}
+                {chatMessages.length === 0 && (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, marginTop: 20 }}>No messages yet. Send a message to the driver or dispatcher.</div>
+                )}
+              </div>
+              <form onSubmit={handleSendMessage} style={{ padding: 12, display: 'flex', gap: 8, background: 'rgba(0,0,0,0.3)' }}>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  style={{ fontSize: 13, background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 12, width: '100%' }}
+                  placeholder="Type message..." 
+                  value={newMessage}
+                  onChange={e => setNewMessage(e.target.value)}
+                />
+                <button type="submit" className="btn btn-primary" style={{ padding: '0 16px', borderRadius: 12 }}><Send size={18}/></button>
+              </form>
             </div>
           </div>
 

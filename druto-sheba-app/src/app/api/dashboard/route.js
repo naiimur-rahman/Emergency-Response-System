@@ -38,7 +38,7 @@ export async function GET() {
       `),
       query(`SELECT tl.trip_id, tl.time_dispatched, p.name as patient_name, h.name as hospital_name, a.license_plate
              FROM trip_logs tl
-             JOIN emergency_requests er ON tl.trip_id = er.request_id
+             JOIN emergency_requests er ON tl.trip_id = er.request_id::text
              JOIN patients p ON er.patient_id = p.patient_id
              JOIN hospitals h ON tl.hospital_id = h.hospital_id
              JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
@@ -46,7 +46,7 @@ export async function GET() {
       query(`SELECT * FROM chat_messages ORDER BY timestamp ASC`),
       query(`SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (tl.time_dispatched - er.timestamp_created)) / 60), 0) as avg_response_time
              FROM trip_logs tl
-             JOIN emergency_requests er ON tl.trip_id = er.request_id`),
+             JOIN emergency_requests er ON tl.trip_id = er.request_id::text`),
       query(`SELECT COALESCE(p.address, 'Unknown Area') as area
              FROM emergency_requests er
              JOIN patients p ON er.patient_id = p.patient_id

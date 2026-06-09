@@ -11,7 +11,7 @@ export async function GET() {
              er.severity_level, er.status as request_status,
              tf.rating, tf.comments
       FROM trip_logs tl
-      JOIN emergency_requests er ON tl.trip_id = er.request_id::text
+      JOIN emergency_requests er ON tl.trip_id = er.request_id::text::text
       JOIN patients p ON er.patient_id = p.patient_id
       JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
       JOIN drivers d ON tl.driver_id = d.driver_id

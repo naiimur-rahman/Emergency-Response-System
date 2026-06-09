@@ -13,7 +13,7 @@ export async function GET(request) {
              h.name as hospital_name, er.status, b.total_amount,
              (SELECT COUNT(*) FROM Trip_Feedback WHERE Trip_ID = tl.trip_id) as has_rating
       FROM trip_logs tl
-      JOIN emergency_requests er ON tl.trip_id = er.request_id
+      JOIN emergency_requests er ON tl.trip_id = er.request_id::text
       JOIN hospitals h ON tl.hospital_id = h.hospital_id
       LEFT JOIN billing b ON tl.trip_id = b.trip_id
     `;

@@ -29,7 +29,7 @@ export async function GET() {
         d.phone as driver_phone
       FROM emergency_requests er
       JOIN patients p ON er.patient_id = p.patient_id
-      LEFT JOIN trip_logs tl ON er.request_id = tl.trip_id
+      LEFT JOIN trip_logs tl ON er.request_id::text = tl.trip_id
       LEFT JOIN hospitals h ON tl.hospital_id = h.hospital_id
       LEFT JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
       LEFT JOIN drivers d ON tl.driver_id = d.driver_id
@@ -38,7 +38,14 @@ export async function GET() {
       LIMIT 1
     `);
 
-    return NextResponse.json({ active_trip: res.rows[0] || null });
+    const trip = res.rows[0] || null;
+    let chatMessages = [];
+    if (trip && trip.trip_id) {
+      const chatRes = await query('SELECT * FROM chat_messages WHERE trip_id = $1 ORDER BY timestamp ASC', [trip.trip_id]);
+      chatMessages = chatRes.rows;
+    }
+
+    return NextResponse.json({ active_trip: trip, chat_messages: chatMessages });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

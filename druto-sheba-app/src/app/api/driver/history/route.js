@@ -12,7 +12,7 @@ export async function GET(request) {
       `SELECT tl.trip_id, er.timestamp_created, p.name as patient_name, 
               h.name as hospital_name, er.status
        FROM trip_logs tl
-       JOIN emergency_requests er ON tl.trip_id = er.request_id
+       JOIN emergency_requests er ON tl.trip_id = er.request_id::text
        JOIN patients p ON er.patient_id = p.patient_id
        JOIN hospitals h ON tl.hospital_id = h.hospital_id
        WHERE tl.driver_id = $1 AND er.status = 'Resolved'

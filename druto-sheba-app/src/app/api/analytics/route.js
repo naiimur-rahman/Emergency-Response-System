@@ -54,7 +54,7 @@ export async function GET() {
         SELECT tf.*, p.name as patient_name
         FROM Trip_Feedback tf
         JOIN Trip_Logs tl ON tf.trip_id = tl.trip_id
-        JOIN Emergency_Requests er ON tl.trip_id = er.request_id::text
+        JOIN Emergency_Requests er ON tl.trip_id = er.request_id::text::text
         JOIN Patients p ON er.patient_id = p.patient_id
         ORDER BY tf.submitted_at DESC LIMIT 5
       `),
@@ -68,7 +68,7 @@ export async function GET() {
           END as range,
           COUNT(*) as count
         FROM trip_logs tl
-        JOIN emergency_requests er ON tl.trip_id = er.request_id
+        JOIN emergency_requests er ON tl.trip_id = er.request_id::text
         GROUP BY range
       `),
       safeQuery(`

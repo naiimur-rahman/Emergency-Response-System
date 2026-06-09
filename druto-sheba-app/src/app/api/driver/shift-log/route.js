@@ -15,7 +15,7 @@ export async function GET(request) {
     const trips = await query(`
       SELECT tl.trip_id, tl.time_dispatched, er.status, er.severity_level
       FROM trip_logs tl
-      JOIN emergency_requests er ON tl.trip_id = er.request_id
+      JOIN emergency_requests er ON tl.trip_id = er.request_id::text
       WHERE tl.driver_id = $1
       ORDER BY tl.time_dispatched DESC
     `, [driverId]);

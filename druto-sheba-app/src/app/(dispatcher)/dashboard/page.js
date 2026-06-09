@@ -136,7 +136,7 @@ export default function DispatcherDashboard() {
       await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trip_id: activeChatTrip.trip_id, text: chatMessage, sender: 'Dispatcher' })
+        body: JSON.stringify({ trip_id: activeChatTrip.request_id, text: chatMessage, sender: 'Dispatcher' })
       });
       setChatMessage('');
       fetchData();
@@ -466,11 +466,11 @@ export default function DispatcherDashboard() {
         <div className="modal-overlay" onClick={() => setActiveChatTrip(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
-              <h3>Chat with Driver (Trip #{activeChatTrip.trip_id})</h3>
+              <h3>Chat with Driver (Trip #{activeChatTrip.request_id})</h3>
               <button className="btn-ghost" onClick={() => setActiveChatTrip(null)}><X size={18}/></button>
             </div>
-            <div style={{ height: 300, overflowY: 'auto', padding: '10px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(data?.chatMessages || []).filter(m => m.trip_id === activeChatTrip.trip_id).map((m) => (
+            <div style={{ padding: 16, height: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(data?.chatMessages || []).filter(m => m.trip_id === String(activeChatTrip.request_id)).map((m) => (
                 <div key={m.message_id || Math.random()} style={{ alignSelf: m.sender === 'Dispatcher' ? 'flex-end' : 'flex-start', background: m.sender === 'Dispatcher' ? 'var(--blue)' : 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 12, maxWidth: '80%' }}>
                   <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>{m.sender}</div>
                   <div style={{ fontSize: 13 }}>{m.message_text}</div>
