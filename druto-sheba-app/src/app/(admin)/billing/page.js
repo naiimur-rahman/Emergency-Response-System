@@ -1,7 +1,7 @@
 'use client';
 import {  useState, useEffect , useCallback } from 'react';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { Receipt, CreditCard, Download, Search } from 'lucide-react';
+import { Receipt, CreditCard, Download, Search, CheckCircle } from 'lucide-react';
 
 export default function BillingPage() {
   const [bills, setBills] = useState([]);
@@ -76,7 +76,7 @@ export default function BillingPage() {
                       </button>
                       {bill.payment_status === 'Unpaid' && (
                         <button className="btn btn-primary btn-sm">
-                          <CreditCard size={14} /> Pay
+                          <CheckCircle size={14} /> Mark Paid
                         </button>
                       )}
                     </div>
