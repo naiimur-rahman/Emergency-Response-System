@@ -516,7 +516,7 @@ export default function MapView({
           <>
             <Marker position={currentAmbulancePos} icon={ambulanceIcon}>
               <Popup>
-                <div class="popup-title">🚑 Ambulance Unit</div>
+                <div class="popup-title">🚑 {realtimeMarker?.title || 'Ambulance Unit'}</div>
                 {realtimeMarker && (
                   <>
                     <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>

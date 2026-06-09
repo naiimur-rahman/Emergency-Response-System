@@ -5,7 +5,7 @@ import { Activity, BarChart3, ShieldAlert, Map, TrendingUp, Star, MessageSquare,
 
 const CostTrendGraph = ({ data }) => {
   if (!data || data.length === 0) return null;
-  const maxVal = Math.max(...data.map(d => parseFloat(d.total_cost)), 1000);
+  const maxVal = Math.max(...data.map(d => parseFloat(d.total_cost) || 0), 1000);
   const width = 400;
   const height = 180;
   const padding = 30;
@@ -13,8 +13,8 @@ const CostTrendGraph = ({ data }) => {
   const chartHeight = height - (padding * 2);
 
   const points = data.map((d, i) => ({
-    x: padding + (i * (chartWidth / (data.length - 1 || 1))),
-    y: height - padding - ((parseFloat(d.total_cost) / maxVal) * chartHeight)
+    x: padding + (i * (chartWidth / ((data.length - 1) || 1))),
+    y: height - padding - (((parseFloat(d.total_cost) || 0) / maxVal) * chartHeight)
   }));
 
   const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
@@ -38,14 +38,14 @@ const CostTrendGraph = ({ data }) => {
 
 const ZoneBarChart = ({ data }) => {
   if (!data || data.length === 0) return null;
-  const maxVal = Math.max(...data.map(d => parseInt(d.count)), 1);
+  const maxVal = Math.max(...data.map(d => parseInt(d.count) || 0), 1);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 0' }}>
       {data.map((z, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 80, fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{z.zone_name}</div>
           <div style={{ flex: 1, height: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 6, overflow: 'hidden' }}>
-            <div style={{ width: `${(parseInt(z.count) / maxVal) * 100}%`, height: '100%', background: i === 0 ? 'var(--red)' : 'var(--blue)', borderRadius: 6 }} />
+            <div style={{ width: `${((parseInt(z.count) || 0) / maxVal) * 100}%`, height: '100%', background: i === 0 ? 'var(--red)' : 'var(--blue)', borderRadius: 6 }} />
           </div>
           <div style={{ width: 30, fontSize: 11, fontWeight: 700 }}>{z.count}</div>
         </div>
@@ -56,12 +56,12 @@ const ZoneBarChart = ({ data }) => {
 
 const ResponseTimeChart = ({ data }) => {
   if (!data || data.length === 0) return null;
-  const maxVal = Math.max(...data.map(d => parseInt(d.count)), 1);
+  const maxVal = Math.max(...data.map(d => parseInt(d.count) || 0), 1);
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, height: 100, alignItems: 'flex-end', padding: '10px 0' }}>
       {data.map((d, i) => (
         <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: '100%', height: `${(parseInt(d.count) / maxVal) * 80}px`, background: 'var(--blue)', borderRadius: '4px 4px 0 0', position: 'relative' }}>
+          <div style={{ width: '100%', height: `${((parseInt(d.count) || 0) / maxVal) * 80}px`, background: 'var(--blue)', borderRadius: '4px 4px 0 0', position: 'relative' }}>
              <div style={{ position: 'absolute', top: -20, width: '100%', textAlign: 'center', fontSize: 10, fontWeight: 700 }}>{d.count}</div>
           </div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{d.range}</div>
@@ -73,13 +73,13 @@ const ResponseTimeChart = ({ data }) => {
 
 const SpecDistChart = ({ data }) => {
   if (!data || data.length === 0) return null;
-  const total = data.reduce((acc, curr) => acc + parseInt(curr.count), 0);
+  const total = data.reduce((acc, curr) => acc + (parseInt(curr.count) || 0), 0);
   let cumulative = 0;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
       <div style={{ width: 100, height: 100, borderRadius: '50%', background: `conic-gradient(${data.map((d, i) => {
         const start = cumulative;
-        const end = cumulative + (parseInt(d.count) / total) * 100;
+        const end = cumulative + ((parseInt(d.count) || 0) / (total || 1)) * 100;
         cumulative = end;
         return `${i === 0 ? 'var(--blue)' : i === 1 ? 'var(--orange)' : i === 2 ? 'var(--green)' : 'var(--red)'} ${start}% ${end}%`;
       }).join(', ')})` }} />
@@ -87,7 +87,7 @@ const SpecDistChart = ({ data }) => {
         {data.map((d, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 8, height: 8, borderRadius: 2, background: i === 0 ? 'var(--blue)' : i === 1 ? 'var(--orange)' : i === 2 ? 'var(--green)' : 'var(--red)' }} />
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{d.spec} ({Math.round((parseInt(d.count)/total)*100)}%)</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{d.spec} ({Math.round(((parseInt(d.count) || 0)/(total || 1))*100)}%)</div>
           </div>
         ))}
       </div>
@@ -191,11 +191,11 @@ export default function AnalyticsPage() {
       <div className="stats-grid" style={{ marginBottom: 24 }}>
         <div className="stat-card">
           <div className="stat-card-label">Total Service Cost</div>
-          <div className="stat-card-value">৳{data?.maintenanceStats?.reduce((acc, curr) => acc + parseFloat(curr.cost), 0).toLocaleString() || 0}</div>
+          <div className="stat-card-value">৳{((data?.maintenanceStats || []).reduce((acc, curr) => acc + (parseFloat(curr.cost) || 0), 0)).toLocaleString()}</div>
         </div>
         <div className="stat-card">
           <div className="stat-card-label">Avg Requests/Zone</div>
-          <div className="stat-card-value">{(data?.zoneAnalysis?.reduce((acc, curr) => acc + parseInt(curr.count), 0) / (data?.zoneAnalysis?.length || 1)).toFixed(1) || 0}</div>
+          <div className="stat-card-value">{((data?.zoneAnalysis || []).reduce((acc, curr) => acc + (parseInt(curr.count) || 0), 0) / ((data?.zoneAnalysis || []).length || 1)).toFixed(1)}</div>
         </div>
       </div>
 
@@ -264,17 +264,17 @@ export default function AnalyticsPage() {
           </div>
           <div className="section-body" style={{ padding: '20px 40px' }}>
              {/* Simple SVG Trend for Analytics */}
-             {data?.requestTrend && (
+             {data?.requestTrend && data.requestTrend.length > 1 && (
                <div style={{ height: 160, width: '100%' }}>
                  <svg width="100%" height="160" viewBox="0 0 800 160" preserveAspectRatio="none">
                     <path 
-                      d={data.requestTrend.map((t, i) => `${i===0?'M':'L'} ${i * (800/(data.requestTrend.length-1))} ${160 - (parseInt(t.count)/(Math.max(...data.requestTrend.map(x=>parseInt(x.count)), 1)||1) * 120 + 20)}`).join(' ')}
+                      d={data.requestTrend.map((t, i) => `${i===0?'M':'L'} ${i * (800/((data.requestTrend.length-1)||1))} ${160 - ((parseInt(t.count)||0)/(Math.max(...data.requestTrend.map(x=>parseInt(x.count)||0), 1)) * 120 + 20)}`).join(' ')}
                       fill="none" stroke="var(--blue)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
                     />
                     {data.requestTrend.map((t, i) => (
                       <g key={i}>
-                        <circle cx={i * (800/(data.requestTrend.length-1))} cy={160 - (parseInt(t.count)/(Math.max(...data.requestTrend.map(x=>parseInt(x.count)), 1)||1) * 120 + 20)} r="5" fill="var(--blue)" />
-                        <text x={i * (800/(data.requestTrend.length-1))} y="155" textAnchor="middle" style={{ fontSize: 10, fill: 'var(--text-muted)', fontWeight: 800 }}>{t.day}</text>
+                        <circle cx={i * (800/((data.requestTrend.length-1)||1))} cy={160 - ((parseInt(t.count)||0)/(Math.max(...data.requestTrend.map(x=>parseInt(x.count)||0), 1)) * 120 + 20)} r="5" fill="var(--blue)" />
+                        <text x={i * (800/((data.requestTrend.length-1)||1))} y="155" textAnchor="middle" style={{ fontSize: 10, fill: 'var(--text-muted)', fontWeight: 800 }}>{t.day}</text>
                       </g>
                     ))}
                  </svg>
