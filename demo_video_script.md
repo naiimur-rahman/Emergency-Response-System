@@ -11,18 +11,18 @@
 **[Screen: Show the Landing Page or Home Screen of your project]**
 
 **Speaker:** 
-"Assalamu Alaikum. Amader project er nam **Druto Sheba - Emergency Response System**. 
+"আসসালামু আলাইকুম। আমাদের প্রজেক্টের নাম **Druto Sheba - Emergency Response System**।
 
-Amader deshe emergency medical situation e somoymoto ambulance ba specialist doctor khuje paoa ekta boro challenge. Thik shomoye response na paoar karone onek jibon jhumkir mukhe pore. Ei problem ti effectively solve korar jonnoi amra Druto Sheba system ti develop korechi.
+আমাদের দেশে emergency medical situation-এ সময়মতো ambulance বা specialist doctor খুঁজে পাওয়া একটা বড় challenge। ঠিক সময়ে response না পাওয়ার কারণে অনেক জীবন হুমকির মুখে পড়ে। এই problem-টি effectively solve করার জন্যই আমরা Druto Sheba system-টি develop করেছি।
 
-Eti ekti real-time, location-based platform. Ekhane ekjon **Patient** emergency SOS er madhyome instant ambulance call korte parbe, ambulance er live location map-e track korte parbe, ebong specific hospital er specialist doctor-der sathe appointment book korte parbe. 
+এটি একটি real-time, location-based platform। এখানে একজন **Patient** emergency SOS-এর মাধ্যমে instant ambulance call করতে পারবেন, ambulance-এর live location map-এ track করতে পারবেন এবং নির্দিষ্ট hospital-এর specialist doctor-দের সাথে appointment book করতে পারবেন।
 
-Amader system e total 3 ti main portal ache: 
-1. **Patient Portal**: Jekhan theke service request kora hoy.
-2. **Dispatcher/Admin Portal**: Jekhan theke hospital authority ba admin shob emergency request control kore ebong ambulance assign kore.
-3. **Driver Portal**: Jekhan theke ambulance driver tader trip manage kore ebong live location share kore.
+আমাদের system-এ total ৩টি main portal আছে:
+1. **Patient Portal**: যেখান থেকে service request করা হয়।
+2. **Dispatcher/Admin Portal**: যেখান থেকে hospital authority বা admin সব emergency request control করে এবং ambulance assign করে।
+3. **Driver Portal**: যেখান থেকে ambulance driver তাদের trip manage করে এবং live location share করে।
 
-Cholun ebar amader system er internal database architecture ti dekhe nei."
+চলুন এবার আমাদের system-এর internal database architecture-টি দেখে নিই।"
 
 ---
 
@@ -31,18 +31,18 @@ Cholun ebar amader system er internal database architecture ti dekhe nei."
 **[Screen: Open and zoom in on the `pure_ER_diagram.md` or a visual diagram]**
 
 **Speaker:** 
-"Eti hocche amader project er Entity Relationship ba **ER Diagram**. Amader full system ti chalachol korar jonno amra total **27 ti tables** design korechi.
+"এটি হচ্ছে আমাদের প্রজেক্টের Entity Relationship বা **ER Diagram**। আমাদের full system-টি চালানোর জন্য আমরা total **২৭টি tables** design করেছি।
 
-Ekhane main entity gulo hocche `Patients`, `Hospitals`, `Ambulances`, `Drivers`, `Doctors`, `Emergency_Requests`, ebong `Trip_Logs`. Amader database er relationship gulo emonvabe map kora jate data redundancy ekdom na thake. 
-Jemon, ekjon patient multiple emergency request korte pare, tai `Patients` ebong `Emergency_Requests` er moddhe amra **One-to-Many** relationship use korechi. Abar ekta emergency request er বিপরীতে ektai trip log thakbe, tai `Emergency_Requests` ebong `Trip_Logs` er relation hocche **One-to-One**.
+এখানে main entity গুলো হচ্ছে `Patients`, `Hospitals`, `Ambulances`, `Drivers`, `Doctors`, `Emergency_Requests` এবং `Trip_Logs`। আমাদের database-এর relationship গুলো এমনভাবে map করা যাতে data redundancy একদম না থাকে।
+যেমন, একজন patient multiple emergency request করতে পারে, তাই `Patients` এবং `Emergency_Requests`-এর মধ্যে আমরা **One-to-Many** relationship use করেছি। আবার একটা emergency request-এর বিপরীতে একটাই trip log থাকবে, তাই `Emergency_Requests` এবং `Trip_Logs`-এর relation হচ্ছে **One-to-One**।
 
 **[Screen: Show the Relational Schema code / SQL tables]**
 
-Akhon ami Normalization process niye kotha bolbo. Amader database ti strictly **3rd Normal Form (3NF)** e normalized:
+এখন আমি Normalization process নিয়ে কথা বলবো। আমাদের database-টি strictly **3rd Normal Form (3NF)**-এ normalized:
 
-1. **First Normal Form (1NF):** Amader protita table er cell e atomic data ache. Kono column e comma-separated ba multiple values nei. Protita table er jonno ekta unique Primary Key (jemon `Patient_ID`, `Trip_ID`) define kora ache.
-2. **Second Normal Form (2NF):** Amader database e kono partial dependency nei. Table er shob non-key attribute directly full Primary Key er upor dependent. 
-3. **Third Normal Form (3NF):** Amader kono transitive dependency nei. Udahoronshorup, `Doctors` table e amra directly Hospital er nam text hishebe na likhe, `Hospital_ID` ke **Foreign Key** hishebe use korechi. Ete kore data duplicate hoy na ebong future-e hospital er nam update korle database er update anomaly thekano jay."
+1. **First Normal Form (1NF):** আমাদের প্রতিটা table-এর cell-এ atomic data আছে। কোনো column-এ comma-separated বা multiple values নেই। প্রতিটা table-এর জন্য একটা unique Primary Key (যেমন `Patient_ID`, `Trip_ID`) define করা আছে।
+2. **Second Normal Form (2NF):** আমাদের database-এ কোনো partial dependency নেই। Table-এর সব non-key attribute directly full Primary Key-এর উপর dependent।
+3. **Third Normal Form (3NF):** আমাদের কোনো transitive dependency নেই। উদাহরণস্বরূপ, `Doctors` table-এ আমরা directly Hospital-এর নাম text হিসেবে না লিখে, `Hospital_ID` কে **Foreign Key** হিসেবে use করেছি। এতে করে data duplicate হয় না এবং future-এ hospital-এর নাম update করলে database-এর update anomaly ঠেকানো যায়।"
 
 ---
 
@@ -51,67 +51,67 @@ Akhon ami Normalization process niye kotha bolbo. Amader database ti strictly **
 **[Screen: Open your SQL terminal, PgAdmin, or Supabase SQL Editor]**
 
 **Speaker:** 
-"Ebar ami amader database theke kisu important SQL query execute kore dekhabo.
+"এবার আমি আমাদের database থেকে কিছু important SQL query execute করে দেখাবো।
 
-**Query 1: JOIN & Filtering (Show complex relationships)**
-Prothom query ti diye amra dekhte chai kon patient er ki dhoroner emergency chilo, kobe dispatch hoyeche ebong kon driver geche. Ekhane amra multiple table JOIN korchi."
+**Query 1: JOIN (Multiple tables combine করা)**
+প্রথম query-টি দিয়ে আমরা দেখতে চাই কোন patient-এর জন্য কোন হাসপাতাল থেকে কোন ambulance assign করা হয়েছে এবং ড্রাইভার কে। এখানে আমরা multiple table JOIN করেছি।"
 
-**[Action: Execute Query 1]**
+**[Action: Execute Query 1 (`01_join_query.sql`)]**
 ```sql
 SELECT 
-    er.request_id, 
-    p.name AS patient_name, 
-    er.emergency_type, 
-    h.name AS hospital_name, 
-    tl.time_dispatched,
+    er.request_id,
+    p.name AS patient_name,
+    h.name AS assigned_hospital,
+    a.license_plate AS ambulance,
     d.name AS driver_name
-FROM emergency_requests er
+FROM trip_logs tl
+JOIN emergency_requests er ON tl.trip_id::text = er.request_id::text
 JOIN patients p ON er.patient_id = p.patient_id
-JOIN trip_logs tl ON er.request_id = tl.trip_id
 JOIN hospitals h ON tl.hospital_id = h.hospital_id
-JOIN drivers d ON tl.driver_id = d.driver_id
-ORDER BY tl.time_dispatched DESC LIMIT 5;
+JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
+JOIN drivers d ON tl.driver_id = d.driver_id;
 ```
 
 **Speaker:** 
-"Result e dekhte pacchen join er madhyome amra relational data gulo ek sathe niye aschi. 
+"Result-এ দেখতে পাচ্ছেন JOIN-এর মাধ্যমে আমরা relational data গুলো একসাথে নিয়ে এসেছি।
 
 **Query 2: Aggregation & Grouping**
-Ditiyo query te amra aggregation function use kore count korbo je kon hospital e koyta emergency case geche ebong tader total koto revenue asche."
+দ্বিতীয় query-তে আমরা Aggregation function use করে বের করবো প্রতিটা hospital-এর average response time কত মিনিট।"
 
-**[Action: Execute Query 2]**
+**[Action: Execute Query 2 (`02_aggregation_query.sql`)]**
 ```sql
 SELECT 
     h.name AS hospital_name,
-    COUNT(tl.trip_id) AS total_emergency_cases,
-    SUM(b.total_amount) AS total_revenue
-FROM hospitals h
-JOIN trip_logs tl ON h.hospital_id = tl.hospital_id
-JOIN billing b ON tl.trip_id = b.trip_id
-GROUP BY h.name
-ORDER BY total_emergency_cases DESC;
+    AVG(EXTRACT(epoch FROM (tl.time_reached_hospital - tl.time_dispatched)) / 60) AS avg_response_time_minutes
+FROM trip_logs tl
+JOIN hospitals h ON tl.hospital_id = h.hospital_id
+WHERE tl.time_reached_hospital IS NOT NULL
+GROUP BY h.name;
 ```
 
 **Speaker:** 
-"Ebar ashi Subquery te. 
+"এখানে `AVG` এবং `GROUP BY` use করে আমরা data summarize করেছি।
 
 **Query 3: Subquery Analysis**
-Amra ei query-r madhyome sei shob ambulance gulo ber korbo jader maintenance cost amader average maintenance cost er cheye beshi. Ete kore amra company-r expense track korte parbo."
+এখন আসি Subquery-তে। এই query-র মাধ্যমে আমরা সেইসব patient-দের খুঁজে বের করবো যাদের একাধিক 'Critical' emergency request ছিল। এখানে Main query-র ভেতরে একটি subquery use করা হয়েছে।"
 
-**[Action: Execute Query 3]**
+**[Action: Execute Query 3 (`03_subquery_query.sql`)]**
 ```sql
-SELECT a.license_plate, m.maintenance_type, m.cost 
-FROM maintenance_logs m
-JOIN ambulances a ON m.vehicle_id = a.vehicle_id
-WHERE m.cost > (
-    SELECT AVG(cost) FROM maintenance_logs
+SELECT name, phone 
+FROM patients
+WHERE patient_id IN (
+    SELECT patient_id 
+    FROM emergency_requests 
+    WHERE severity_level = 'Critical' 
+    GROUP BY patient_id 
+    HAVING COUNT(*) > 1
 );
 ```
 
 **Speaker:** 
-"Sudhu sadharon query noy, amra database e **Advanced Features** o implement korechi.
-- **Views:** Dashboard er summary data fast load korar jonno amra `emergency_analytics_mv` name ekta Materialized View toiri korechi jeta automatically daily trip, average response time ebong revenue calculate kore rakhe.
-- **Triggers:** Amader database e Postgres Triggers ache. Jokhon dispatcher ekta trip 'Arrived' ba 'Completed' mark kore, tokhon automated trigger er madhyome backend theke automatically ambulance er status 'Available' e change hoye jay, ebong driver er status update hoye jay. Eta fully automated."
+"শুধু সাধারণ query নয়, আমরা database-এ **Advanced Features**-ও implement করেছি।
+- **Views:** Analytics dashboard-এর summary data fast load করার জন্য আমরা `emergency_analytics_mv` নামে একটা Materialized View তৈরি করেছি যা automatically calculate করে রাখে।
+- **Triggers:** আমাদের database-এ Postgres Triggers আছে। যেমন, যখন একটি নতুন emergency request insert হয়, তখন একটি automated trigger patient-এর history analyze করে severity level auto-predict করতে পারে।"
 
 ---
 
@@ -120,37 +120,37 @@ WHERE m.cost > (
 **[Screen: Go to Patient Portal UI]**
 
 **Speaker:** 
-"Ebar ami amader system er main workflow ta frontend UI theke practically run kore dekhabo.
+"এবার আমি আমাদের system-এর main workflow-টা frontend UI থেকে practically run করে দেখাবো।
 
-Prothomei eta amader **Patient Portal**. Ekjon patient login korar por dashboard e ekta SOS button dekhte parbe. (Click SOS)
-Patient jokhon SOS trigger korbe, tar phone er GPS theke live coordinates database e pathano hoy. 
+প্রথমেই এটা আমাদের **Patient Portal**। একজন patient login করার পর dashboard-এ একটা SOS button দেখতে পারবে। (Click SOS)
+Patient যখন SOS trigger করবে, তার phone-এর GPS থেকে live coordinates database-এ পাঠানো হয়।
 
-ChAley patient ekhane Doctor o book korte parbe. (Navigate to 'Book Doctor' page)
-Ekhane hospital ebong specialization (jemon Cardiology ba Orthopedics) select korle database theke available doctor der list chole asbe. System e validation kora ache je ekjon patient er ektai active appointment thakte parbe. Booking korar por button ta directly 'Cancel Appointment' e porinoto hoye jay. 
+এছাড়া patient এখানে Doctor-ও book করতে পারবে। (Navigate to 'Book Doctor' page)
+এখানে hospital এবং specialization (যেমন Cardiology বা Orthopedics) select করলে database থেকে available doctor-দের list চলে আসবে। System-এ validation করা আছে যে একজন patient-এর একটাই active appointment থাকতে পারবে। Booking করার পর button-টা directly 'Cancel Appointment'-এ পরিণত হয়ে যায়।
 
 **[Screen: Switch to Dispatcher Portal]**
 
-Patient jokhon SOS request kore, sathe sathe eta **Dispatcher Portal** er live dashboard e chole ashe.
+Patient যখন SOS request করে, সাথে সাথে এটা **Dispatcher Portal**-এর live dashboard-এ চলে আসে।
 (Show Dispatcher Portal Map). 
-Dispatcher map er moddhe real-time shob patient er pickup location ebong available ambulance er location dekhte pan. Dispatcher eikhan theke closest ambulance k select kore assign korle, request ti automatically driver er kache chole jay.
+Dispatcher map-এর মধ্যে real-time সব patient-এর pickup location এবং available ambulance-এর location দেখতে পান। Dispatcher এখান থেকে closest ambulance-কে select করে assign করলে, request-টি automatically driver-এর কাছে চলে যায়।
 
 **[Screen: Switch to Admin Portal]**
 
-Echaraw amader ekta secure **Admin Portal** ache jekhan theke system er puro operations manage kora hoy. (Navigate through Admin Dashboard). 
-Ekhane admin chaile Patients, Ambulances, Hospitals, ebong total Billing er statistics dekhte pare. Doctor der assigning ebong tader availability control korar jonno ekhane ekti dedicated system ache. Ekhane data load optimized rakhbar jonno amra backend theke complex pagination use korechi jate hajar hajar doctors er data smoothly load hoy.
+এরপর আমাদের একটা secure **Admin Portal** আছে যেখান থেকে system-এর পুরো operations manage করা হয়। (Navigate through Admin Dashboard).
+এখানে admin চাইলে Patients, Ambulances, Hospitals এবং total Billing-এর statistics দেখতে পারে। Doctor-দের assigning এবং তাদের availability control করার জন্য এখানে একটি dedicated system আছে। Data load optimized রাখার জন্য আমরা backend থেকে complex pagination use করেছি যাতে হাজার হাজার doctor-দের data smoothly load হয়।
 
 **[Screen: Switch to Driver Portal]**
 
-Eti **Driver Portal**. Driver tar dashboard e trip request dekhte parbe. Trip start korle, background theke continously driver er location patient ke pathano hote thake, ja patient map-e dekhte pare (Uber ba Pathao er moto). 
-Trip shesh hole automatically bill generate hoye jay ebong database trigger er madhyome sei ambulance ti next trip er jonno available hoye jay.
+এটি **Driver Portal**। Driver তার dashboard-এ trip request দেখতে পারবে। Trip start করলে, background থেকে continuously driver-এর location patient-কে পাঠানো হতে থাকে, যা patient map-এ দেখতে পারে (Uber বা Pathao-এর মতো)।
+Trip শেষ হলে automatically bill generate হয়ে যায় এবং database trigger-এর মাধ্যমে সেই ambulance-টি next trip-এর জন্য available হয়ে যায়।
 
-Shobgulo user interface khub-i modern, component-based ebong dark-mode supported design e kora hoyeche jate night-time eo user-friendly hoy."
+সবগুলো user interface খুবই modern, component-based এবং dark-mode supported design-এ করা হয়েছে যাতে night-time-এও user-friendly হয়।"
 
 ---
 
 ## Conclusion (30 Seconds)
 
 **Speaker:**
-"To sum up, Druto Sheba hocche ekta complete, fully-normalized relational database back-end and modern interactive UI er ekta proper implementation ja real-world emergency response problems effectively handle korte sakkhom. 
+"To sum up, Druto Sheba হচ্ছে একটা complete, fully-normalized relational database back-end এবং modern interactive UI-এর একটা proper implementation যা real-world emergency response problems effectively handle করতে সক্ষম।
 
 Thank you for your time and for watching the demonstration of our project."
