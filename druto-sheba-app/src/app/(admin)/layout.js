@@ -10,6 +10,7 @@ const navItems = [
   { href: '/hospitals', label: 'Hospitals', icon: Building2 },
   { href: '/billing', label: 'Billing', icon: ClipboardList },
   { href: '/maintenance', label: 'Maintenance', icon: Wrench },
+  { href: '/doctors', label: 'Doctors', icon: Activity },
 ];
 
 

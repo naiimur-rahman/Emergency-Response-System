@@ -170,6 +170,41 @@ erDiagram
         JSONB New_Values
     }
 
+    Assistants {
+        SERIAL Assistant_ID PK
+        VARCHAR Name "NOT NULL"
+        INT Hospital_ID FK "NOT NULL"
+        TIMESTAMP Created_At
+    }
+
+    Doctors {
+        SERIAL Doctor_ID PK
+        VARCHAR Name "NOT NULL"
+        VARCHAR Phone "NOT NULL"
+        INT Hospital_ID FK "NOT NULL"
+        INT Spec_ID FK "NOT NULL"
+        BOOLEAN Is_Available "DEFAULT TRUE"
+        TIMESTAMP Created_At
+    }
+
+    Doctor_Schedules {
+        SERIAL Schedule_ID PK
+        INT Doctor_ID FK "NOT NULL"
+        VARCHAR Day_of_Week "NOT NULL"
+        TIME Start_Time "NOT NULL"
+        TIME End_Time "NOT NULL"
+    }
+
+    Doctor_Assignments {
+        SERIAL Assignment_ID PK
+        INT Patient_ID FK "NOT NULL"
+        INT Doctor_ID FK "NOT NULL"
+        DATE Appointment_Date "NOT NULL"
+        TIME Appointment_Time "NOT NULL"
+        VARCHAR Status "DEFAULT Pending"
+        TIMESTAMP Created_At
+    }
+
     %% === RELATIONSHIPS ===
 
     Patients ||--o{ Patient_Conditions : "has medical"
@@ -197,3 +232,10 @@ erDiagram
 
     Trip_Logs ||--|| Billing : "generates"
     Trip_Logs ||--o| Trip_Feedback : "reviewed in"
+
+    Hospitals ||--o{ Assistants : "employs"
+    Hospitals ||--o{ Doctors : "has"
+    Specializations ||--o{ Doctors : "specialty of"
+    Doctors ||--o{ Doctor_Schedules : "has schedules"
+    Doctors ||--o{ Doctor_Assignments : "assigned to"
+    Patients ||--o{ Doctor_Assignments : "books"
