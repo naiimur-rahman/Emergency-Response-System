@@ -16,6 +16,7 @@ import {
   Radio,
   ShieldCheck,
   Siren,
+  Stethoscope,
   Sun,
   X,
   Zap,
@@ -52,6 +53,7 @@ const staffPortals = [
 const serviceLinks = [
   { href: '/sos', label: 'Emergency request', icon: Siren },
   { href: '/track', label: 'Track ambulance', icon: Navigation },
+  { href: '/book-doctor', label: 'Book a doctor', icon: Stethoscope },
   { href: '/history', label: 'Request history', icon: Clock3 },
   { href: '/profile', label: 'Patient profile', icon: HeartPulse },
 ];
