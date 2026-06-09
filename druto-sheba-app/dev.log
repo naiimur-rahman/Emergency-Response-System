@@ -1,0 +1,278 @@
+
+> druto-sheba-app@2.0.0 dev
+> next dev -H localhost
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://localhost:3000
+- Environments: .env.local
+✓ Ready in 317ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+ GET /analytics 200 in 327ms (next.js: 85ms, proxy.ts: 45ms, application-code: 197ms)
+CONNECTING TO DB:  postgresql://postgres.pwkdehymrayzdzgcaxzv:Sohan786%400112420186@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
+[browser] Supabase client not initialized. Auto-refresh is disabled. (src/hooks/useAutoRefresh.js:13:15)
+Executed query {
+  text: '\n' +
+    '      SELECT p.*, array_agg(pc.condition_name) FILTER (WHERE pc.condition_name ',
+  duration: 1293,
+  rows: 4
+}
+ GET /api/patients 200 in 1421ms (next.js: 124ms, application-code: 1298ms)
+Executed query {
+  text: '\n' +
+    '        SELECT a.License_Plate, vi.Item_Name, vi.Quantity,\n' +
+    '        CASE WHEN vi',
+  duration: 1363,
+  rows: 4
+}
+Executed query {
+  text: '\n' +
+    '        SELECT a.License_Plate, ml.Maintenance_Type, ml.Cost, ml.Date_Started,\n',
+  duration: 1371,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    '        SELECT dz.Zone_Name, COUNT(er.Request_ID) as count\n' +
+    '        FROM Dispatc',
+  duration: 1371,
+  rows: 0
+}
+Executed query {
+  text: '\n' +
+    "        SELECT TO_CHAR(DATE_TRUNC('day', timestamp_created), 'DD Mon') as day, ",
+  duration: 1369,
+  rows: 1
+}
+Executed query {
+  text: '\n' +
+    '        SELECT tf.*, p.name as patient_name\n' +
+    '        FROM Trip_Feedback tf\n' +
+    '     ',
+  duration: 1371,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    '        SELECT \n' +
+    '          CASE \n' +
+    '            WHEN (EXTRACT(EPOCH FROM (tl.time_d',
+  duration: 1370,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    "        SELECT TO_CHAR(DATE_TRUNC('day', Date_Started), 'DD Mon') as day, SUM(C",
+  duration: 1508,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    '        SELECT Name, ICU_Beds, General_Beds,\n' +
+    '        RANK() OVER (ORDER BY ICU_',
+  duration: 1513,
+  rows: 33
+}
+Executed query {
+  text: 'SELECT * FROM drivers ORDER BY driver_id',
+  duration: 1462,
+  rows: 20
+}
+ GET /api/drivers 200 in 1571ms (next.js: 106ms, application-code: 1465ms)
+Executed query {
+  text: '\n' +
+    "        SELECT COALESCE(primary_specialization, 'General Care') as spec, COUNT(",
+  duration: 1621,
+  rows: 1
+}
+ GET /api/analytics?t=1781046304241 200 in 1691ms (next.js: 53ms, application-code: 1637ms)
+[browser] Supabase client not initialized. Auto-refresh is disabled. (src/hooks/useAutoRefresh.js:13:15)
+Executed query { text: 'SELECT 1', duration: 125, rows: 1 }
+ GET /api/admin/health?t=1781046305960 200 in 145ms (next.js: 16ms, application-code: 128ms)
+ GET /control 200 in 193ms (next.js: 45ms, proxy.ts: 20ms, application-code: 128ms)
+[browser] Supabase client not initialized. Auto-refresh is disabled. (src/hooks/useAutoRefresh.js:13:15)
+Executed query {
+  text: '\n' +
+    '      SELECT p.*, array_agg(pc.condition_name) FILTER (WHERE pc.condition_name ',
+  duration: 657,
+  rows: 4
+}
+ GET /api/patients 200 in 706ms (next.js: 45ms, application-code: 661ms)
+Executed query {
+  text: 'SELECT * FROM drivers ORDER BY driver_id',
+  duration: 677,
+  rows: 20
+}
+ GET /api/drivers 200 in 722ms (next.js: 43ms, application-code: 679ms)
+Executed query {
+  text: 'SELECT * FROM audit_log ORDER BY changed_at DESC LIMIT 25',
+  duration: 691,
+  rows: 0
+}
+Executed query {
+  text: 'SELECT user_id, username, role, created_at, blocked FROM staff_users ORDER BY us',
+  duration: 694,
+  rows: 2
+}
+Executed query {
+  text: 'SELECT * FROM pricing_config ORDER BY config_id LIMIT 1',
+  duration: 691,
+  rows: 0
+}
+Executed query {
+  text: 'SELECT * FROM ambulances ORDER BY vehicle_id',
+  duration: 831,
+  rows: 20
+}
+ GET /api/admin/control?t=1781046539942 200 in 864ms (next.js: 26ms, application-code: 839ms)
+ GET /analytics 200 in 27ms (next.js: 4ms, proxy.ts: 5ms, application-code: 17ms)
+[browser] Supabase client not initialized. Auto-refresh is disabled. (src/hooks/useAutoRefresh.js:13:15)
+Executed query {
+  text: '\n' +
+    '        SELECT tf.*, p.name as patient_name\n' +
+    '        FROM Trip_Feedback tf\n' +
+    '     ',
+  duration: 127,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    "        SELECT TO_CHAR(DATE_TRUNC('day', Date_Started), 'DD Mon') as day, SUM(C",
+  duration: 127,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    '        SELECT Name, ICU_Beds, General_Beds,\n' +
+    '        RANK() OVER (ORDER BY ICU_',
+  duration: 129,
+  rows: 33
+}
+Executed query {
+  text: '\n' +
+    '        SELECT dz.Zone_Name, COUNT(er.Request_ID) as count\n' +
+    '        FROM Dispatc',
+  duration: 129,
+  rows: 0
+}
+Executed query {
+  text: '\n' +
+    '        SELECT a.License_Plate, vi.Item_Name, vi.Quantity,\n' +
+    '        CASE WHEN vi',
+  duration: 128,
+  rows: 4
+}
+Executed query {
+  text: '\n' +
+    '        SELECT a.License_Plate, ml.Maintenance_Type, ml.Cost, ml.Date_Started,\n',
+  duration: 130,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    "        SELECT COALESCE(primary_specialization, 'General Care') as spec, COUNT(",
+  duration: 661,
+  rows: 1
+}
+Executed query {
+  text: '\n' +
+    "        SELECT TO_CHAR(DATE_TRUNC('day', timestamp_created), 'DD Mon') as day, ",
+  duration: 661,
+  rows: 1
+}
+Executed query {
+  text: '\n' +
+    '        SELECT \n' +
+    '          CASE \n' +
+    '            WHEN (EXTRACT(EPOCH FROM (tl.time_d',
+  duration: 662,
+  rows: 3
+}
+ GET /api/analytics?t=1781046542201 200 in 667ms (next.js: 1894µs, application-code: 666ms)
+[browser] Supabase client not initialized. Auto-refresh is disabled. (src/hooks/useAutoRefresh.js:13:15)
+Executed query { text: 'SELECT 1', duration: 134, rows: 1 }
+ GET /api/admin/health?t=1781046542883 200 in 138ms (next.js: 1435µs, application-code: 137ms)
+Executed query {
+  text: '\n' +
+    '      SELECT p.*, array_agg(pc.condition_name) FILTER (WHERE pc.condition_name ',
+  duration: 148,
+  rows: 4
+}
+ GET /api/patients 200 in 153ms (next.js: 3ms, application-code: 150ms)
+Executed query {
+  text: 'SELECT * FROM drivers ORDER BY driver_id',
+  duration: 152,
+  rows: 20
+}
+ GET /api/drivers 200 in 155ms (next.js: 1617µs, application-code: 154ms)
+Executed query {
+  text: '\n' +
+    "        SELECT TO_CHAR(DATE_TRUNC('day', timestamp_created), 'DD Mon') as day, ",
+  duration: 130,
+  rows: 1
+}
+Executed query {
+  text: '\n' +
+    "        SELECT COALESCE(primary_specialization, 'General Care') as spec, COUNT(",
+  duration: 131,
+  rows: 1
+}
+Executed query {
+  text: '\n' +
+    '        SELECT a.License_Plate, ml.Maintenance_Type, ml.Cost, ml.Date_Started,\n',
+  duration: 152,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    '        SELECT Name, ICU_Beds, General_Beds,\n' +
+    '        RANK() OVER (ORDER BY ICU_',
+  duration: 154,
+  rows: 33
+}
+Executed query {
+  text: '\n' +
+    "        SELECT TO_CHAR(DATE_TRUNC('day', Date_Started), 'DD Mon') as day, SUM(C",
+  duration: 153,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    '        SELECT tf.*, p.name as patient_name\n' +
+    '        FROM Trip_Feedback tf\n' +
+    '     ',
+  duration: 153,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    '        SELECT \n' +
+    '          CASE \n' +
+    '            WHEN (EXTRACT(EPOCH FROM (tl.time_d',
+  duration: 153,
+  rows: 3
+}
+Executed query {
+  text: '\n' +
+    '        SELECT a.License_Plate, vi.Item_Name, vi.Quantity,\n' +
+    '        CASE WHEN vi',
+  duration: 153,
+  rows: 4
+}
+Executed query {
+  text: '\n' +
+    '        SELECT dz.Zone_Name, COUNT(er.Request_ID) as count\n' +
+    '        FROM Dispatc',
+  duration: 277,
+  rows: 0
+}
+ GET /api/analytics 200 in 297ms (next.js: 6ms, application-code: 291ms)
+⚠ Server is approaching the used memory threshold, restarting...
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://localhost:3000
+- Environments: .env.local
+✓ Ready in 313ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
