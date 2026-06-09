@@ -5,7 +5,7 @@ import { Activity, Building2, ClipboardList, ShieldCheck, Wrench, Settings, Rout
 const navItems = [
   { href: '/control', label: 'Control', icon: Settings },
   { href: '/analytics', label: 'Analytics', icon: Activity },
-  { href: '/trips', label: 'Trip Logs', icon: Route },
+  { href: '/logs', label: 'Trip Logs', icon: Route },
   { href: '/hospitals', label: 'Hospitals', icon: Building2 },
   { href: '/billing', label: 'Billing', icon: ClipboardList },
   { href: '/maintenance', label: 'Maintenance', icon: Wrench },
