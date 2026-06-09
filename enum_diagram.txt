@@ -2,17 +2,26 @@ graph LR
     subgraph equipment_lvl
         E1["Basic"]
         E2["Advanced"]
+        E3["Basic Life Support"]
+        E4["Advanced Life Support"]
+        E5["ICU Support"]
     end
 
-    subgraph vehicle_status
-        V1["Available"]
-        V2["Dispatched"]
-        V3["Maintenance"]
+    subgraph hospital_type
+        HT1["Government"]
+        HT2["Private"]
     end
 
-    subgraph shift_status
-        S1["On_Duty"]
-        S2["Off_Duty"]
+    subgraph req_status
+        R1["Pending"]
+        R2["Active"]
+        R3["En Route"]
+        R4["Picked Up"]
+        R5["Arrived"]
+        R6["Resolved"]
+        R7["Cancelled"]
+        R8["Broadcast"]
+        R9["Admitted"]
     end
 
     subgraph severity_lvl
@@ -22,24 +31,44 @@ graph LR
         SV4["Critical"]
     end
 
-    subgraph req_status
-        R1["Pending"]
-        R2["Active"]
-        R5["En Route"]
-        R6["Picked Up"]
-        R7["Arrived"]
-        R3["Resolved"]
-        R4["Cancelled"]
+    subgraph shift_status
+        S1["On_Duty"]
+        S2["Off_Duty"]
+        S3["Available"]
+        S4["Dispatched"]
+        S5["On_Trip"]
+        S6["Offline"]
     end
-    
-    subgraph hospital_type
-        HT1["Government"]
-        HT2["Private"]
+
+    subgraph vehicle_status
+        V1["Available"]
+        V2["Dispatched"]
+        V3["Maintenance"]
+        V4["Maintenance_Required"]
+    end
+
+    subgraph day_of_week_enum
+        D1["Monday"]
+        D2["Tuesday"]
+        D3["Wednesday"]
+        D4["Thursday"]
+        D5["Friday"]
+        D6["Saturday"]
+        D7["Sunday"]
+    end
+
+    subgraph assignment_status
+        AS1["Pending"]
+        AS2["Confirmed"]
+        AS3["Completed"]
+        AS4["Cancelled"]
     end
 
     style equipment_lvl fill:#7c3aed22,stroke:#7c3aed
-    style vehicle_status fill:#0a84ff22,stroke:#0a84ff
-    style shift_status fill:#30d15822,stroke:#30d158
-    style severity_lvl fill:#ff2d5522,stroke:#ff2d55
-    style req_status fill:#ff9f0a22,stroke:#ff9f0a
     style hospital_type fill:#0a84ff22,stroke:#0a84ff
+    style req_status fill:#ff9f0a22,stroke:#ff9f0a
+    style severity_lvl fill:#ff2d5522,stroke:#ff2d55
+    style shift_status fill:#30d15822,stroke:#30d158
+    style vehicle_status fill:#0a84ff22,stroke:#0a84ff
+    style day_of_week_enum fill:#32ade622,stroke:#32ade6
+    style assignment_status fill:#bf5af222,stroke:#bf5af2

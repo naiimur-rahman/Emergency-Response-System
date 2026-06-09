@@ -190,7 +190,7 @@ erDiagram
     Doctor_Schedules {
         SERIAL Schedule_ID PK
         INT Doctor_ID FK "NOT NULL"
-        VARCHAR Day_of_Week "NOT NULL"
+        day_of_week_enum Day_of_Week "NOT NULL"
         TIME Start_Time "NOT NULL"
         TIME End_Time "NOT NULL"
     }
@@ -201,8 +201,34 @@ erDiagram
         INT Doctor_ID FK "NOT NULL"
         DATE Appointment_Date "NOT NULL"
         TIME Appointment_Time "NOT NULL"
-        VARCHAR Status "DEFAULT Pending"
+        assignment_status Status "DEFAULT Pending"
         TIMESTAMP Created_At
+    }
+
+    Chat_Messages {
+        SERIAL Message_ID PK
+        VARCHAR Trip_ID FK
+        VARCHAR Sender "NOT NULL"
+        TEXT Message_Text "NOT NULL"
+        TIMESTAMP Timestamp "DEFAULT NOW"
+    }
+
+    Pricing_Config {
+        INT Config_ID PK "DEFAULT 1"
+        DECIMAL Base_Fare "NOT NULL"
+        DECIMAL Per_KM_Charge "NOT NULL"
+        DECIMAL Night_Multiplier "NOT NULL"
+        DECIMAL Critical_Surcharge "NOT NULL"
+        TIMESTAMP Updated_At "DEFAULT NOW"
+    }
+
+    Staff_Users {
+        SERIAL User_ID PK
+        VARCHAR Username "UNIQUE NOT NULL"
+        TEXT Password_Hash "NOT NULL"
+        VARCHAR Role "NOT NULL"
+        TIMESTAMP Created_At "DEFAULT NOW"
+        BOOLEAN Blocked "DEFAULT FALSE"
     }
 
     %% === RELATIONSHIPS ===
@@ -239,3 +265,4 @@ erDiagram
     Doctors ||--o{ Doctor_Schedules : "has schedules"
     Doctors ||--o{ Doctor_Assignments : "assigned to"
     Patients ||--o{ Doctor_Assignments : "books"
+    Trip_Logs ||--o{ Chat_Messages : "has messages"
