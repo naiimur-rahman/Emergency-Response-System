@@ -45,11 +45,23 @@ export default function ManageDoctorsPage() {
     }
     setLoading(true);
     
-    const { data: dData } = await supabase
-      .from('doctors')
-      .select('*, hospitals(name), specializations(spec_name)');
+    let allDoctors = [];
+    let page = 0;
+    while (true) {
+      const { data } = await supabase
+        .from('doctors')
+        .select('*, hospitals(name), specializations(spec_name)')
+        .range(page * 1000, (page + 1) * 1000 - 1);
       
-    setDoctors(dData || []);
+      if (data && data.length > 0) {
+        allDoctors = [...allDoctors, ...data];
+        if (data.length < 1000) break;
+        page++;
+      } else {
+        break;
+      }
+    }
+    setDoctors(allDoctors);
 
     const { data: aData } = await supabase
       .from('doctor_assignments')
