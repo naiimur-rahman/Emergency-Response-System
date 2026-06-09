@@ -13,6 +13,9 @@ export default function BookDoctorPage() {
   
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
+  
+  // Track patient's active appointments
+  const [activeAppointment, setActiveAppointment] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -22,12 +25,21 @@ export default function BookDoctorPage() {
          setLoading(false);
          return;
       }
-      const [hRes, sRes] = await Promise.all([
+      const [hRes, sRes, apptRes] = await Promise.all([
         supabase.from('hospitals').select('*'),
-        supabase.from('specializations').select('*')
+        supabase.from('specializations').select('*'),
+        supabase.from('doctor_assignments')
+          .select('*')
+          .eq('patient_id', 1)
+          .in('status', ['Pending', 'Confirmed'])
       ]);
       setHospitals(hRes.data || []);
       setSpecs(sRes.data || []);
+      if (apptRes.data && apptRes.data.length > 0) {
+        setActiveAppointment(apptRes.data[0]);
+      } else {
+        setActiveAppointment(null);
+      }
       setLoading(false);
     }
     loadData();
@@ -80,17 +92,37 @@ export default function BookDoctorPage() {
     date.setDate(date.getDate() + 3);
     const dateString = date.toISOString().split('T')[0];
 
-    const { error } = await supabase.from('doctor_assignments').insert({
+    const { data, error } = await supabase.from('doctor_assignments').insert({
       patient_id: patientId,
       doctor_id: doctorId,
       appointment_date: dateString,
       appointment_time: '10:00:00',
       status: 'Pending'
-    });
+    }).select().single();
 
     setBookingLoading(false);
-    if (error) alert('Error booking appointment: ' + error.message);
-    else alert('Appointment request sent successfully!');
+    if (error) {
+      alert('Error booking appointment: ' + error.message);
+    } else {
+      setActiveAppointment(data);
+      alert('Appointment request sent successfully!');
+    }
+  };
+
+  const handleCancelAppointment = async (assignmentId) => {
+    if (!confirm('Are you sure you want to cancel your current appointment?')) return;
+    setBookingLoading(true);
+    const { error } = await supabase
+      .from('doctor_assignments')
+      .update({ status: 'Cancelled' })
+      .eq('assignment_id', assignmentId);
+    setBookingLoading(false);
+    if (error) {
+      alert('Failed to cancel appointment: ' + error.message);
+    } else {
+      setActiveAppointment(null);
+      alert('Appointment cancelled successfully.');
+    }
   };
 
   return (
@@ -140,7 +172,14 @@ export default function BookDoctorPage() {
 
       {selectedHospital && selectedSpec && !loading && (
         <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Available Doctors</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Available Doctors</h3>
+            {activeAppointment && (
+              <div className="badge badge-critical" style={{ fontSize: '13px', padding: '6px 12px' }}>
+                You already have an active appointment
+              </div>
+            )}
+          </div>
           {doctors.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)' }}>
               No available doctors found for this specialization at the selected hospital.
@@ -173,14 +212,33 @@ export default function BookDoctorPage() {
                     </div>
                   )}
                   
-                  <button 
-                    className="btn btn-primary" 
-                    style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
-                    onClick={() => handleBook(doc.doctor_id)}
-                    disabled={bookingLoading}
-                  >
-                    Request Appointment
-                  </button>
+                  {activeAppointment && activeAppointment.doctor_id === doc.doctor_id ? (
+                    <button 
+                      className="btn btn-outline" 
+                      style={{ width: '100%', justifyContent: 'center', marginTop: 'auto', borderColor: 'var(--red)', color: 'var(--red)' }}
+                      onClick={() => handleCancelAppointment(activeAppointment.assignment_id)}
+                      disabled={bookingLoading}
+                    >
+                      Cancel Appointment
+                    </button>
+                  ) : activeAppointment ? (
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ width: '100%', justifyContent: 'center', marginTop: 'auto', opacity: 0.6, cursor: 'not-allowed' }}
+                      disabled={true}
+                    >
+                      Already Booked Elsewhere
+                    </button>
+                  ) : (
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
+                      onClick={() => handleBook(doc.doctor_id)}
+                      disabled={bookingLoading}
+                    >
+                      Request Appointment
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
