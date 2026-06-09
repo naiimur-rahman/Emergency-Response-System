@@ -1,7 +1,7 @@
 'use client';
 import {  useState, useEffect , useCallback } from 'react';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { ClipboardList, Clock, ArrowRight } from 'lucide-react';
+import { ClipboardList, Clock, ArrowRight, Star } from 'lucide-react';
 import { SeverityBadge, StatusBadge } from '@/components/Badges';
 
 export default function TripsPage() {
@@ -46,6 +46,7 @@ export default function TripsPage() {
                 <th>At Scene</th>
                 <th>At Hospital</th>
                 <th>Status</th>
+                <th>Rating</th>
               </tr>
             </thead>
             <tbody>
@@ -62,6 +63,16 @@ export default function TripsPage() {
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{formatTime(t.time_arrived_scene)}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{formatTime(t.time_reached_hospital)}</td>
                   <td><StatusBadge status={t.request_status} /></td>
+                  <td>
+                    {t.rating ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title={t.comments || 'No comments'}>
+                        <Star size={14} fill="var(--yellow)" color="var(--yellow)" />
+                        <span style={{ fontWeight: 600 }}>{t.rating}/5</span>
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Unrated</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

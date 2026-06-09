@@ -8,13 +8,15 @@ export async function GET() {
     const result = await query(`
       SELECT tl.*, p.name as patient_name, p.blood_type, 
              a.license_plate, d.name as driver_name, h.name as hospital_name,
-             er.severity_level, er.status as request_status
+             er.severity_level, er.status as request_status,
+             tf.rating, tf.comments
       FROM trip_logs tl
-      JOIN emergency_requests er ON tl.request_id = er.request_id
+      JOIN emergency_requests er ON tl.trip_id = er.request_id::text
       JOIN patients p ON er.patient_id = p.patient_id
       JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
       JOIN drivers d ON tl.driver_id = d.driver_id
       JOIN hospitals h ON tl.hospital_id = h.hospital_id
+      LEFT JOIN trip_feedback tf ON tl.trip_id = tf.trip_id
       ORDER BY tl.time_dispatched DESC
     `);
     return NextResponse.json(result.rows);
