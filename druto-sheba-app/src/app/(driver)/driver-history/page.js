@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 
 import { History, Star, Clock, MapPin, Banknote } from 'lucide-react';
 import { SeverityBadge } from '@/components/Badges';
@@ -14,7 +15,7 @@ export default function DriverHistory() {
     if (!activeDriver?.id) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/driver/history?driver_id=${activeDriver.id}`);
+      const res = await fetch(`/api/driver/history?driver_id=${activeDriver.id}&t=${Date.now()}`, { cache: 'no-store' });
       const resData = await res.json();
       setData(resData);
     } catch (err) {
@@ -24,13 +25,13 @@ export default function DriverHistory() {
     }
   }, [activeDriver]);
 
+  useAutoRefresh(fetchData);
   useEffect(() => {
     const init = async () => {
       await fetchData();
     };
     init();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
   }, [fetchData]);
 
   if (!activeDriver) return null;

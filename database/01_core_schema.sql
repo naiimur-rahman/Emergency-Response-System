@@ -1,4 +1,4 @@
-SELECT pg_catalog.set_config('search_path', '', false);
+SELECT pg_catalog.set_config('search_path', 'public', false);
 
 CREATE SCHEMA public;
 

@@ -54,8 +54,8 @@ export default function PatientProfile() {
     // This prevents the background polling in UserContext from resetting the local unsaved state.
     if (activePatient && (!profile || String(profile.patient_id) !== String(activePatient.id))) {
       Promise.all([
-        fetch(`/api/patients?patient_id=${activePatient.id}`).then(res => res.json()),
-        fetch(`/api/patients/contacts?patient_id=${activePatient.id}`).then(res => res.json())
+        fetch(`/api/patients?patient_id=${activePatient.id}&t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json()),
+        fetch(`/api/patients/contacts?patient_id=${activePatient.id}&t=${Date.now()}`, { cache: 'no-store' }).then(res => res.json())
       ]).then(([profileData, contactsData]) => {
          setProfile(Array.isArray(profileData) ? profileData[0] : profileData);
          setContacts(Array.isArray(contactsData) ? contactsData : []);

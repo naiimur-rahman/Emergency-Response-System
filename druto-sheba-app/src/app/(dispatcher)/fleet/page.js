@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Truck, Users, Plus, ToggleLeft, ToggleRight, Trash2, Search, Wrench, Package } from 'lucide-react';
 import { StatusBadge, EquipmentBadge } from '@/components/Badges';
 import Modal from '@/components/Modal';
@@ -28,8 +29,8 @@ export default function FleetPage() {
   const fetchData = useCallback(async () => {
     try {
       const [a, d] = await Promise.all([
-        fetch('/api/ambulances').then(r => r.json()),
-        fetch('/api/drivers').then(r => r.json()),
+        fetch(`/api/ambulances?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()),
+        fetch(`/api/drivers?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()),
       ]);
       setAmbulances(Array.isArray(a) ? a : []);
       setDrivers(Array.isArray(d) ? d : []);
@@ -42,13 +43,13 @@ export default function FleetPage() {
     }
   }, []);
 
+  useAutoRefresh(fetchData);
   useEffect(() => {
     const init = async () => {
       await fetchData();
     };
     init();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+
   }, [fetchData]);
 
 
@@ -93,7 +94,7 @@ export default function FleetPage() {
   const openInventory = async (ambulance) => {
     setSelectedAmb(ambulance);
     setShowInvModal(true);
-    const res = await fetch(`/api/ambulances/inventory?vehicle_id=${ambulance.vehicle_id}`);
+    const res = await fetch(`/api/ambulances/inventory?vehicle_id=${ambulance.vehicle_id}&t=${Date.now()}`, { cache: 'no-store' });
     const data = await res.json();
     setInventory(data);
   };

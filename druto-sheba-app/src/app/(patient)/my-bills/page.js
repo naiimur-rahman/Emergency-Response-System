@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Receipt, CreditCard, Download, ShieldCheck } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 import { useToast } from '@/components/Toast';
@@ -14,7 +15,7 @@ export default function PatientBills() {
   const fetchBills = useCallback(async () => {
     if (!activePatient?.id) return;
     try {
-      const r = await fetch(`/api/patient/bills?patientId=${activePatient.id}`);
+      const r = await fetch(`/api/patient/bills?patientId=${activePatient.id}&t=${Date.now()}`, { cache: 'no-store' });
       const data = await r.json();
       setBills(data);
     } catch (err) {
@@ -24,10 +25,10 @@ export default function PatientBills() {
     }
   }, [activePatient]);
 
+  useAutoRefresh(fetchBills);
   useEffect(() => {
     fetchBills();
-    const interval = setInterval(fetchBills, 10000);
-    return () => clearInterval(interval);
+
   }, [fetchBills]);
 
   const handlePay = async (billId) => {

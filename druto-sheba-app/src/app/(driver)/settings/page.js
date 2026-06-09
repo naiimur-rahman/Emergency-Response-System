@@ -10,7 +10,7 @@ export default function DriverSettings() {
 
   useEffect(() => {
     if (activeDriver?.id) {
-      fetch(`/api/driver/certifications?driver_id=${activeDriver.id}`)
+      fetch(`/api/driver/certifications?driver_id=${activeDriver.id}&t=${Date.now()}`, { cache: 'no-store' })
         .then(res => res.json())
         .then(data => {
           setCertifications(Array.isArray(data) ? data : []);

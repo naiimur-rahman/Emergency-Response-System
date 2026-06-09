@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Save, UserPlus, ShieldBan, Truck, Settings, ClipboardList, RefreshCw } from 'lucide-react';
 import { StatusBadge, EquipmentBadge } from '@/components/Badges';
 import { useToast } from '@/components/Toast';
@@ -14,7 +15,7 @@ export default function AdminControlPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/control');
+      const res = await fetch(`/api/admin/control?t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       setData(json);
       setPricing(json.pricing || pricing);
@@ -25,7 +26,11 @@ export default function AdminControlPage() {
     }
   }, [toast]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useAutoRefresh(fetchData);
+  useEffect(() => { 
+    fetchData(); 
+
+  }, [fetchData]);
 
   const createUser = async (e) => {
     e.preventDefault();

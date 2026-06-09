@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { ClipboardPlus, RefreshCw, Route, Truck, Building2, Clock, Radio } from 'lucide-react';
 import { SeverityBadge, StatusBadge, EquipmentBadge } from '@/components/Badges';
 import { useToast } from '@/components/Toast';
@@ -25,7 +26,7 @@ export default function DispatcherOperationsPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/dispatcher/operations');
+      const res = await fetch(`/api/dispatcher/operations?t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       setData({
         triage_queue: json.triage_queue || [],
@@ -41,10 +42,10 @@ export default function DispatcherOperationsPage() {
     }
   }, [toast]);
 
+  useAutoRefresh(fetchData);
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
   }, [fetchData]);
 
   const availableAmbulances = useMemo(() => data.ambulances.filter((a) => a.current_status === 'Available'), [data.ambulances]);

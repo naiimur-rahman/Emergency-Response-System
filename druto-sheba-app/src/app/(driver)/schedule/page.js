@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Calendar as CalendarIcon, Clock, AlertCircle } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
@@ -13,7 +14,7 @@ export default function DriverSchedule() {
     if (!activeDriver?.id) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/driver/schedule?driver_id=${activeDriver.id}`);
+      const res = await fetch(`/api/driver/schedule?driver_id=${activeDriver.id}&t=${Date.now()}`, { cache: 'no-store' });
       const resData = await res.json();
       setData({
          hours: (resData.shifts.length * 8) + ' hrs',
@@ -27,13 +28,13 @@ export default function DriverSchedule() {
     }
   }, [activeDriver]);
 
+  useAutoRefresh(fetchData);
   useEffect(() => {
     const init = async () => {
       await fetchData();
     };
     init();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
   }, [fetchData]);
 
   if (!activeDriver) return null;

@@ -1,19 +1,20 @@
 'use client';
-import { useState, useEffect } from 'react';
+import {  useState, useEffect , useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Receipt, CreditCard, Download, Search } from 'lucide-react';
 
 export default function BillingPage() {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const fetchBills = useCallback(() => {
+      fetch(`/api/billing?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).then(setBills).finally(() => setLoading(false));
+    }, []);
 
   useEffect(() => {
-    const fetchBills = () => {
-      fetch('/api/billing').then(r => r.json()).then(setBills).finally(() => setLoading(false));
-    };
     fetchBills();
-    const interval = setInterval(fetchBills, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchBills]);
+
+  useAutoRefresh(fetchBills);
 
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
 

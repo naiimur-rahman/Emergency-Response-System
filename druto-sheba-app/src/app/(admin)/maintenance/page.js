@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Wrench, CheckCircle, Plus, Truck, History, AlertTriangle, X, RefreshCw } from 'lucide-react';
 import { StatusBadge } from '@/components/Badges';
 
@@ -20,7 +21,7 @@ export default function MaintenanceHub() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/maintenance');
+      const res = await fetch(`/api/maintenance?t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       setData(json);
     } catch (err) {
@@ -30,13 +31,13 @@ export default function MaintenanceHub() {
     }
   }, []);
 
+  useAutoRefresh(fetchData);
   useEffect(() => {
     const init = async () => {
       await fetchData();
     };
     init();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
   }, [fetchData]);
 
 

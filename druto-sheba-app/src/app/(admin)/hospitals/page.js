@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Building2, BedDouble, MapPin, Plus, Stethoscope } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Modal from '@/components/Modal';
@@ -19,8 +20,8 @@ export default function HospitalsPage() {
   const fetchData = useCallback(async () => {
     try {
       const [hRes, sRes] = await Promise.all([
-        fetch('/api/hospitals').then(r => r.json()),
-        fetch('/api/specializations').then(r => r.json())
+        fetch(`/api/hospitals?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()),
+        fetch(`/api/specializations?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json())
       ]);
       setHospitals(hRes);
       setSpecializations(sRes);
@@ -28,13 +29,13 @@ export default function HospitalsPage() {
     finally { setLoading(false); }
   }, []);
 
+  useAutoRefresh(fetchData);
   useEffect(() => {
     const init = async () => {
       await fetchData();
     };
     init();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
   }, [fetchData]);
 
 

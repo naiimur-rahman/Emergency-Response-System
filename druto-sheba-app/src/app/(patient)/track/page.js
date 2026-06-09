@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Navigation, PhoneCall, Truck, AlertTriangle, Building2, ShieldAlert, Radio, Gauge, MapPin } from 'lucide-react';
 import MapView from '@/components/MapView';
 import { SeverityBadge } from '@/components/Badges';
@@ -13,7 +14,7 @@ export default function PatientTrackPage() {
 
   const fetchTrip = useCallback(async () => {
     try {
-      const res = await fetch('/api/patient/track');
+      const res = await fetch(`/api/patient/track?t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       setTrip(data.active_trip);
     } catch (err) {
@@ -23,10 +24,9 @@ export default function PatientTrackPage() {
     }
   }, []);
 
+  useAutoRefresh(fetchTrip);
   useEffect(() => {
     fetchTrip();
-    const interval = setInterval(fetchTrip, 10000); // Slower polling as backup
-    return () => clearInterval(interval);
   }, [fetchTrip]);
 
   // MQTT Connection for real-time updates

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { FileText, MapPin, Download, CheckCircle, Clock, Star } from 'lucide-react';
 import { SeverityBadge } from '@/components/Badges';
 import Modal from '@/components/Modal';
@@ -58,10 +59,10 @@ export default function PatientHistoryPage() {
     }
   }, [activePatient]);
 
+  useAutoRefresh(fetchHistory);
   useEffect(() => {
     fetchHistory();
-    const interval = setInterval(fetchHistory, 10000);
-    return () => clearInterval(interval);
+
   }, [fetchHistory]);
 
   return (

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { AlertTriangle, Truck, BedDouble, Users, Zap, RefreshCw, Clock, MessageCircle, Send, X, CloudLightning, Navigation, Map as MapIcon } from 'lucide-react';
 import { SeverityBadge, StatusBadge } from '@/components/Badges';
 import { useToast } from '@/components/Toast';
@@ -115,7 +116,7 @@ export default function DispatcherDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await fetch(`/api/dashboard?t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       setData(json);
     } catch (err) {
@@ -124,6 +125,8 @@ export default function DispatcherDashboard() {
       setLoading(false);
     }
   }, []);
+
+  useAutoRefresh(fetchData);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -147,8 +150,7 @@ export default function DispatcherDashboard() {
       await fetchData();
     };
     init();
-    const interval = setInterval(fetchData, 15000); // Poll every 15 seconds instead of 3
-    return () => clearInterval(interval);
+
   }, [fetchData]);
 
   const handleManualAssignSubmit = async () => {

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Plus, Zap, Filter } from 'lucide-react';
 import { SeverityBadge, StatusBadge } from '@/components/Badges';
 import Modal from '@/components/Modal';
@@ -15,8 +16,8 @@ export default function RequestsPage() {
   const fetchData = useCallback(async () => {
     try {
       const [reqRes, patRes] = await Promise.all([
-        fetch('/api/requests').then(r => r.json()),
-        fetch('/api/patients').then(r => r.json()),
+        fetch(`/api/requests?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()),
+        fetch(`/api/patients?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()),
       ]);
       setRequests(reqRes);
       setPatients(patRes);
@@ -27,13 +28,13 @@ export default function RequestsPage() {
     }
   }, []);
 
+  useAutoRefresh(fetchData);
   useEffect(() => {
     const init = async () => {
       await fetchData();
     };
     init();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+
   }, [fetchData]);
 
 

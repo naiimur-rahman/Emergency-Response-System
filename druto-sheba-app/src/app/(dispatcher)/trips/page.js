@@ -1,20 +1,21 @@
 'use client';
-import { useState, useEffect } from 'react';
+import {  useState, useEffect , useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { ClipboardList, Clock, ArrowRight } from 'lucide-react';
 import { SeverityBadge, StatusBadge } from '@/components/Badges';
 
 export default function TripsPage() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const fetchTrips = useCallback(() => {
+      fetch(`/api/trips?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).then(setTrips).catch(console.error).finally(() => setLoading(false));
+    }, []);
 
   useEffect(() => {
-    const fetchTrips = () => {
-      fetch('/api/trips').then(r => r.json()).then(setTrips).catch(console.error).finally(() => setLoading(false));
-    };
     fetchTrips();
-    const interval = setInterval(fetchTrips, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchTrips]);
+
+  useAutoRefresh(fetchTrips);
 
   const formatTime = (ts) => ts ? new Date(ts).toLocaleString() : '—';
 

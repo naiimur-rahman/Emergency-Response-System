@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Navigation, PhoneCall, Truck, AlertTriangle, Building2, CheckCircle, Clock, MessageCircle, Send, Radio, MapPin, Gauge, PackageCheck, Save } from 'lucide-react';
 import MapView from '@/components/MapView';
 import { SeverityBadge } from '@/components/Badges';
@@ -37,8 +38,8 @@ export default function DriverDutyPage() {
     if (!activeDriver?.id) return;
     try {
       const [res, shiftRes] = await Promise.all([
-        fetch(`/api/driver/duty?driver_id=${activeDriver.id}`),
-        fetch(`/api/driver/shift-log?driver_id=${activeDriver.id}`)
+        fetch(`/api/driver/duty?driver_id=${activeDriver.id}&t=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`/api/driver/shift-log?driver_id=${activeDriver.id}&t=${Date.now()}`, { cache: 'no-store' })
       ]);
       const data = await res.json();
       const shiftData = await shiftRes.json();
@@ -48,7 +49,7 @@ export default function DriverDutyPage() {
       if (!shiftData.error) setShiftSummary(shiftData);
       
       const vehicleId = data.active_trip?.vehicle_id || 1;
-      const invRes = await fetch(`/api/ambulances/inventory?vehicle_id=${vehicleId}`);
+      const invRes = await fetch(`/api/ambulances/inventory?vehicle_id=${vehicleId}&t=${Date.now()}`, { cache: 'no-store' });
       if (invRes.ok) {
         const invData = await invRes.json();
         if (invData && invData.length > 0) {
@@ -71,6 +72,7 @@ export default function DriverDutyPage() {
   }, [activeDriver]);
 
   // MQTT Connection
+  useAutoRefresh(fetchTrip);
   useEffect(() => {
     if (!activeDriver?.id) return;
     mqttService.connect(`driver-${activeDriver.id}`);
@@ -170,8 +172,6 @@ export default function DriverDutyPage() {
       await fetchTrip();
     };
     init();
-    const interval = setInterval(fetchTrip, 15000); // Poll every 15 seconds
-    return () => clearInterval(interval);
   }, [activeDriver, fetchTrip]);
 
   const handleAction = async (action, reqId = null) => {

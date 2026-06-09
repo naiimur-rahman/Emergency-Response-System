@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import {  useState, useEffect , useCallback } from 'react';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Activity, BarChart3, ShieldAlert, Map, TrendingUp, Star, MessageSquare, Clock, Server, Wifi, Cpu, Database } from 'lucide-react';
 
 const CostTrendGraph = ({ data }) => {
@@ -97,11 +98,12 @@ const SpecDistChart = ({ data }) => {
 const SystemHealthMonitor = () => {
   const [health, setHealth] = useState(null);
 
+  useAutoRefresh(fetchHealth);
+  useAutoRefresh(fetchAnalytics);
   useEffect(() => {
-    const fetchHealth = () => fetch('/api/admin/health').then(r => r.json()).then(setHealth).catch(() => {});
+    const fetchHealth = () => fetch(`/api/admin/health?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).then(setHealth).catch(() => {});
     fetchHealth();
-    const int = setInterval(fetchHealth, 10000);
-    return () => clearInterval(int);
+    (int);
   }, []);
 
   if (!health) return null;
@@ -154,18 +156,17 @@ export default function AnalyticsPage() {
   const [data, setData] = useState(emptyData);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAnalytics = () => {
-      fetch('/api/analytics')
+  const fetchAnalytics = useCallback(() => {
+      fetch(`/api/analytics?t=${Date.now()}`, { cache: 'no-store' })
         .then(r => r.json())
         .then(json => setData({ ...emptyData, ...json }))
         .catch(() => {})
         .finally(() => setLoading(false));
-    };
+    }, []);
+
+  useEffect(() => {
     fetchAnalytics();
-    const interval = setInterval(fetchAnalytics, 15000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchAnalytics]);
 
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
 

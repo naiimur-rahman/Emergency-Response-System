@@ -78,7 +78,7 @@ export default function SOSPage() {
 
   useEffect(() => {
     if (activePatient?.id) {
-      fetch(`/api/patients?patient_id=${activePatient.id}`)
+      fetch(`/api/patients?patient_id=${activePatient.id}&t=${Date.now()}`, { cache: 'no-store' })
         .then(r => r.json())
         .then(data => setProfile(Array.isArray(data) ? data[0] : data))
         .catch(() => {});
