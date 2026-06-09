@@ -16,6 +16,19 @@ export default function BillingPage() {
 
   useAutoRefresh(fetchBills);
 
+  const handleMarkPaid = async (bill_id) => {
+    try {
+      const res = await fetch('/api/billing', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bill_id, status: 'Paid' })
+      });
+      if (res.ok) fetchBills();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
 
   return (
@@ -75,7 +88,7 @@ export default function BillingPage() {
                         <Download size={14} />
                       </button>
                       {bill.payment_status === 'Unpaid' && (
-                        <button className="btn btn-primary btn-sm">
+                        <button className="btn btn-primary btn-sm" onClick={() => handleMarkPaid(bill.bill_id)}>
                           <CheckCircle size={14} /> Mark Paid
                         </button>
                       )}
