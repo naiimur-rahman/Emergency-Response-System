@@ -66,7 +66,7 @@ export async function GET() {
         LIMIT 5
       `),
       query(`SELECT * FROM drivers`),
-      query(`SELECT * FROM ambulances`),
+      query(`SELECT *, ST_X(current_location::geometry) as lon, ST_Y(current_location::geometry) as lat FROM ambulances`),
       query(`SELECT * FROM hospitals`),
     ]);
 

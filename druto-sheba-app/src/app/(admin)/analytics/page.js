@@ -103,7 +103,6 @@ const SystemHealthMonitor = () => {
   useEffect(() => {
     const fetchHealth = () => fetch(`/api/admin/health?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).then(setHealth).catch(() => {});
     fetchHealth();
-    (int);
   }, []);
 
   if (!health) return null;

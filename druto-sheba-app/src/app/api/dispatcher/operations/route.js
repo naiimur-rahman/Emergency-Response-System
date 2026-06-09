@@ -14,7 +14,7 @@ export async function GET() {
           CASE severity_level WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END,
           request_id ASC
       `),
-      query('SELECT * FROM ambulances ORDER BY vehicle_id'),
+      query('SELECT *, ST_X(current_location::geometry) as lon, ST_Y(current_location::geometry) as lat FROM ambulances ORDER BY vehicle_id'),
       query('SELECT * FROM drivers ORDER BY driver_id'),
       query('SELECT * FROM hospitals ORDER BY hospital_id'),
       query('SELECT * FROM audit_log ORDER BY changed_at DESC LIMIT 10'),
