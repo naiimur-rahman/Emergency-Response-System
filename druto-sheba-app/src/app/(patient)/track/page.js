@@ -24,9 +24,10 @@ export default function PatientTrackPage() {
     }
   }, []);
 
-  useAutoRefresh(fetchTrip);
   useEffect(() => {
     fetchTrip();
+    const int = setInterval(fetchTrip, 3000);
+    return () => clearInterval(int);
   }, [fetchTrip]);
 
   // MQTT Connection for real-time updates

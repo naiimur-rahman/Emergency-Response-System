@@ -27,14 +27,14 @@ export async function GET() {
         ST_Y(a.current_location::geometry) as ambulance_lat,
         d.name as driver_name,
         d.phone as driver_phone
-      FROM trip_logs tl
-      JOIN emergency_requests er ON tl.trip_id = er.request_id
+      FROM emergency_requests er
       JOIN patients p ON er.patient_id = p.patient_id
-      JOIN hospitals h ON tl.hospital_id = h.hospital_id
-      JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
+      LEFT JOIN trip_logs tl ON er.request_id = tl.trip_id
+      LEFT JOIN hospitals h ON tl.hospital_id = h.hospital_id
+      LEFT JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
       LEFT JOIN drivers d ON tl.driver_id = d.driver_id
-      WHERE er.status IN ('Pending', 'Active', 'En Route', 'Picked Up', 'Arrived')
-      ORDER BY tl.time_dispatched DESC
+      WHERE er.status IN ('Broadcast', 'Pending', 'Active', 'En Route', 'Picked Up', 'Arrived')
+      ORDER BY er.timestamp_created DESC
       LIMIT 1
     `);
 
