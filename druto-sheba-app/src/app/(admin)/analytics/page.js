@@ -98,12 +98,18 @@ const SpecDistChart = ({ data }) => {
 const SystemHealthMonitor = () => {
   const [health, setHealth] = useState(null);
 
-  useAutoRefresh(fetchHealth);
-  useAutoRefresh(fetchAnalytics);
-  useEffect(() => {
-    const fetchHealth = () => fetch(`/api/admin/health?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).then(setHealth).catch(() => {});
-    fetchHealth();
+  const fetchHealth = useCallback(() => {
+    fetch(`/api/admin/health?t=${Date.now()}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(setHealth)
+      .catch(() => {});
   }, []);
+
+  useAutoRefresh(fetchHealth);
+
+  useEffect(() => {
+    fetchHealth();
+  }, [fetchHealth]);
 
   if (!health) return null;
 
@@ -162,6 +168,8 @@ export default function AnalyticsPage() {
         .catch(() => {})
         .finally(() => setLoading(false));
     }, []);
+
+  useAutoRefresh(fetchAnalytics);
 
   useEffect(() => {
     fetchAnalytics();
