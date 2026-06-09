@@ -12,6 +12,7 @@ export default function DriverDutyPage() {
   const [trip, setTrip] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [broadcastRequests, setBroadcastRequests] = useState([]);
@@ -149,17 +150,28 @@ export default function DriverDutyPage() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !trip) return;
+    if (!newMessage.trim() || !trip || isSending) return;
+    
+    setIsSending(true);
     try {
-      await fetch('/api/chat', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trip_id: trip.trip_id, text: newMessage, sender: `Driver (${activeDriver.name})` })
       });
-      setNewMessage('');
-      fetchTrip();
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert('Failed to send message: ' + (errData.error || res.statusText));
+      } else {
+        setNewMessage('');
+        fetchTrip();
+      }
     } catch (err) {
       console.error(err);
+      alert('Network error while sending message.');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -561,7 +573,9 @@ export default function DriverDutyPage() {
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
                   />
-                  <button type="submit" className="btn btn-primary" style={{ padding: '0 16px', borderRadius: 12 }}><Send size={18}/></button>
+                  <button type="submit" disabled={isSending} className="btn btn-primary" style={{ padding: '0 16px', borderRadius: 12, opacity: isSending ? 0.7 : 1 }}>
+                    {isSending ? <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : <Send size={18}/>}
+                  </button>
                 </form>
               </div>
             </>
