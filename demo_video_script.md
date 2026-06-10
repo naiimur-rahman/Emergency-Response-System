@@ -189,7 +189,7 @@ SELECT
     a.license_plate AS ambulance,
     d.name AS driver_name
 FROM trip_logs tl
-JOIN emergency_requests er ON tl.request_id = er.request_id
+JOIN emergency_requests er ON tl.trip_id::text = er.request_id::text
 JOIN patients p ON er.patient_id = p.patient_id
 JOIN hospitals h ON tl.hospital_id = h.hospital_id
 JOIN ambulances a ON tl.vehicle_id = a.vehicle_id
@@ -240,7 +240,7 @@ WHERE patient_id IN (
 ```sql
 SELECT 
     'Ambulances' as resource_type,
-    current_status as status_or_type, 
+    current_status::text as status_or_type, 
     COUNT(vehicle_id) as available_count
 FROM ambulances
 GROUP BY current_status
