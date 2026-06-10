@@ -42,7 +42,11 @@
 
 1. **First Normal Form (1NF):** আমাদের প্রতিটা table-এর cell-এ atomic data আছে। কোনো column-এ comma-separated বা multiple values নেই। প্রতিটা table-এর জন্য একটা unique Primary Key (যেমন `Patient_ID`, `Trip_ID`) define করা আছে।
 2. **Second Normal Form (2NF):** আমাদের database-এ কোনো partial dependency নেই। Table-এর সব non-key attribute directly full Primary Key-এর উপর dependent।
-3. **Third Normal Form (3NF):** আমাদের কোনো transitive dependency নেই। উদাহরণস্বরূপ, `Doctors` table-এ আমরা directly Hospital-এর নাম text হিসেবে না লিখে, `Hospital_ID` কে **Foreign Key** হিসেবে use করেছি। এতে করে data duplicate হয় না এবং future-এ hospital-এর নাম update করলে database-এর update anomaly ঠেকানো যায়।"
+3. **Third Normal Form (3NF):** আমাদের কোনো transitive dependency নেই। উদাহরণস্বরূপ, `Doctors` table-এ আমরা directly Hospital-এর নাম text হিসেবে না লিখে, `Hospital_ID` কে **Foreign Key** হিসেবে use করেছি। এতে করে data duplicate হয় না এবং future-এ hospital-এর নাম update করলে database-এর update anomaly ঠেকানো যায়।
+
+**[Screen: Show the Enum Types Visualization]**
+
+এছাড়াও ডেটাবেসের Data Integrity ১০০% নিশ্চিত করার জন্য আমরা কিছু Custom **ENUM Types** তৈরি করেছি। যেমন আপনি স্ক্রিনে দেখতে পাচ্ছেন, `vehicle_status`, `severity_lvl`, `req_status` ইত্যাদি। সাধারণ `VARCHAR` ব্যবহার না করে ENUM ব্যবহার করার কারণে আমাদের সিস্টেমে কোনো ইনভ্যালিড ডেটা ইনসার্ট হতে পারে না। উদাহরণস্বরূপ, একটি ইমার্জেন্সি রিকোয়েস্টের স্ট্যাটাস শুধুমাত্র Pending, Active, En Route ইত্যাদির মধ্যেই সীমাবদ্ধ থাকবে, যা ডেটাবেস লেভেলেই error প্রতিরোধ করে।"
 
 ---
 
