@@ -281,6 +281,7 @@ BEGIN
         END IF;
 
         UPDATE Ambulances 
+        SET Current_Status = CASE 
                                 WHEN Trips_Since_Maintenance >= 50 THEN 'Maintenance_Required'::vehicle_status 
                                 ELSE 'Available'::vehicle_status 
                              END
@@ -317,7 +318,7 @@ BEGIN
     SELECT Severity_Level INTO v_Severity FROM Emergency_Requests WHERE Request_ID = NEW.Trip_ID;
 
     UPDATE Ambulances 
-        Trips_Since_Maintenance = Trips_Since_Maintenance + 1
+    SET Trips_Since_Maintenance = Trips_Since_Maintenance + 1
     WHERE Vehicle_ID = NEW.Vehicle_ID;
 
     IF v_Severity = 'Critical' THEN

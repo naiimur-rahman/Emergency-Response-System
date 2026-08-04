@@ -5,10 +5,11 @@ import { Navigation, PhoneCall, Truck, AlertTriangle, Building2, CheckCircle, Cl
 import MapView from '@/components/MapView';
 import { SeverityBadge } from '@/components/Badges';
 import { useUser } from '@/lib/UserContext';
-import mqttService from '@/lib/mqttService';
+import { useBroadcast } from '@/lib/BroadcastContext';
 
 export default function DriverDutyPage() {
   const { activeDriver } = useUser();
+  const { isBroadcasting, speed, accuracy, uptime, realtimeMarker, startBroadcasting, stopBroadcasting } = useBroadcast();
   const [trip, setTrip] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -20,20 +21,8 @@ export default function DriverDutyPage() {
   const [equipmentLog, setEquipmentLog] = useState({ oxygen: 75, defibrillator: 'Ready', supplies: 'Stocked' });
   const [equipmentSaving, setEquipmentSaving] = useState(false);
 
-  // Real-time Telemetry State
-  const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const [speed, setSpeed] = useState(0);
-  const [accuracy, setAccuracy] = useState(0);
-  const [uptime, setUptime] = useState('00:00');
-  const [realtimeMarker, setRealtimeMarker] = useState(null);
   const [panicLoading, setPanicLoading] = useState(false);
   const panicTimer = useRef(null);
-
-  const watchId = useRef(null);
-  const tripStartTime = useRef(null);
-  const lastSentTime = useRef(0);
-
-
 
   const fetchTrip = useCallback(async () => {
     if (!activeDriver?.id) return;
@@ -72,81 +61,7 @@ export default function DriverDutyPage() {
     }
   }, [activeDriver]);
 
-  // MQTT Connection
   useAutoRefresh(fetchTrip);
-  useEffect(() => {
-    if (!activeDriver?.id) return;
-    mqttService.connect(`driver-${activeDriver.id}`);
-    return () => mqttService.disconnect();
-  }, [activeDriver?.id]);
-
-  const startBroadcasting = useCallback(() => {
-    if (!navigator.geolocation) return;
-
-    setIsBroadcasting(true);
-    tripStartTime.current = Date.now();
-
-    watchId.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude, speed: rawSpeed, accuracy: acc } = pos.coords;
-        const currentSpeed = (rawSpeed || 0) * 3.6; // m/s to km/h
-        
-        setSpeed(currentSpeed);
-        setAccuracy(acc);
-        setRealtimeMarker({ lat: latitude, lng: longitude, speed: currentSpeed.toFixed(1), acc });
-
-        const now = Date.now();
-        if (now - lastSentTime.current > 500) { // Throttling
-          mqttService.publish({
-            id: `ambulance-${activeDriver.id}`,
-            driver_name: activeDriver.name,
-            lat: latitude,
-            lng: longitude,
-            speed: currentSpeed.toFixed(1),
-            acc: acc,
-            status: 'active'
-          });
-          lastSentTime.current = now;
-        }
-
-        // Persist to database every 10 seconds to ensure stale locations are updated
-        if (now - (window.lastDbUpdate || 0) > 10000 && trip?.license_plate) {
-          fetch('/api/driver/location', {
-            method: 'POST',
-            body: JSON.stringify({ vehicle_id: trip.license_plate, lat: latitude, lng: longitude })
-          }).catch(err => console.error(err));
-          window.lastDbUpdate = now;
-        }
-      },
-      (err) => console.error(err),
-      { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
-    );
-  }, [activeDriver, trip]);
-
-  const stopBroadcasting = useCallback(() => {
-    setIsBroadcasting(false);
-    if (watchId.current) {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
-    mqttService.publishOffline(`ambulance-${activeDriver.id}`);
-    setRealtimeMarker(null);
-    setSpeed(0);
-    setAccuracy(0);
-    setUptime('00:00');
-  }, [activeDriver]);
-
-  // Uptime Counter
-  useEffect(() => {
-    if (!isBroadcasting) return;
-    const interval = setInterval(() => {
-      const diff = Math.floor((Date.now() - tripStartTime.current) / 1000);
-      const m = Math.floor(diff / 60).toString().padStart(2, '0');
-      const s = (diff % 60).toString().padStart(2, '0');
-      setUptime(`${m}:${s}`);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isBroadcasting]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

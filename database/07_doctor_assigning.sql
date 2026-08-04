@@ -46,3 +46,25 @@ CREATE TABLE assistants (
 
 -- RLS Policies (if using Supabase, we can enable RLS and add basic policies later)
 -- For now, we will just create the tables.
+
+-- Real-time view utilized by the Dispatcher portal to monitor all active emergencies
+CREATE MATERIALIZED VIEW emergency_analytics_mv AS
+ SELECT date(tl.time_dispatched) AS trip_date,
+    count(tl.trip_id) AS total_trips,
+    (avg((EXTRACT(epoch FROM (tl.time_reached_hospital - tl.time_dispatched)) / (60)::numeric)))::numeric(10,2) AS avg_response_time_minutes,
+    sum(b.total_amount) AS total_revenue,
+    (avg(tf.rating))::numeric(3,2) AS avg_driver_rating
+   FROM ((trip_logs tl
+     LEFT JOIN billing b ON (((tl.trip_id)::text = (b.trip_id)::text)))
+     LEFT JOIN trip_feedback tf ON (((tl.trip_id)::text = (tf.trip_id)::text)))
+  WHERE (tl.time_reached_hospital IS NOT NULL)
+  GROUP BY (date(tl.time_dispatched))
+  WITH NO DATA;
+
+ALTER MATERIALIZED VIEW emergency_analytics_mv OWNER TO postgres;
+
+CREATE UNIQUE INDEX idx_analytics_mv_date ON emergency_analytics_mv USING btree (trip_date);
+
+GRANT ALL ON TABLE emergency_analytics_mv TO anon;
+GRANT ALL ON TABLE emergency_analytics_mv TO authenticated;
+GRANT ALL ON TABLE emergency_analytics_mv TO service_role;

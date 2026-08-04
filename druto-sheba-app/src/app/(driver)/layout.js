@@ -1,6 +1,7 @@
 'use client';
 import PortalSidebar from '@/components/PortalSidebar';
 import { Navigation, CalendarClock, UserCog, History } from 'lucide-react';
+import { BroadcastProvider } from '@/lib/BroadcastContext';
 
 const navItems = [
   { href: '/duty', label: 'Active Duty', icon: Navigation },
@@ -11,14 +12,17 @@ const navItems = [
 
 export default function DriverLayout({ children }) {
   return (
-    <div className="app-layout">
-      <PortalSidebar
-        portalName="Driver Portal"
-        portalColor="#ff9f0a"
-        portalIcon={Navigation}
-        navItems={navItems}
-      />
-      <main className="main-content">{children}</main>
-    </div>
+    <BroadcastProvider>
+      <div className="app-layout">
+        <PortalSidebar
+          portalName="Driver Portal"
+          portalColor="#ff9f0a"
+          portalIcon={Navigation}
+          navItems={navItems}
+        />
+        <main className="main-content">{children}</main>
+      </div>
+    </BroadcastProvider>
   );
 }
+

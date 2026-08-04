@@ -86,6 +86,11 @@ export default function PatientBills() {
                         {bill.payment_status}
                       </span>
                     </div>
+                    {bill.payment_status !== 'Paid' && bill.payment_reminder_sent && (
+                      <div style={{ background: 'rgba(255,159,10,0.1)', border: '1px solid rgba(255,159,10,0.3)', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', color: '#ff9f0a', marginBottom: '8px', maxWidth: '400px' }}>
+                        ⚠️ <strong>Payment Reminder: Please pay this bill to settle outstanding dues.</strong>
+                      </div>
+                    )}
                     <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '4px' }}>
                       Destination: {bill.hospital_name}
                     </div>

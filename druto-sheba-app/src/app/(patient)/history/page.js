@@ -183,8 +183,7 @@ export default function PatientHistoryPage() {
           <>
             <button className="btn btn-secondary" onClick={() => setShowInvoiceModal(false)}>Close</button>
             <button className="btn btn-primary" onClick={() => {
-              toast('Invoice downloaded successfully', 'success');
-              setShowInvoiceModal(false);
+              window.print();
             }}>
               <Download size={16} /> Download PDF
             </button>

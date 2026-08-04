@@ -2,30 +2,31 @@
 import { useEffect, useState, useRef } from 'react';
 
 // Helper component to auto-fit map bounds to all markers
-function FitBounds({ bounds, mapLib }) {
+function FitBounds({ bounds, shouldFit, mapLib }) {
   const MapHook = mapLib;
   if (!MapHook) return null;
 
-  return <FitBoundsInner bounds={bounds} useMap={MapHook.useMap} />;
+  return <FitBoundsInner bounds={bounds} shouldFit={shouldFit} useMap={MapHook.useMap} />;
 }
 
-function FitBoundsInner({ bounds, useMap }) {
+function FitBoundsInner({ bounds, shouldFit, useMap }) {
   const map = useMap();
   const hasFitted = useRef(false);
 
   useEffect(() => {
-    if (!bounds || bounds.length < 2) return;
-    // Only auto-fit once on initial load, then let user pan freely
+    if (!shouldFit || !bounds || bounds.length < 2) return;
     if (hasFitted.current) return;
     try {
-      const L = window.L || require('leaflet');
-      const latLngBounds = L.latLngBounds(bounds);
-      if (latLngBounds.isValid()) {
-        map.fitBounds(latLngBounds, { padding: [60, 60], maxZoom: 15 });
-        hasFitted.current = true;
+      if (map && map._container && map.getContainer()) {
+        const L = window.L || require('leaflet');
+        const latLngBounds = L.latLngBounds(bounds);
+        if (latLngBounds.isValid()) {
+          map.fitBounds(latLngBounds, { padding: [60, 60], maxZoom: 15 });
+          hasFitted.current = true;
+        }
       }
     } catch {}
-  }, [bounds, map]);
+  }, [bounds, shouldFit, map]);
 
   return null;
 }
@@ -34,8 +35,10 @@ function FitBoundsInner({ bounds, useMap }) {
 function FollowAmbulance({ position, shouldFollow, useMap }) {
   const map = useMap();
   useEffect(() => {
-    if (shouldFollow && position) {
-      map.panTo(position, { animate: true, duration: 0.5 });
+    if (shouldFollow && position && map && map._container && map.getContainer()) {
+      try {
+        map.panTo(position, { animate: true, duration: 0.5 });
+      } catch {}
     }
   }, [position, shouldFollow, map]);
   return null;
@@ -49,58 +52,69 @@ function AutoRecenter({ position, shouldFollow, useMap }) {
 
   // Initial center and follow-on-change
   useEffect(() => {
-    if (position) {
-      const bounds = map.getBounds();
-      const viewHeightLat = bounds.getNorth() - bounds.getSouth();
-      const zoom = map.getZoom();
-      const offsetFactor = zoom > 16 ? 0.30 : 0.38;
-      const offsetLat = position.lat - (viewHeightLat * offsetFactor);
-      const centerPos = [offsetLat, position.lon];
+    if (position && map && map._container && map.getContainer()) {
+      try {
+        const bounds = map.getBounds();
+        const viewHeightLat = bounds.getNorth() - bounds.getSouth();
+        const zoom = map.getZoom();
+        const offsetFactor = zoom > 16 ? 0.30 : 0.38;
+        const offsetLat = position.lat - (viewHeightLat * offsetFactor);
+        const centerPos = [offsetLat, position.lon];
 
-      if (!hasCentered.current) {
-        map.setView(centerPos, 15, { animate: true });
-        hasCentered.current = true;
-      } else if (shouldFollow) {
-        map.panTo(centerPos, { animate: true, duration: 0.5 });
-      }
+        if (!hasCentered.current) {
+          map.setView(centerPos, 15, { animate: true });
+          hasCentered.current = true;
+        } else if (shouldFollow) {
+          map.panTo(centerPos, { animate: true, duration: 0.5 });
+        }
+      } catch {}
     }
   }, [position, shouldFollow, map]);
 
   // Snap back if user pans away while following
   useEffect(() => {
-    if (!shouldFollow || !position) return;
+    if (!shouldFollow || !position || !map || !map._container || !map.getContainer()) return;
 
     const snapBack = () => {
       if (snapTimer.current) clearTimeout(snapTimer.current);
       
       snapTimer.current = setTimeout(() => {
-        if (shouldFollow && position) {
-          const bounds = map.getBounds();
-          const viewHeightLat = bounds.getNorth() - bounds.getSouth();
-          const zoom = map.getZoom();
-          const offsetFactor = zoom > 16 ? 0.30 : 0.38;
-          const offsetLat = position.lat - (viewHeightLat * offsetFactor);
-          const target = [offsetLat, position.lon];
+        if (shouldFollow && position && map && map._container && map.getContainer()) {
+          try {
+            const bounds = map.getBounds();
+            const viewHeightLat = bounds.getNorth() - bounds.getSouth();
+            const zoom = map.getZoom();
+            const offsetFactor = zoom > 16 ? 0.30 : 0.38;
+            const offsetLat = position.lat - (viewHeightLat * offsetFactor);
+            const target = [offsetLat, position.lon];
 
-          const currentCenter = map.getCenter();
-          const dist = Math.sqrt(Math.pow(currentCenter.lat - offsetLat, 2) + Math.pow(currentCenter.lng - position.lon, 2));
-          
-          if (dist > viewHeightLat * 0.001) {
-            map.setView(target, map.getZoom(), { animate: true });
-          }
+            const currentCenter = map.getCenter();
+            const dist = Math.sqrt(Math.pow(currentCenter.lat - offsetLat, 2) + Math.pow(currentCenter.lng - position.lon, 2));
+            
+            if (dist > viewHeightLat * 0.001) {
+              map.setView(target, map.getZoom(), { animate: true });
+            }
+          } catch {}
         }
       }, 3000); // 3 second delay
     };
 
     const clearTimer = () => { if (snapTimer.current) clearTimeout(snapTimer.current); };
 
-    map.on('move', clearTimer);
-    map.on('moveend', snapBack);
+    try {
+      map.on('move', clearTimer);
+      map.on('moveend', snapBack);
+    } catch {}
 
     return () => {
       if (snapTimer.current) clearTimeout(snapTimer.current);
-      map.off('move', clearTimer);
-      map.off('moveend', snapBack);
+      try {
+        if (map && map._container && map.getContainer()) {
+          map.stop();
+          map.off('move', clearTimer);
+          map.off('moveend', snapBack);
+        }
+      } catch {}
     };
   }, [map, shouldFollow, position]);
 
@@ -142,6 +156,20 @@ export default function MapView({
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
+
+      if (L.Map && !L.Map.prototype.__patchedForUnmount) {
+        L.Map.prototype.__patchedForUnmount = true;
+        const originalOnZoomTransitionEnd = L.Map.prototype._onZoomTransitionEnd;
+        L.Map.prototype._onZoomTransitionEnd = function (...args) {
+          try {
+            if (this._container && this.getContainer()) {
+              originalOnZoomTransitionEnd.apply(this, args);
+            }
+          } catch (e) {
+            console.warn("Prevented Leaflet zoom transition unmount crash:", e);
+          }
+        };
+      }
 
       // Custom DivIcon: Hospital 🏥
       const hospitalIcon = new L.DivIcon({
@@ -269,9 +297,9 @@ export default function MapView({
       // Add a small delay to prevent rapid-fire requests during location jitter
       const timer = setTimeout(() => {
         fetch(url)
-          .then(r => r.json())
+          .then(r => r.ok ? r.json() : null)
           .then(data => {
-            if (isMounted && data.code === 'Ok' && data.routes.length > 0) {
+            if (isMounted && data && data.code === 'Ok' && data.routes && data.routes.length > 0) {
               const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
               setPatientToHospitalRoute(coords);
             }
@@ -299,9 +327,9 @@ export default function MapView({
       
       const timer = setTimeout(() => {
         fetch(url)
-          .then(r => r.json())
+          .then(r => r.ok ? r.json() : null)
           .then(data => {
-            if (isMounted && data.code === 'Ok' && data.routes.length > 0) {
+            if (isMounted && data && data.code === 'Ok' && data.routes && data.routes.length > 0) {
               const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
               setAmbulanceToPatientRoute(coords);
             }
@@ -419,19 +447,25 @@ export default function MapView({
         />
 
         {/* Auto-fit bounds */}
-        {boundsPoints.length >= 2 && !followUser && !followAmbulance && (
-          <FitBoundsInner bounds={boundsPoints} useMap={RL.useMap} />
-        )}
+        <FitBoundsInner 
+          bounds={boundsPoints} 
+          shouldFit={boundsPoints.length >= 2 && !followUser && !followAmbulance} 
+          useMap={RL.useMap} 
+        />
 
         {/* Follow ambulance (Priority) */}
-        {currentAmbulancePos && followAmbulance ? (
-          <FollowAmbulance position={currentAmbulancePos} shouldFollow={followAmbulance} useMap={RL.useMap} />
-        ) : (
-          /* Patient auto-recenter / follow (Only if ambulance not following) */
-          pickupCoords && (
-            <AutoRecenter position={pickupCoords} shouldFollow={followUser} useMap={RL.useMap} />
-          )
-        )}
+        <FollowAmbulance 
+          position={currentAmbulancePos} 
+          shouldFollow={!!currentAmbulancePos && followAmbulance} 
+          useMap={RL.useMap} 
+        />
+
+        {/* Patient auto-recenter / follow */}
+        <AutoRecenter 
+          position={pickupCoords} 
+          shouldFollow={!!pickupCoords && followUser && !(currentAmbulancePos && followAmbulance)} 
+          useMap={RL.useMap} 
+        />
 
         {/* Route: Ambulance → Patient (dashed orange) */}
         {ambulanceToPatient && (
@@ -472,13 +506,13 @@ export default function MapView({
               }}
             >
               <Popup>
-                <div class="popup-title">🏥 {h.name}</div>
-                <div class="popup-sub">{h.type || 'Private'} Hospital</div>
+                <div className="popup-title">🏥 {h.name}</div>
+                <div className="popup-sub">{h.type || 'Private'} Hospital</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                  <span class="popup-badge" style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158' }}>
+                  <span className="popup-badge" style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158' }}>
                     🛏️ General: {h.general_beds}
                   </span>
-                  <span class="popup-badge" style={{ background: 'rgba(255,45,85,0.15)', color: '#ff2d55' }}>
+                  <span className="popup-badge" style={{ background: 'rgba(255,45,85,0.15)', color: '#ff2d55' }}>
                     ❤️ ICU: {h.icu_beds}
                   </span>
                 </div>
@@ -502,9 +536,9 @@ export default function MapView({
             } : undefined}
           >
             <Popup>
-              <div class="popup-title">📍 Emergency Pickup</div>
-              <div class="popup-sub">{onPickupDrag ? 'Drag to change location' : 'Patient Location'}</div>
-              <div class="popup-badge" style={{ background: 'rgba(255,45,85,0.15)', color: '#ff2d55' }}>
+              <div className="popup-title">📍 Emergency Pickup</div>
+              <div className="popup-sub">{onPickupDrag ? 'Drag to change location' : 'Patient Location'}</div>
+              <div className="popup-badge" style={{ background: 'rgba(255,45,85,0.15)', color: '#ff2d55' }}>
                 🆘 {requestStatus}
               </div>
             </Popup>
@@ -516,14 +550,14 @@ export default function MapView({
           <>
             <Marker position={currentAmbulancePos} icon={ambulanceIcon}>
               <Popup>
-                <div class="popup-title">🚑 {realtimeMarker?.title || 'Ambulance Unit'}</div>
+                <div className="popup-title">🚑 {realtimeMarker?.title || 'Ambulance Unit'}</div>
                 {realtimeMarker && (
                   <>
                     <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                      <span class="popup-badge" style={{ background: 'rgba(10,132,255,0.15)', color: '#0a84ff' }}>
+                      <span className="popup-badge" style={{ background: 'rgba(10,132,255,0.15)', color: '#0a84ff' }}>
                         🏎️ {realtimeMarker.speed} km/h
                       </span>
-                      <span class="popup-badge" style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158' }}>
+                      <span className="popup-badge" style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158' }}>
                         📡 ±{Math.round(realtimeMarker.acc || 0)}m
                       </span>
                     </div>

@@ -47,11 +47,20 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    const { driver_id, shift_status } = await request.json();
-    const result = await query(
-      `UPDATE drivers SET shift_status = $1 WHERE driver_id = $2 RETURNING *`,
-      [shift_status, driver_id]
-    );
+    const { driver_id, shift_status, name, license_no } = await request.json();
+    
+    let result;
+    if (shift_status !== undefined) {
+      result = await query(
+        `UPDATE drivers SET shift_status = $1 WHERE driver_id = $2 RETURNING *`,
+        [shift_status, driver_id]
+      );
+    } else {
+      result = await query(
+        `UPDATE drivers SET name = COALESCE($1, name), license_no = COALESCE($2, license_no) WHERE driver_id = $3 RETURNING *`,
+        [name, license_no, driver_id]
+      );
+    }
     return NextResponse.json(result.rows[0]);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

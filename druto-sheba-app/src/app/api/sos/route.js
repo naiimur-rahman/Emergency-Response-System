@@ -30,10 +30,10 @@ export async function POST(request) {
 
     // Step 2: Create emergency request
     const reqResult = await query(
-      `INSERT INTO emergency_requests (patient_id, pickup_coords, severity_level, emergency_type, requested_for, status)
-       VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, 'Broadcast')
+      `INSERT INTO emergency_requests (patient_id, pickup_coords, severity_level, emergency_type, requested_for, status, hospital_id)
+       VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5, $6, 'Broadcast', $7)
        RETURNING request_id`,
-      [patientId, lon, lat, severity, emergency_type, requested_for]
+      [patientId, lon, lat, severity, emergency_type, requested_for, hospital_id]
     );
     const requestId = reqResult.rows[0].request_id;
 
