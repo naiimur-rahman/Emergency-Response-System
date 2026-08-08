@@ -1,17 +1,40 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Save, UserPlus, ShieldBan, Truck, Settings, ClipboardList, RefreshCw } from 'lucide-react';
 import { StatusBadge, EquipmentBadge } from '@/components/Badges';
 import { useToast } from '@/components/Toast';
 
 export default function AdminControlPage() {
+  const router = useRouter();
   const toast = useToast();
   const [data, setData] = useState({ users: [], ambulances: [], audit: [], pricing: {} });
   const [userForm, setUserForm] = useState({ username: '', role: 'Dispatcher' });
   const [fleetForm, setFleetForm] = useState({ license_plate: '', equipment_level: 'Basic', hub: 'Central Hub', next_service_date: '' });
   const [pricing, setPricing] = useState({ base_fare: 500, per_km_charge: 25, night_multiplier: 1.35, critical_surcharge: 500 });
   const [loading, setLoading] = useState(true);
+
+  const [bypassActive, setBypassActive] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [confirming, setConfirming] = useState(false);
+
+  // Poll for pending count to determine bypass button status
+  useEffect(() => {
+    const checkBypass = async () => {
+      try {
+        const res = await fetch('/api/admin/pending-count');
+        if (res.ok) {
+          const d = await res.json();
+          setBypassActive(!!d.hasOverdue);
+        }
+      } catch {}
+    };
+    checkBypass();
+    const interval = setInterval(checkBypass, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -88,6 +111,39 @@ export default function AdminControlPage() {
     if (res.ok) toast('Pricing engine updated.', 'success');
   };
 
+  const handleBypassDispatch = () => {
+    if (!bypassActive) return;
+    setAdminPassword('');
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmBypass = async (e) => {
+    e.preventDefault();
+    if (!adminPassword.trim()) return;
+
+    setConfirming(true);
+    try {
+      const res = await fetch('/api/auth/bypass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      });
+      
+      if (res.ok) {
+        toast('Bypass session generated successfully.', 'success');
+        setShowConfirmModal(false);
+        router.push('/dashboard');
+      } else {
+        const err = await res.json();
+        toast(err.error || 'Incorrect password verification failed.', 'error');
+      }
+    } catch {
+      toast('Network error during verification.', 'error');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   if (loading) return <div className="page-container"><div className="loading-container"><div className="spinner" /></div></div>;
 
   return (
@@ -97,7 +153,30 @@ export default function AdminControlPage() {
           <h2>Admin Control</h2>
           <p className="page-header-sub">Roles, fleet registry, pricing engine, and audit ledger</p>
         </div>
-        <button className="btn btn-secondary" onClick={fetchData}><RefreshCw size={16} /> Refresh</button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button 
+            className="btn" 
+            disabled={!bypassActive}
+            onClick={handleBypassDispatch}
+            style={{
+              fontSize: '11px',
+              padding: '4px 10px',
+              background: bypassActive ? '#ff3b30' : 'rgba(120, 120, 128, 0.2)',
+              color: bypassActive ? '#fff' : 'rgba(120, 120, 128, 0.6)',
+              border: 'none',
+              cursor: bypassActive ? 'pointer' : 'not-allowed',
+              opacity: bypassActive ? 1 : 0.8,
+              transition: 'all 0.3s ease',
+              boxShadow: bypassActive ? '0 0 10px rgba(255, 59, 48, 0.4)' : 'none',
+              fontWeight: 700,
+              borderRadius: '6px',
+              height: '30px'
+            }}
+          >
+            Bypass Dispatcher
+          </button>
+          <button className="btn btn-secondary" style={{ height: '36px' }} onClick={fetchData}><RefreshCw size={16} /> Refresh</button>
+        </div>
       </div>
 
       <div className="content-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -189,6 +268,46 @@ export default function AdminControlPage() {
           </table>
         </div>
       </div>
+
+      {showConfirmModal && (
+        <div className="modal-overlay" style={{ display: 'flex', zIndex: 10000 }}>
+          <div className="modal-content" style={{ maxWidth: 360, padding: 24, borderRadius: 16 }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: 16, fontWeight: 800 }}>Confirm Bypass Credentials</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+              For security, please enter your Admin password to bypass the dispatcher portal.
+            </p>
+            <form onSubmit={handleConfirmBypass}>
+              <input
+                required
+                type="password"
+                className="form-input"
+                placeholder="Enter Admin Password"
+                value={adminPassword}
+                onChange={e => setAdminPassword(e.target.value)}
+                style={{ width: '100%', marginBottom: 20, height: 40 }}
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-ghost" 
+                  onClick={() => setShowConfirmModal(false)}
+                  disabled={confirming}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={confirming || !adminPassword}
+                >
+                  {confirming ? 'Verifying...' : 'Verify & Bypass'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

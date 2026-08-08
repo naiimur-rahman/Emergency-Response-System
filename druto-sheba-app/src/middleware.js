@@ -15,45 +15,71 @@ export default async function proxy(request) {
   const isAdminRoute = pathname.startsWith('/analytics') || pathname.startsWith('/hospitals') || pathname.startsWith('/billing') || pathname.startsWith('/maintenance') || pathname.startsWith('/control') || pathname.startsWith('/logs') || pathname.startsWith('/admin-reviews') || pathname.startsWith('/doctors');
   const isDispatcherRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/fleet') || pathname.startsWith('/requests') || pathname.startsWith('/trips') || pathname.startsWith('/operations') || pathname.startsWith('/dispatcher-reviews');
 
-  if (isAdminRoute || isDispatcherRoute) {
-    const sessionCookie = request.cookies.get('staff_session');
+  if (isAdminRoute) {
+    const sessionCookie = request.cookies.get('admin_session');
     
     if (!sessionCookie) {
-      // For RSC (client-side navigation) requests, redirect properly
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/login?portal=admin', request.url));
     }
 
     try {
       const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET);
       
       // Role-based access control (RBAC)
-      if (isAdminRoute && payload.role !== 'Admin') {
-         // Redirect non-admins to their dashboard
-         return NextResponse.redirect(new URL('/dashboard', request.url));
+      if (payload.role !== 'Admin') {
+         return NextResponse.redirect(new URL('/login?portal=admin', request.url));
       }
       
-      // Allow request — pass role info via headers for downstream use
       const response = NextResponse.next();
       response.headers.set('x-user-role', payload.role);
       return response;
     } catch (error) {
-      console.error('Middleware JWT verification failed:', error?.message || error);
-      // Clear invalid cookie and redirect to login
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      response.cookies.delete('staff_session');
+      console.error('Middleware JWT verification failed for Admin:', error?.message || error);
+      const response = NextResponse.redirect(new URL('/login?portal=admin', request.url));
+      response.cookies.delete('admin_session');
+      return response;
+    }
+  }
+
+  if (isDispatcherRoute) {
+    const dispatcherCookie = request.cookies.get('dispatcher_session');
+    
+    if (!dispatcherCookie) {
+      return NextResponse.redirect(new URL('/login?portal=dispatcher', request.url));
+    }
+
+    try {
+      const { payload } = await jwtVerify(dispatcherCookie.value, JWT_SECRET);
+      
+      if (payload.role !== 'Dispatcher') {
+         return NextResponse.redirect(new URL('/login?portal=dispatcher', request.url));
+      }
+      
+      const response = NextResponse.next();
+      response.headers.set('x-user-role', payload.role);
+      return response;
+    } catch (error) {
+      console.error('Middleware JWT verification failed for Dispatcher:', error?.message || error);
+      const response = NextResponse.redirect(new URL('/login?portal=dispatcher', request.url));
+      response.cookies.delete('dispatcher_session');
       return response;
     }
   }
 
   // If user tries to access /login or /register while already logged in
   if (pathname === '/login' || pathname === '/register') {
-    const sessionCookie = request.cookies.get('staff_session');
+    const searchParams = request.nextUrl.searchParams;
+    const targetPortal = searchParams.get('portal') || 'dispatcher';
+    
+    const cookieName = targetPortal === 'admin' ? 'admin_session' : 'dispatcher_session';
+    const sessionCookie = request.cookies.get(cookieName);
+    
     if (sessionCookie) {
       try {
         const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET);
-        if (payload.role === 'Admin') {
+        if (payload.role === 'Admin' && targetPortal === 'admin') {
           return NextResponse.redirect(new URL('/analytics', request.url));
-        } else {
+        } else if (payload.role === 'Dispatcher' && targetPortal === 'dispatcher') {
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
       } catch (e) {

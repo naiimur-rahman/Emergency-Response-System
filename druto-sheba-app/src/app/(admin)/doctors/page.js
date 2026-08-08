@@ -1,7 +1,21 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { User, CheckCircle2, XCircle, Calendar, Power } from 'lucide-react';
+
+function getNextDateForDay(dayName) {
+  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const targetDay = daysOfWeek.indexOf(dayName);
+  if (targetDay === -1) return new Date().toISOString().split('T')[0];
+  
+  const resultDate = new Date();
+  const currentDay = resultDate.getDay();
+  
+  let steps = (targetDay - currentDay + 7) % 7;
+  if (steps === 0) steps = 7;
+  
+  resultDate.setDate(resultDate.getDate() + steps);
+  return resultDate.toISOString().split('T')[0];
+}
 
 export default function ManageDoctorsPage() {
   const [doctors, setDoctors] = useState([]);
@@ -9,67 +23,26 @@ export default function ManageDoctorsPage() {
   const [loading, setLoading] = useState(true);
   const [filterHospital, setFilterHospital] = useState('');
   const [filterSpec, setFilterSpec] = useState('');
+  const [selectedDays, setSelectedDays] = useState({});
 
   const loadData = async () => {
-    if (!supabase) {
-      const generatedDoctors = [];
-      const specs = ['Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics'];
-      const hosps = ['Central Hospital', 'City Clinic'];
-      const names = ['Rahim Ahmed', 'Farhana Khan', 'Tarek Rahman', 'Salma Begum', 'Shahin Islam', 'Nusrat Jahan', 'Karim Hossain', 'Riyad Ahmed', 'Ayesha Siddiqua', 'Kamrul Hasan', 'Sadia Afrin', 'Mehedi Hasan', 'Monir Hossain', 'Sharmin Akter', 'Rubel Mia', 'Tania Sultana', 'Zahid Hasan', 'Fatema Zohra', 'Rafiqul Islam', 'Sonia Akter'];
-      
-      let idCounter = 1;
-      for (const h of hosps) {
-        for (const s of specs) {
-          for (let i = 0; i < 4; i++) {
-             generatedDoctors.push({
-               doctor_id: idCounter,
-               name: 'Dr. ' + names[(idCounter - 1) % names.length],
-               is_available: Math.random() > 0.2, // 80% available
-               hospitals: { name: h },
-               specializations: { spec_name: s }
-             });
-             idCounter++;
-          }
-        }
-      }
-      setDoctors(generatedDoctors);
-
-      setAssignments([
-        { assignment_id: 1, patients: { name: 'Afsana' }, doctors: { name: generatedDoctors[0].name }, appointment_date: '2026-06-15', appointment_time: '10:00:00', status: 'Pending' },
-        { assignment_id: 2, patients: { name: 'Kamal' }, doctors: { name: generatedDoctors[1].name }, appointment_date: '2026-06-16', appointment_time: '14:30:00', status: 'Confirmed' },
-        { assignment_id: 3, patients: { name: 'Jamal' }, doctors: { name: generatedDoctors[5].name }, appointment_date: '2026-06-17', appointment_time: '09:15:00', status: 'Pending' },
-        { assignment_id: 4, patients: { name: 'Rina' }, doctors: { name: generatedDoctors[6].name }, appointment_date: '2026-06-18', appointment_time: '11:00:00', status: 'Confirmed' }
+    try {
+      setLoading(true);
+      const [dRes, aRes] = await Promise.all([
+        fetch('/api/doctors?t=' + Date.now()),
+        fetch('/api/appointments?t=' + Date.now())
       ]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    
-    let allDoctors = [];
-    let page = 0;
-    while (true) {
-      const { data } = await supabase
-        .from('doctors')
-        .select('*, hospitals(name), specializations(spec_name)')
-        .range(page * 1000, (page + 1) * 1000 - 1);
       
-      if (data && data.length > 0) {
-        allDoctors = [...allDoctors, ...data];
-        if (data.length < 1000) break;
-        page++;
-      } else {
-        break;
-      }
-    }
-    setDoctors(allDoctors);
+      const dbDoctors = dRes.ok ? await dRes.json() : [];
+      const dbAssignments = aRes.ok ? await aRes.json() : [];
 
-    const { data: aData } = await supabase
-      .from('doctor_assignments')
-      .select('*, patients(name), doctors(name)')
-      .order('appointment_date', { ascending: false });
-      
-    setAssignments(aData || []);
-    setLoading(false);
+      setDoctors(dbDoctors);
+      setAssignments(dbAssignments);
+    } catch (err) {
+      console.error('Error loading admin doctors/appointments data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -77,15 +50,49 @@ export default function ManageDoctorsPage() {
   }, []);
 
   const toggleAvailability = async (doctorId, currentStatus) => {
-    if (!supabase) return alert('Demo mode');
-    await supabase.from('doctors').update({ is_available: !currentStatus }).eq('doctor_id', doctorId);
-    loadData();
+    try {
+      const res = await fetch('/api/doctors', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctor_id: doctorId,
+          is_available: !currentStatus
+        })
+      });
+      if (res.ok) {
+        loadData();
+      } else {
+        const errorData = await res.json();
+        alert('Failed to toggle availability: ' + (errorData.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Failed to toggle availability: ' + err.message);
+    }
   };
 
-  const updateAssignmentStatus = async (assignmentId, status) => {
-    if (!supabase) return alert('Demo mode');
-    await supabase.from('doctor_assignments').update({ status }).eq('assignment_id', assignmentId);
-    loadData();
+  const updateAssignmentStatus = async (assignmentId, status, dateVal = null, timeVal = null) => {
+    try {
+      const payload = {
+        assignment_id: assignmentId,
+        status: status
+      };
+      if (dateVal) payload.appointment_date = dateVal;
+      if (timeVal) payload.appointment_time = timeVal;
+
+      const res = await fetch('/api/appointments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        loadData();
+      } else {
+        const errorData = await res.json();
+        alert('Failed to update status: ' + (errorData.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Failed to update status: ' + err.message);
+    }
   };
 
   if (loading) {
@@ -172,6 +179,16 @@ export default function ManageDoctorsPage() {
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
                       {a.appointment_date} at {a.appointment_time?.slice(0,5)}
                     </div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '12px' }}>
+                      <span className={`badge ${a.payment_status === 'Paid' ? 'badge-available' : 'badge-maintenance'}`}>
+                        {a.payment_status === 'Paid' ? '💳 Paid' : '⏳ Unpaid'}
+                      </span>
+                      {a.payment_reminder_sent && (
+                        <span className="badge" style={{ background: 'rgba(255,159,10,0.15)', color: '#ff9f0a', padding: '3px 8px', borderRadius: '6px', fontSize: '10px' }}>
+                          📢 Reminder Sent
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className={`badge ${
                     a.status === 'Confirmed' ? 'badge-available' :
@@ -184,13 +201,91 @@ export default function ManageDoctorsPage() {
                 </div>
                 
                 {a.status === 'Pending' && (
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                    <button className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => updateAssignmentStatus(a.assignment_id, 'Confirmed')}>
-                      Confirm
-                    </button>
-                    <button className="btn btn-secondary btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => updateAssignmentStatus(a.assignment_id, 'Cancelled')}>
-                      Cancel
-                    </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                    {(() => {
+                      const docObj = doctors.find(d => d.doctor_id === a.doctor_id);
+                      const docSchedules = docObj?.doctor_schedules || [];
+                      return (
+                        <>
+                          {a.payment_status !== 'Paid' && (
+                            <button 
+                              className="btn btn-secondary btn-sm" 
+                              style={{ width: '100%', justifyContent: 'center' }}
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch('/api/appointments', {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ assignment_id: a.assignment_id, payment_reminder_sent: true })
+                                  });
+                                  if (res.ok) {
+                                    alert('Payment reminder notification triggered!');
+                                    loadData();
+                                  }
+                                } catch (e) {
+                                  alert('Error sending reminder: ' + e.message);
+                                }
+                              }}
+                            >
+                              📢 Send Payment Reminder
+                            </button>
+                          )}
+                          
+                          {docSchedules.length > 1 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Choose Appointment Day:</span>
+                              <select 
+                                className="form-select" 
+                                style={{ padding: '6px 10px', fontSize: '12px', borderRadius: '6px', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
+                                value={selectedDays[a.assignment_id] || ''}
+                                onChange={e => setSelectedDays({ ...selectedDays, [a.assignment_id]: e.target.value })}
+                              >
+                                <option value="">-- Select Day --</option>
+                                {docSchedules.map(ds => (
+                                  <option key={ds.day_of_week} value={JSON.stringify(ds)}>
+                                    {ds.day_of_week} ({ds.start_time.slice(0,5)} - {ds.end_time.slice(0,5)})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                            <button 
+                              className="btn btn-primary btn-sm" 
+                              style={{ flex: 1, justifyContent: 'center' }} 
+                              disabled={a.payment_status !== 'Paid'}
+                              title={a.payment_status !== 'Paid' ? 'Patient must pay before confirming' : ''}
+                              onClick={() => {
+                                let finalDate = null;
+                                let finalTime = null;
+                                
+                                if (docSchedules.length > 1) {
+                                  const selectedDayRaw = selectedDays[a.assignment_id];
+                                  if (!selectedDayRaw) {
+                                    alert('Please select an appointment day from the dropdown first!');
+                                    return;
+                                  }
+                                  const ds = JSON.parse(selectedDayRaw);
+                                  finalDate = getNextDateForDay(ds.day_of_week);
+                                  finalTime = ds.start_time;
+                                } else if (docSchedules.length === 1) {
+                                  finalDate = getNextDateForDay(docSchedules[0].day_of_week);
+                                  finalTime = docSchedules[0].start_time;
+                                }
+                                
+                                updateAssignmentStatus(a.assignment_id, 'Confirmed', finalDate, finalTime);
+                              }}
+                            >
+                              Confirm
+                            </button>
+                            <button className="btn btn-secondary btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => updateAssignmentStatus(a.assignment_id, 'Cancelled')}>
+                              Cancel
+                            </button>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
                 {a.status === 'Confirmed' && (

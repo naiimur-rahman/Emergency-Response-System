@@ -37,11 +37,13 @@ function getAccuratePosition(timeoutMs = 15000) {
             if (resolved) return;
             try {
               const ipRes = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
-              const ipData = await ipRes.json();
-              if (ipData.latitude && ipData.longitude) {
-                resolved = true;
-                resolve({ lat: ipData.latitude, lon: ipData.longitude, accuracy: 5000, source: 'ip' });
-                return;
+              if (ipRes.ok) {
+                const ipData = await ipRes.json();
+                if (ipData && ipData.latitude && ipData.longitude) {
+                  resolved = true;
+                  resolve({ lat: ipData.latitude, lon: ipData.longitude, accuracy: 5000, source: 'ip' });
+                  return;
+                }
               }
             } catch {}
             resolved = true;
@@ -79,8 +81,12 @@ export default function SOSPage() {
   useEffect(() => {
     if (activePatient?.id) {
       fetch(`/api/patients?patient_id=${activePatient.id}&t=${Date.now()}`, { cache: 'no-store' })
-        .then(r => r.json())
-        .then(data => setProfile(Array.isArray(data) ? data[0] : data))
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            setProfile(Array.isArray(data) ? data[0] : data);
+          }
+        })
         .catch(() => {});
     }
   }, [activePatient]);
@@ -166,6 +172,9 @@ export default function SOSPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) {
+        throw new Error('Failed to fetch recommendations');
+      }
       const data = await res.json();
       setHospitals(data.hospitals || []);
       setPhase('recommendations');

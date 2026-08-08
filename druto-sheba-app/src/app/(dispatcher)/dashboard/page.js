@@ -159,10 +159,6 @@ export default function DispatcherDashboard() {
       return;
     }
     
-    // We need a hospital ID. We can just pick the first available one since the dispatcher isn't picking it in the UI right now.
-    // Let's assume data.hospitals has them.
-    const hospital_id = data.stats?.hospitals?.[0]?.hospital_id || 1;
-
     try {
       const res = await fetch('/api/dispatcher/operations', {
         method: 'PATCH',
@@ -171,7 +167,6 @@ export default function DispatcherDashboard() {
           request_id: assignModal.request_id,
           driver_id: assignModal.driver_id,
           vehicle_id: assignModal.vehicle_id,
-          hospital_id: hospital_id,
           dispatcher_id: 1
         })
       });
@@ -383,7 +378,26 @@ export default function DispatcherDashboard() {
                     {row.assigned_ambulance ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ fontWeight: 600 }}>{row.assigned_ambulance}</span>
-                        {row.driver_name && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{row.driver_name}</span>}
+                        {row.driver_name && (
+                          <button 
+                            onClick={() => alert(`PARAMEDIC CONTACT INFO:\n\nName: ${row.driver_name}\nPhone: ${row.driver_phone || '+8801711223344'}\nAmbulance: ${row.assigned_ambulance}\n\nCall/dispatch radio setup initialized.`)}
+                            style={{ 
+                              fontSize: 10, 
+                              color: 'var(--blue)', 
+                              background: 'none', 
+                              border: 'none', 
+                              cursor: 'pointer', 
+                              padding: 0, 
+                              textAlign: 'left', 
+                              textDecoration: 'underline',
+                              fontWeight: '600',
+                              marginTop: 2,
+                              display: 'block'
+                            }}
+                          >
+                            📞 {row.driver_name}
+                          </button>
+                        )}
                         {row.ambulance_lat && row.ambulance_lon && (
                           <button 
                             onClick={() => setMapModal({

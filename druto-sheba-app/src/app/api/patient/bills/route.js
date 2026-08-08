@@ -21,12 +21,13 @@ export async function GET(request) {
         b.Tax,
         b.Total_Amount,
         b.Payment_Status,
-        b.Date_Issued
+        b.Date_Issued,
+        b.payment_reminder_sent
       FROM Billing b
       JOIN Trip_Logs tl ON b.Trip_ID = tl.Trip_ID
       JOIN Hospitals h ON tl.Hospital_ID = h.Hospital_ID
       WHERE b.Patient_ID = $1
-      ORDER BY b.Date_Issued DESC
+      ORDER BY b.Bill_ID DESC
     `, [patientId]);
     
     return NextResponse.json(res.rows);

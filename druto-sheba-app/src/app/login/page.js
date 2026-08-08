@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function LoginPage() {
+function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const portalParam = searchParams.get('portal') || '';
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,7 +20,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`/api/auth/login${portalParam ? `?portal=${portalParam}` : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -121,12 +123,20 @@ export default function LoginPage() {
         <div style={{ marginTop: '24px', textAlign: 'center' }}>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
             Don't have a staff account?{' '}
-            <Link href="/register" style={{ color: 'var(--blue)', fontWeight: '600' }}>
+            <Link href={`/register${portalParam ? `?portal=${portalParam}` : ''}`} style={{ color: 'var(--blue)', fontWeight: '600' }}>
               Register here
             </Link>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="loading-container"><div className="spinner" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,55 +1,63 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { Calendar, Clock, User, XCircle, CheckCircle } from 'lucide-react';
+import { useUser } from '@/lib/UserContext';
 
 export default function PatientAppointmentsPage() {
+  const { activePatient } = useUser();
+  const patientId = activePatient?.id || 1;
+
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadAppointments = async () => {
-    if (!supabase) return setLoading(false);
-    
-    // Patient ID is hardcoded to 1 for demo purposes
-    const patientId = 1; 
-    
-    const { data } = await supabase
-      .from('doctor_assignments')
-      .select(`
-        assignment_id,
-        appointment_date,
-        appointment_time,
-        status,
-        doctors (
-          name,
-          phone,
-          hospitals (name),
-          specializations (spec_name)
-        )
-      `)
-      .eq('patient_id', patientId)
-      .order('appointment_date', { ascending: false });
-      
-    setAppointments(data || []);
-    setLoading(false);
+    if (!patientId) return setLoading(false);
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/appointments?patient_id=${patientId}&t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAppointments(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadAppointments();
-  }, []);
+  }, [patientId]);
 
   const handleCancel = async (assignmentId) => {
     if (!confirm('Are you sure you want to cancel this appointment?')) return;
     
-    const { error } = await supabase
-      .from('doctor_assignments')
-      .update({ status: 'Cancelled' })
-      .eq('assignment_id', assignmentId);
-      
-    if (error) {
+    const appToCancel = appointments.find(a => a.assignment_id === assignmentId);
+    const wasPaid = appToCancel && appToCancel.payment_status === 'Paid';
+
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignment_id: assignmentId,
+          status: 'Cancelled'
+        })
+      });
+      if (res.ok) {
+        if (wasPaid) {
+          alert('You got your refund');
+        } else {
+          alert('Appointment cancelled successfully.');
+        }
+        loadAppointments();
+      } else {
+        const errorData = await res.json();
+        alert('Failed to cancel appointment: ' + (errorData.error || 'Unknown error'));
+      }
+    } catch (error) {
       alert('Failed to cancel appointment: ' + error.message);
-    } else {
-      loadAppointments();
     }
   };
 
@@ -102,17 +110,58 @@ export default function PatientAppointmentsPage() {
                   <User size={16} color="var(--green)" />
                   <span style={{ fontWeight: '600' }}>Hospital:</span> {app.doctors?.hospitals?.name}
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                  <span style={{ fontWeight: '600' }}>Payment:</span> 
+                  <span className={`badge ${
+                    app.payment_status === 'Paid' ? 'badge-ok' : 
+                    app.payment_status === 'Refunded' ? 'badge-critical' : 
+                    app.payment_status === 'N/A' ? 'badge-medium' : 'badge-low'
+                  }`} style={{ marginLeft: '4px' }}>
+                    {app.payment_status}
+                  </span>
+                </div>
               </div>
               
-              {(app.status === 'Pending' || app.status === 'Confirmed') && (
-                <button 
-                  className="btn btn-outline" 
-                  style={{ width: '100%', justifyContent: 'center', marginTop: 'auto', borderColor: 'var(--red)', color: 'var(--red)' }}
-                  onClick={() => handleCancel(app.assignment_id)}
-                >
-                  Cancel Appointment
-                </button>
+              {app.payment_status !== 'Paid' && app.payment_status !== 'Refunded' && app.payment_status !== 'N/A' && app.payment_reminder_sent && (
+                <div style={{ background: 'rgba(255,159,10,0.1)', border: '1px solid rgba(255,159,10,0.3)', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#ff9f0a' }}>
+                  ⚠️ <strong>For confirm your appointment, please pay the bill.</strong>
+                </div>
               )}
+              
+              <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                {app.payment_status === 'Unpaid' && app.status !== 'Cancelled' && (
+                  <button 
+                    className="btn btn-primary"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/appointments', {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ assignment_id: app.assignment_id, payment_status: 'Paid' })
+                        });
+                        if (res.ok) {
+                          alert('Payment successful! Your appointment is now ready for confirmation.');
+                          loadAppointments();
+                        }
+                      } catch (e) {
+                        alert('Payment failed: ' + e.message);
+                      }
+                    }}
+                  >
+                    Pay Bill
+                  </button>
+                )}
+                {(app.status === 'Pending' || app.status === 'Confirmed') && (
+                  <button 
+                    className="btn btn-outline" 
+                    style={{ flex: (app.payment_status === 'Unpaid' && app.status !== 'Cancelled') ? 1 : 'none', width: (app.payment_status === 'Unpaid' && app.status !== 'Cancelled') ? 'auto' : '100%', justifyContent: 'center', borderColor: 'var(--red)', color: 'var(--red)' }}
+                    onClick={() => handleCancel(app.assignment_id)}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

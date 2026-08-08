@@ -1,25 +1,96 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { User, Truck, ShieldCheck, MapPin, Settings as SettingsIcon, Award } from 'lucide-react';
+import { User, Truck, ShieldCheck, MapPin, Settings as SettingsIcon, Award, X } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
 
 export default function DriverSettings() {
-  const { activeDriver } = useUser();
+  const { activeDriver, refreshUserContext } = useUser();
   const [loading, setLoading] = useState(true);
   const [certifications, setCertifications] = useState([]);
+  
+  // Stateful Toggles
+  const [voiceNav, setVoiceNav] = useState(true);
+  const [autoAccept, setAutoAccept] = useState(false);
 
+  // Edit Profile Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editLicense, setEditLicense] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load preferences and certifications
   useEffect(() => {
     if (activeDriver?.id) {
+      // Preferences from localStorage
+      const savedVoice = localStorage.getItem(`voiceNav_${activeDriver.id}`);
+      const savedAccept = localStorage.getItem(`autoAccept_${activeDriver.id}`);
+      setVoiceNav(savedVoice !== 'false'); // defaults to true
+      setAutoAccept(savedAccept === 'true'); // defaults to false
+
+      // Load certifications
       fetch(`/api/driver/certifications?driver_id=${activeDriver.id}&t=${Date.now()}`, { cache: 'no-store' })
         .then(res => res.json())
         .then(data => {
           setCertifications(Array.isArray(data) ? data : []);
           setLoading(false);
         });
+
+      // Prepare edit values
+      setEditName(activeDriver.name || '');
+      setEditLicense(activeDriver.license || '');
     }
   }, [activeDriver]);
 
+  // Toggle handlers
+  const handleToggleVoice = () => {
+    const newVal = !voiceNav;
+    setVoiceNav(newVal);
+    if (activeDriver?.id) {
+      localStorage.setItem(`voiceNav_${activeDriver.id}`, String(newVal));
+    }
+  };
+
+  const handleToggleAccept = () => {
+    const newVal = !autoAccept;
+    setAutoAccept(newVal);
+    if (activeDriver?.id) {
+      localStorage.setItem(`autoAccept_${activeDriver.id}`, String(newVal));
+    }
+  };
+
+  // Profile Save handler
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!editName.trim() || !editLicense.trim() || !activeDriver?.id) return;
+    setIsSaving(true);
+
+    try {
+      const res = await fetch('/api/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driver_id: activeDriver.id,
+          name: editName,
+          license_no: editLicense
+        })
+      });
+
+      if (res.ok) {
+        await refreshUserContext();
+        setIsModalOpen(false);
+      } else {
+        alert('Failed to save profile changes');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (!activeDriver) return null;
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -27,7 +98,9 @@ export default function DriverSettings() {
           <h2>Profile & Settings</h2>
           <p className="page-header-sub">Manage your driver account and vehicle preferences</p>
         </div>
-        <button className="btn btn-primary"><SettingsIcon size={16} /> Edit Profile</button>
+        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+          <SettingsIcon size={16} /> Edit Profile
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24 }}>
@@ -97,8 +170,30 @@ export default function DriverSettings() {
                   <div style={{ fontWeight: 600 }}>Voice Navigation</div>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Read out turn-by-turn directions</div>
                 </div>
-                <div style={{ width: 44, height: 24, background: 'var(--green)', borderRadius: 12, position: 'relative', cursor: 'pointer' }}>
-                  <div style={{ width: 20, height: 20, background: 'white', borderRadius: 10, position: 'absolute', right: 2, top: 2 }} />
+                <div 
+                  onClick={handleToggleVoice}
+                  style={{ 
+                    width: 44, 
+                    height: 24, 
+                    background: voiceNav ? 'var(--green)' : 'var(--bg-primary)', 
+                    border: voiceNav ? 'none' : '1px solid var(--border-subtle)',
+                    borderRadius: 12, 
+                    position: 'relative', 
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                >
+                  <div style={{ 
+                    width: 20, 
+                    height: 20, 
+                    background: voiceNav ? 'white' : 'var(--text-muted)', 
+                    borderRadius: 10, 
+                    position: 'absolute', 
+                    right: voiceNav ? 2 : 'auto',
+                    left: voiceNav ? 'auto' : 2, 
+                    top: voiceNav ? 2 : 1,
+                    transition: 'all 0.2s ease-in-out'
+                  }} />
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -106,8 +201,30 @@ export default function DriverSettings() {
                   <div style={{ fontWeight: 600 }}>Auto-Accept Critical Dispatches</div>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Automatically accept Level 1 emergencies</div>
                 </div>
-                <div style={{ width: 44, height: 24, background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: 12, position: 'relative', cursor: 'pointer' }}>
-                  <div style={{ width: 20, height: 20, background: 'var(--text-muted)', borderRadius: 10, position: 'absolute', left: 2, top: 1 }} />
+                <div 
+                  onClick={handleToggleAccept}
+                  style={{ 
+                    width: 44, 
+                    height: 24, 
+                    background: autoAccept ? 'var(--green)' : 'var(--bg-primary)', 
+                    border: autoAccept ? 'none' : '1px solid var(--border-subtle)',
+                    borderRadius: 12, 
+                    position: 'relative', 
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                >
+                  <div style={{ 
+                    width: 20, 
+                    height: 20, 
+                    background: autoAccept ? 'white' : 'var(--text-muted)', 
+                    borderRadius: 10, 
+                    position: 'absolute', 
+                    right: autoAccept ? 2 : 'auto',
+                    left: autoAccept ? 'auto' : 2, 
+                    top: autoAccept ? 2 : 1,
+                    transition: 'all 0.2s ease-in-out'
+                  }} />
                 </div>
               </div>
             </div>
@@ -152,6 +269,68 @@ export default function DriverSettings() {
         </div>
 
       </div>
+
+      {/* Edit Profile Modal (Glassmorphism Popup) */}
+      {isModalOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', 
+          backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', 
+          justifyContent: 'center', zIndex: 1000, padding: 20
+        }}>
+          <div className="glass" style={{ width: '100%', maxWidth: 460, padding: 32, position: 'relative' }}>
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              style={{ position: 'absolute', right: 20, top: 20, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            >
+              <X size={20} />
+            </button>
+            <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Edit Profile Details</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>Update your system identification records.</p>
+            
+            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">License Number</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={editLicense}
+                  onChange={(e) => setEditLicense(e.target.value)}
+                  required 
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <button 
+                  type="button" 
+                  className="btn" 
+                  style={{ flex: 1, border: '1px solid var(--border-subtle)', background: 'transparent' }}
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  style={{ flex: 1 }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

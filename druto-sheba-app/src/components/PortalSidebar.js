@@ -15,9 +15,46 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
   const menuRef = useRef(null);
   const router = useRouter();
 
+  const [pendingCount, setPendingCount] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Load current user for role bypass check
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.username) {
+          setCurrentUser(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Poll for pending SOS count for the admin bulb alert
+  useEffect(() => {
+    if (portalName !== 'Admin Portal') return;
+    
+    const checkPending = async () => {
+      try {
+        const res = await fetch('/api/admin/pending-count');
+        if (res.ok) {
+          const data = await res.json();
+          setPendingCount(data.count || 0);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    
+    checkPending();
+    const interval = setInterval(checkPending, 5000);
+    return () => clearInterval(interval);
+  }, [portalName]);
+
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const portalParam = portalName === 'Admin Portal' ? 'admin' : 'dispatcher';
+      await fetch(`/api/auth/logout?portal=${portalParam}`, { method: 'POST' });
       router.push('/');
     } catch (err) {
       console.error(err);
@@ -38,7 +75,12 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
   const getDisplayName = () => {
     if (portalName === 'Driver Portal') return activeDriver?.name || 'Loading...';
     if (portalName === 'Patient Portal') return activePatient?.name || 'Guest Patient';
-    if (portalName === 'Dispatcher Portal') return 'Lead Dispatcher';
+    if (portalName === 'Dispatcher Portal') {
+      if (currentUser?.username?.startsWith('Bypass Dispatcher:')) {
+        return currentUser.username;
+      }
+      return 'Lead Dispatcher';
+    }
     if (portalName === 'Admin Portal') return 'Chief Administrator';
     return 'User';
   };
@@ -46,7 +88,12 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
   const getDisplayRole = () => {
     if (portalName === 'Driver Portal') return activeDriver?.role || 'Paramedic';
     if (portalName === 'Patient Portal') return `Blood Group: ${activePatient?.blood_type || 'N/A'}`;
-    if (portalName === 'Dispatcher Portal') return 'Emergency Command';
+    if (portalName === 'Dispatcher Portal') {
+      if (currentUser?.username?.startsWith('Bypass Dispatcher:')) {
+        return 'Admin Bypass Mode';
+      }
+      return 'Emergency Command';
+    }
     if (portalName === 'Admin Portal') return 'System Control';
     return 'Portal Access';
   };
@@ -139,6 +186,20 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
           transition: background 0.15s; width: 100%;
         }
         .user-card-trigger:hover { background: rgba(255,255,255,0.04); }
+
+        .ambulance-siren-active {
+          animation: realSirenFlash 0.5s infinite alternate;
+        }
+        @keyframes realSirenFlash {
+          0% {
+            color: #ff3b30;
+            filter: drop-shadow(0 0 8px #ff3b30);
+          }
+          100% {
+            color: #007aff;
+            filter: drop-shadow(0 0 8px #007aff);
+          }
+        }
       `}</style>
 
       <aside className="sidebar">
@@ -147,7 +208,28 @@ export default function PortalSidebar({ portalName, portalColor, portalIcon: Por
             <PortalIcon size={20} style={{ color: portalColor }} />
           </div>
           <div className="sidebar-brand">
-            <h1>Druto Sheba</h1>
+            <h1 style={{ display: 'flex', alignItems: 'center', margin: 0, fontSize: '16px', fontWeight: 800, whiteSpace: 'nowrap' }}>
+              Druto Sheba
+              {portalName === 'Admin Portal' && (
+                <svg 
+                  viewBox="0 0 24 24" 
+                  width="18" 
+                  height="18" 
+                  className={pendingCount > 0 ? 'ambulance-siren-active' : ''} 
+                  style={{ 
+                    color: pendingCount > 0 ? '#ff3b30' : 'rgba(255,255,255,0.25)',
+                    transition: 'color 0.3s ease, filter 0.3s ease',
+                    marginLeft: '8px',
+                    flexShrink: 0
+                  }}
+                  title={pendingCount > 0 ? `${pendingCount} pending SOS requests!` : 'No pending SOS requests'}
+                >
+                  <path d="M4 19h16v2H4z" fill="#444" />
+                  <path d="M6 18c0-5 3-7 6-7s6 2 6 7H6z" fill="currentColor" />
+                  <circle cx="12" cy="14" r="3" fill="#fff" opacity="0.4" />
+                </svg>
+              )}
+            </h1>
             <span style={{ color: portalColor }}>{portalName}</span>
           </div>
         </div>

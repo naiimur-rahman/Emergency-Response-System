@@ -5,6 +5,39 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // 1. Proactively re-define active_dashboard_view to ensure driver_phone column is available
+    await query(`
+      CREATE OR REPLACE VIEW active_dashboard_view AS
+       SELECT er.request_id,
+          er.patient_id,
+          p.name AS patient_name,
+          p.blood_type,
+          p.allergies,
+          er.primary_specialization,
+          st_x((er.pickup_coords)::geometry) AS patient_lon,
+          st_y((er.pickup_coords)::geometry) AS patient_lat,
+          er.severity_level,
+          er.emergency_type,
+          er.requested_for,
+          er.timestamp_created,
+          er.status AS request_status,
+          a.license_plate AS assigned_ambulance,
+          h.name AS destination_hospital,
+          h.type AS hospital_type,
+          st_x((a.current_location)::geometry) AS ambulance_lon,
+          st_y((a.current_location)::geometry) AS ambulance_lat,
+          tl.driver_id,
+          d.name AS driver_name,
+          d.phone AS driver_phone
+         FROM (((((emergency_requests er
+           JOIN patients p ON ((er.patient_id = p.patient_id)))
+           LEFT JOIN trip_logs tl ON (((er.request_id)::text = (tl.trip_id)::text)))
+           LEFT JOIN ambulances a ON ((tl.vehicle_id = a.vehicle_id)))
+           LEFT JOIN hospitals h ON ((tl.hospital_id = h.hospital_id)))
+           LEFT JOIN drivers d ON ((tl.driver_id = d.driver_id)))
+        WHERE (er.status = ANY (ARRAY['Broadcast'::req_status, 'Pending'::req_status, 'Active'::req_status, 'En Route'::req_status, 'Picked Up'::req_status, 'Arrived'::req_status]));
+    `).catch(err => console.error("Failed to patch active_dashboard_view:", err));
+
     const results = await Promise.all([
       query(`SELECT COUNT(*) as total, 
              COUNT(*) FILTER (WHERE status = 'Pending') as pending,
@@ -27,7 +60,7 @@ export async function GET() {
                  v.primary_specialization, v.patient_lon, v.patient_lat, v.severity_level,
                  v.emergency_type, v.requested_for, v.timestamp_created, v.request_status,
                  v.assigned_ambulance, v.destination_hospital, v.hospital_type,
-                 v.ambulance_lon, v.ambulance_lat, v.driver_id, v.driver_name
+                 v.ambulance_lon, v.ambulance_lat, v.driver_id, v.driver_name, v.driver_phone
         ORDER BY 
           CASE v.severity_level 
             WHEN 'Critical' THEN 1 

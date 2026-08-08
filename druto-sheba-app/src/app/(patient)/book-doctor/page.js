@@ -1,9 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { Calendar, Clock, MapPin, User, Activity } from 'lucide-react';
+import { useUser } from '@/lib/UserContext';
 
 export default function BookDoctorPage() {
+  const { activePatient } = useUser();
+  const patientId = activePatient?.id || 1;
+
   const [hospitals, setHospitals] = useState([]);
   const [specs, setSpecs] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -17,111 +20,115 @@ export default function BookDoctorPage() {
   // Track patient's active appointments
   const [activeAppointment, setActiveAppointment] = useState(null);
 
-  useEffect(() => {
-    async function loadData() {
-      if (!supabase) {
-         setHospitals([{ hospital_id: 1, name: 'Central Hospital' }, { hospital_id: 2, name: 'City Clinic' }]);
-         setSpecs([{ spec_id: 1, spec_name: 'Cardiology' }, { spec_id: 2, spec_name: 'Neurology' }]);
-         setLoading(false);
-         return;
-      }
+  const loadData = async () => {
+    if (!patientId) return;
+    try {
+      setLoading(true);
       const [hRes, sRes, apptRes] = await Promise.all([
-        supabase.from('hospitals').select('*'),
-        supabase.from('specializations').select('*'),
-        supabase.from('doctor_assignments')
-          .select('*')
-          .eq('patient_id', 1)
-          .in('status', ['Pending', 'Confirmed'])
+        fetch('/api/hospitals'),
+        fetch('/api/specializations'),
+        fetch(`/api/appointments?patient_id=${patientId}`)
       ]);
-      setHospitals(hRes.data || []);
-      setSpecs(sRes.data || []);
-      if (apptRes.data && apptRes.data.length > 0) {
-        setActiveAppointment(apptRes.data[0]);
+      const hospitalsData = hRes.ok ? await hRes.json() : [];
+      const specsData = sRes.ok ? await sRes.json() : [];
+      const appointmentsData = apptRes.ok ? await apptRes.json() : [];
+      
+      setHospitals(hospitalsData);
+      setSpecs(specsData);
+      
+      const activeAppt = appointmentsData.find(a => ['Pending', 'Confirmed'].includes(a.status));
+      if (activeAppt) {
+        setActiveAppointment(activeAppt);
       } else {
         setActiveAppointment(null);
       }
+    } catch (error) {
+      console.error('Error loading page data:', error);
+    } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
-  }, []);
+  }, [patientId]);
 
   useEffect(() => {
     async function loadDoctors() {
       if (!selectedHospital || !selectedSpec) return;
-      if (!supabase) {
-        const names = ['Rahim Ahmed', 'Farhana Khan', 'Tarek Rahman', 'Salma Begum', 'Shahin Islam', 'Nusrat Jahan', 'Karim Hossain', 'Riyad Ahmed', 'Ayesha Siddiqua', 'Kamrul Hasan', 'Sadia Afrin', 'Mehedi Hasan'];
-        
-        const mockDocs = [];
-        for (let i = 1; i <= 5; i++) {
-          const id = parseInt(selectedHospital) * 100 + parseInt(selectedSpec) * 10 + i;
-          const name = 'Dr. ' + names[id % names.length];
-          mockDocs.push({
-            doctor_id: id,
-            name: name,
-            phone: '01711' + id.toString().padStart(6, '0'),
-            is_available: Math.random() > 0.2, // 80% available
-            doctor_schedules: [
-              { day_of_week: 'Monday', start_time: '09:00:00', end_time: '14:00:00' },
-              { day_of_week: 'Thursday', start_time: '15:00:00', end_time: '20:00:00' }
-            ]
-          });
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/doctors?hospital_id=${selectedHospital}&spec_id=${selectedSpec}&available_only=true`);
+        if (res.ok) {
+          const data = await res.json();
+          setDoctors(data);
         }
-        setDoctors(mockDocs.filter(d => d.is_available));
+      } catch (error) {
+        console.error('Error loading doctors:', error);
+      } finally {
         setLoading(false);
-        return;
       }
-      setLoading(true);
-      const { data } = await supabase
-        .from('doctors')
-        .select(`*, doctor_schedules ( day_of_week, start_time, end_time )`)
-        .eq('hospital_id', selectedHospital)
-        .eq('spec_id', selectedSpec)
-        .eq('is_available', true);
-      setDoctors(data || []);
-      setLoading(false);
     }
     loadDoctors();
   }, [selectedHospital, selectedSpec]);
 
   const handleBook = async (doctorId) => {
-    if (!supabase) return alert('Demo mode: Booking successful');
     setBookingLoading(true);
     
-    const patientId = 1; 
     const date = new Date();
     date.setDate(date.getDate() + 3);
     const dateString = date.toISOString().split('T')[0];
 
-    const { data, error } = await supabase.from('doctor_assignments').insert({
-      patient_id: patientId,
-      doctor_id: doctorId,
-      appointment_date: dateString,
-      appointment_time: '10:00:00',
-      status: 'Pending'
-    }).select().single();
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient_id: patientId,
+          doctor_id: doctorId,
+          appointment_date: dateString,
+          appointment_time: '10:00:00'
+        })
+      });
 
-    setBookingLoading(false);
-    if (error) {
-      alert('Error booking appointment: ' + error.message);
-    } else {
-      setActiveAppointment(data);
-      alert('Appointment request sent successfully!');
+      setBookingLoading(false);
+      if (res.ok) {
+        alert('Appointment request sent successfully!');
+        loadData(); // reload active appointment from DB to get nested names
+      } else {
+        const errorData = await res.json();
+        alert('Error booking appointment: ' + (errorData.error || 'Unknown error'));
+      }
+    } catch (err) {
+      setBookingLoading(false);
+      alert('Error booking appointment: ' + err.message);
     }
   };
 
   const handleCancelAppointment = async (assignmentId) => {
     if (!confirm('Are you sure you want to cancel your current appointment?')) return;
     setBookingLoading(true);
-    const { error } = await supabase
-      .from('doctor_assignments')
-      .update({ status: 'Cancelled' })
-      .eq('assignment_id', assignmentId);
-    setBookingLoading(false);
-    if (error) {
-      alert('Failed to cancel appointment: ' + error.message);
-    } else {
-      setActiveAppointment(null);
-      alert('Appointment cancelled successfully.');
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignment_id: assignmentId,
+          status: 'Cancelled'
+        })
+      });
+      setBookingLoading(false);
+      if (res.ok) {
+        setActiveAppointment(null);
+        alert('Appointment cancelled successfully.');
+        loadData();
+      } else {
+        const errorData = await res.json();
+        alert('Failed to cancel appointment: ' + (errorData.error || 'Unknown error'));
+      }
+    } catch (err) {
+      setBookingLoading(false);
+      alert('Failed to cancel appointment: ' + err.message);
     }
   };
 

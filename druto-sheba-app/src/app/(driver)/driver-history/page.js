@@ -16,8 +16,14 @@ export default function DriverHistory() {
     try {
       setLoading(true);
       const res = await fetch(`/api/driver/history?driver_id=${activeDriver.id}&t=${Date.now()}`, { cache: 'no-store' });
-      const resData = await res.json();
-      setData(resData);
+      if (res.ok) {
+        const resData = await res.json();
+        setData({
+          earnings: resData?.earnings || '৳0',
+          rating: resData?.rating || 0,
+          trips: Array.isArray(resData?.trips) ? resData.trips : []
+        });
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -37,6 +43,8 @@ export default function DriverHistory() {
   if (!activeDriver) return null;
 
 
+  const tripsList = Array.isArray(data?.trips) ? data.trips : [];
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -47,11 +55,11 @@ export default function DriverHistory() {
         <div style={{ display: 'flex', gap: 20 }}>
            <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Total Earnings</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>{data.earnings}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>{data.earnings || '৳0'}</div>
            </div>
            <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Average Rating</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--yellow)', display: 'flex', alignItems: 'center', gap: 4 }}>{data.rating} <Star size={16} fill="currentColor" /></div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--yellow)', display: 'flex', alignItems: 'center', gap: 4 }}>{data.rating || 0} <Star size={16} fill="currentColor" /></div>
            </div>
         </div>
       </div>
@@ -70,7 +78,12 @@ export default function DriverHistory() {
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: 20 }}>Loading...</td></tr> : data.trips.map((trip) => (
+            {loading ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 20 }}>Loading...</td></tr>
+            ) : tripsList.length === 0 ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>No completed trips recorded yet.</td></tr>
+            ) : (
+              tripsList.map((trip) => (
               <tr key={trip.id}>
                 <td style={{ fontWeight: 600 }}>#{trip.id}</td>
                 <td>{trip.date}</td>
@@ -91,7 +104,7 @@ export default function DriverHistory() {
                   </div>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
       </div>

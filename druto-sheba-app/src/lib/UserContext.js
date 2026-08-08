@@ -19,8 +19,8 @@ export function UserProvider({ children }) {
         fetch('/api/patients')
       ]);
       
-      const dbDrivers = await drvRes.json();
-      const dbPatients = await patRes.json();
+      const dbDrivers = drvRes.ok ? await drvRes.json().catch(() => []) : [];
+      const dbPatients = patRes.ok ? await patRes.json().catch(() => []) : [];
       
       if (Array.isArray(dbDrivers) && dbDrivers.length > 0) {
          const formattedDrivers = dbDrivers.map(d => ({
@@ -71,7 +71,7 @@ export function UserProvider({ children }) {
          });
       }
     } catch (err) {
-      console.error('Failed to load portal data', err);
+      console.warn('Portal data sync notice:', err.message);
     } finally {
       setLoading(false);
     }

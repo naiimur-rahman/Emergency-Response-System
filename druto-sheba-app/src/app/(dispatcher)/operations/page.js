@@ -172,7 +172,7 @@ export default function DispatcherOperationsPage() {
       <div className="content-grid" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 24 }}>
         <div className="section-card">
           <div className="section-header"><h3><Radio size={16} /> Live Fleet Board</h3></div>
-          <div className="section-body" style={{ display: 'grid', gap: 10, maxHeight: 800, overflowY: 'auto' }}>
+          <div className="section-body" style={{ display: 'grid', gap: 10, maxHeight: 600, overflowY: 'auto' }}>
             {data.ambulances.map((a) => (
               <div key={a.vehicle_id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, alignItems: 'center', padding: 12 }}>
                 <div><strong>{a.license_plate}</strong><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{a.hub || 'Central Hub'} · {a.lat?.toFixed?.(4) || '23.7750'}, {a.lon?.toFixed?.(4) || '90.4100'}</div></div>
@@ -185,7 +185,7 @@ export default function DispatcherOperationsPage() {
 
         <div className="section-card">
           <div className="section-header"><h3><Building2 size={16} /> Hospital Coordination</h3></div>
-          <div className="section-body" style={{ display: 'grid', gap: 10, maxHeight: 400, overflowY: 'auto' }}>
+          <div className="section-body" style={{ display: 'grid', gap: 10, maxHeight: 600, overflowY: 'auto' }}>
             {data.hospitals.map((h) => (
               <div key={h.hospital_id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, alignItems: 'center', padding: 12 }}>
                 <div><strong>{h.name}</strong><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{h.type} · {(h.specializations || []).slice?.(0, 3).join(', ')}</div></div>

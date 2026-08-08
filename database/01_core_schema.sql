@@ -1,8 +1,7 @@
 SELECT pg_catalog.set_config('search_path', 'public', false);
 
-CREATE SCHEMA public;
+CREATE SCHEMA IF NOT EXISTS public;
 
-ALTER SCHEMA public OWNER TO pg_database_owner;
 
 COMMENT ON SCHEMA public IS 'standard public schema';
 
@@ -85,7 +84,7 @@ CREATE SEQUENCE ambulances_vehicle_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE ambulances_vehicle_id_seq OWNED BY ambulances.vehicle_id;
+-- ALTER SEQUENCE ambulances_vehicle_id_seq OWNED BY ambulances.vehicle_id;
 
 CREATE TABLE audit_log (
     audit_id integer NOT NULL,
@@ -107,7 +106,7 @@ CREATE SEQUENCE audit_log_audit_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE audit_log_audit_id_seq OWNED BY audit_log.audit_id;
+-- ALTER SEQUENCE audit_log_audit_id_seq OWNED BY audit_log.audit_id;
 
 CREATE SEQUENCE billing_bill_id_seq
     AS integer
@@ -117,7 +116,7 @@ CREATE SEQUENCE billing_bill_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE billing_bill_id_seq OWNED BY billing.bill_id;
+-- ALTER SEQUENCE billing_bill_id_seq OWNED BY billing.bill_id;
 
 CREATE TABLE chat_messages (
     message_id integer NOT NULL,
@@ -135,7 +134,7 @@ CREATE SEQUENCE chat_messages_message_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE chat_messages_message_id_seq OWNED BY chat_messages.message_id;
+-- ALTER SEQUENCE chat_messages_message_id_seq OWNED BY chat_messages.message_id;
 
 CREATE TABLE dispatch_zones (
     zone_id integer NOT NULL,
@@ -153,7 +152,7 @@ CREATE SEQUENCE dispatch_zones_zone_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE dispatch_zones_zone_id_seq OWNED BY dispatch_zones.zone_id;
+-- ALTER SEQUENCE dispatch_zones_zone_id_seq OWNED BY dispatch_zones.zone_id;
 
 CREATE SEQUENCE dispatchers_dispatcher_id_seq
     AS integer
@@ -163,7 +162,7 @@ CREATE SEQUENCE dispatchers_dispatcher_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE dispatchers_dispatcher_id_seq OWNED BY dispatchers.dispatcher_id;
+-- ALTER SEQUENCE dispatchers_dispatcher_id_seq OWNED BY dispatchers.dispatcher_id;
 
 CREATE TABLE driver_certifications (
     cert_id integer NOT NULL,
@@ -183,7 +182,7 @@ CREATE SEQUENCE driver_certifications_cert_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE driver_certifications_cert_id_seq OWNED BY driver_certifications.cert_id;
+-- ALTER SEQUENCE driver_certifications_cert_id_seq OWNED BY driver_certifications.cert_id;
 
 CREATE SEQUENCE drivers_driver_id_seq
     AS integer
@@ -193,7 +192,7 @@ CREATE SEQUENCE drivers_driver_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE drivers_driver_id_seq OWNED BY drivers.driver_id;
+-- ALTER SEQUENCE drivers_driver_id_seq OWNED BY drivers.driver_id;
 
 CREATE TABLE trip_feedback (
     feedback_id integer NOT NULL,
@@ -208,20 +207,7 @@ CREATE TABLE trip_feedback (
     CONSTRAINT trip_feedback_response_time_rating_check CHECK (((response_time_rating >= 1) AND (response_time_rating <= 5)))
 );
 
-CREATE MATERIALIZED VIEW emergency_analytics_mv AS
- SELECT date(tl.time_dispatched) AS trip_date,
-    count(tl.trip_id) AS total_trips,
-    (avg((EXTRACT(epoch FROM (tl.time_reached_hospital - tl.time_dispatched)) / (60)::numeric)))::numeric(10,2) AS avg_response_time_minutes,
-    sum(b.total_amount) AS total_revenue,
-    (avg(tf.rating))::numeric(3,2) AS avg_driver_rating
-   FROM ((trip_logs tl
-     LEFT JOIN billing b ON (((tl.trip_id)::text = (b.trip_id)::text)))
-     LEFT JOIN trip_feedback tf ON (((tl.trip_id)::text = (tf.trip_id)::text)))
-  WHERE (tl.time_reached_hospital IS NOT NULL)
-  GROUP BY (date(tl.time_dispatched))
-  WITH NO DATA;
 
-ALTER MATERIALIZED VIEW emergency_analytics_mv OWNER TO postgres;
 
 CREATE TABLE emergency_types (
     type_id integer NOT NULL,
@@ -341,7 +327,7 @@ CREATE SEQUENCE shift_schedules_schedule_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE shift_schedules_schedule_id_seq OWNED BY shift_schedules.schedule_id;
+-- ALTER SEQUENCE shift_schedules_schedule_id_seq OWNED BY shift_schedules.schedule_id;
 
 CREATE TABLE specializations (
     spec_id integer NOT NULL,
@@ -377,7 +363,7 @@ CREATE SEQUENCE staff_users_user_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE staff_users_user_id_seq OWNED BY staff_users.user_id;
+-- ALTER SEQUENCE staff_users_user_id_seq OWNED BY staff_users.user_id;
 
 CREATE SEQUENCE trip_feedback_feedback_id_seq
     AS integer
@@ -387,7 +373,7 @@ CREATE SEQUENCE trip_feedback_feedback_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE trip_feedback_feedback_id_seq OWNED BY trip_feedback.feedback_id;
+-- ALTER SEQUENCE trip_feedback_feedback_id_seq OWNED BY trip_feedback.feedback_id;
 
 CREATE SEQUENCE vehicle_inventory_inventory_id_seq
     AS integer
@@ -397,7 +383,7 @@ CREATE SEQUENCE vehicle_inventory_inventory_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE vehicle_inventory_inventory_id_seq OWNED BY vehicle_inventory.inventory_id;
+-- ALTER SEQUENCE vehicle_inventory_inventory_id_seq OWNED BY vehicle_inventory.inventory_id;
 
 ALTER TABLE ONLY audit_log ALTER COLUMN audit_id SET DEFAULT nextval('audit_log_audit_id_seq'::regclass);
 
@@ -487,7 +473,7 @@ ALTER TABLE ONLY trip_feedback
 
 CREATE INDEX idx_ambulances_status ON ambulances USING btree (current_status);
 
-CREATE UNIQUE INDEX idx_analytics_mv_date ON emergency_analytics_mv USING btree (trip_date);
+-- CREATE UNIQUE INDEX idx_analytics_mv_date ON emergency_analytics_mv USING btree (trip_date);
 
 CREATE INDEX idx_audit_table ON audit_log USING btree (table_name, changed_at);
 
@@ -618,9 +604,9 @@ GRANT ALL ON TABLE trip_feedback TO anon;
 GRANT ALL ON TABLE trip_feedback TO authenticated;
 GRANT ALL ON TABLE trip_feedback TO service_role;
 
-GRANT ALL ON TABLE emergency_analytics_mv TO anon;
-GRANT ALL ON TABLE emergency_analytics_mv TO authenticated;
-GRANT ALL ON TABLE emergency_analytics_mv TO service_role;
+-- GRANT ALL ON TABLE emergency_analytics_mv TO anon;
+-- GRANT ALL ON TABLE emergency_analytics_mv TO authenticated;
+-- GRANT ALL ON TABLE emergency_analytics_mv TO service_role;
 
 GRANT ALL ON TABLE emergency_types TO anon;
 GRANT ALL ON TABLE emergency_types TO authenticated;

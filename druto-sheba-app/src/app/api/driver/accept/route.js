@@ -49,9 +49,14 @@ export async function POST(request) {
             if (ambRes.rowCount === 0) throw new Error('No available ambulances found.');
             vehicle_id = ambRes.rows[0].vehicle_id;
 
-            // get hospital
-            const hospRes = await client.query("SELECT hospital_id FROM hospitals LIMIT 1");
-            const hospital_id = hospRes.rows[0].hospital_id;
+            // get hospital from emergency request
+            const reqRes = await client.query("SELECT hospital_id FROM emergency_requests WHERE request_id = $1", [request_id]);
+            let hospital_id = reqRes.rows[0]?.hospital_id;
+
+            if (!hospital_id) {
+              const hospRes = await client.query("SELECT hospital_id FROM hospitals LIMIT 1");
+              hospital_id = hospRes.rows[0]?.hospital_id;
+            }
 
             // create trip log
             await client.query(`

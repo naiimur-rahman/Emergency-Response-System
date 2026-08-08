@@ -8,7 +8,8 @@ CREATE TABLE emergency_requests (
     status req_status DEFAULT 'Pending'::req_status,
     primary_specialization character varying(100),
     emergency_type character varying(100) DEFAULT 'General'::character varying,
-    requested_for character varying(100) DEFAULT 'Self'::character varying
+    requested_for character varying(100) DEFAULT 'Self'::character varying,
+    hospital_id integer
 );
 
 
