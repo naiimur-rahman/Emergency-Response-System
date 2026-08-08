@@ -20,6 +20,17 @@ export async function POST(req) {
     }
 
     const user = result.rows[0];
+    const userRole = user.role || user.Role;
+    const { searchParams } = new URL(req.url);
+    const portal = searchParams.get('portal');
+
+    if (portal === 'admin' && userRole !== 'Admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin role required for this portal' }, { status: 403 });
+    }
+    if (portal === 'dispatcher' && userRole !== 'Dispatcher') {
+      return NextResponse.json({ error: 'Unauthorized: Dispatcher role required for this portal' }, { status: 403 });
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password_hash || user.Password_Hash);
     
     if (!passwordMatch) {
@@ -37,11 +48,13 @@ export async function POST(req) {
       .setExpirationTime('24h')
       .sign(JWT_SECRET);
 
-    const response = NextResponse.json({ success: true, role: user.role || user.Role }, { status: 200 });
+    const cookieName = userRole === 'Admin' ? 'admin_session' : 'dispatcher_session';
+
+    const response = NextResponse.json({ success: true, role: userRole }, { status: 200 });
     
     // Set cookie
     response.cookies.set({
-      name: 'staff_session',
+      name: cookieName,
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

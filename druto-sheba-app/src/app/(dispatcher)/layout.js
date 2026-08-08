@@ -11,6 +11,8 @@ const navItems = [
   { href: '/dispatcher-reviews', label: 'Ratings', icon: Star },
 ];
 
+import StaffChatWidget from '@/components/StaffChatWidget';
+
 export default function DispatcherLayout({ children }) {
   return (
     <div className="app-layout">
@@ -21,6 +23,7 @@ export default function DispatcherLayout({ children }) {
         navItems={navItems}
       />
       <main className="main-content">{children}</main>
+      <StaffChatWidget />
     </div>
   );
 }

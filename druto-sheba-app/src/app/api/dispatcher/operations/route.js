@@ -87,11 +87,38 @@ export async function PATCH(request) {
   try {
     const { request_id, vehicle_id, driver_id, hospital_id, dispatcher_id = 1 } = await request.json();
 
-    if (!request_id || !vehicle_id || !driver_id || !hospital_id) {
-      return NextResponse.json({ error: 'request_id, vehicle_id, driver_id, and hospital_id are required' }, { status: 400 });
+    if (!request_id || !vehicle_id || !driver_id) {
+      return NextResponse.json({ error: 'request_id, vehicle_id, and driver_id are required' }, { status: 400 });
     }
 
     await transaction(async (client) => {
+      // 0. Check if driver is already on an active mission
+      const activeCheck = await client.query(`
+        SELECT tl.trip_id 
+        FROM trip_logs tl
+        JOIN emergency_requests er ON tl.trip_id = er.request_id::text
+        WHERE tl.driver_id = $1 AND er.status IN ('Active', 'En Route', 'Picked Up', 'Arrived')
+        LIMIT 1
+      `, [driver_id]);
+      
+      if (activeCheck.rows.length > 0) {
+        throw new Error('Already in a mission');
+      }
+
+      // 1. Look up the hospital_id from emergency_requests if not passed, or to preserve patient selection
+      let finalHospitalId = hospital_id;
+      
+      const reqResult = await client.query('SELECT hospital_id FROM emergency_requests WHERE request_id = $1', [request_id]);
+      if (reqResult.rows.length > 0 && reqResult.rows[0].hospital_id) {
+        finalHospitalId = reqResult.rows[0].hospital_id;
+      }
+      
+      // 2. Fallback to first available hospital if none is selected/requested
+      if (!finalHospitalId) {
+        const fallback = await client.query('SELECT hospital_id FROM hospitals LIMIT 1');
+        finalHospitalId = fallback.rows[0]?.hospital_id || 1;
+      }
+
       await client.query(`
         INSERT INTO trip_logs (trip_id, vehicle_id, driver_id, hospital_id, dispatcher_id)
         VALUES ($1, $2, $3, $4, $5)
@@ -101,7 +128,7 @@ export async function PATCH(request) {
             hospital_id = EXCLUDED.hospital_id,
             dispatcher_id = EXCLUDED.dispatcher_id,
             time_dispatched = CURRENT_TIMESTAMP
-      `, [request_id, vehicle_id, driver_id, hospital_id, dispatcher_id]);
+      `, [request_id, vehicle_id, driver_id, finalHospitalId, dispatcher_id]);
 
       await client.query('UPDATE emergency_requests SET status = $1 WHERE request_id = $2', ['Active', request_id]);
       await client.query('UPDATE ambulances SET current_status = $1 WHERE vehicle_id = $2', ['Dispatched', vehicle_id]);

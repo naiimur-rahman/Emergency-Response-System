@@ -1,17 +1,20 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, User, AlertCircle, Loader2, Shield } from 'lucide-react';
 import Link from 'next/link';
 
-export default function RegisterPage() {
+function RegisterForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const portalParam = searchParams.get('portal') || '';
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Dispatcher');
+  const [role, setRole] = useState(portalParam === 'admin' ? 'Admin' : 'Dispatcher');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -28,7 +31,7 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (res.ok) {
-        router.push('/login');
+        router.push(`/login${portalParam ? `?portal=${portalParam}` : ''}`);
       } else {
         setError(data.error || 'Registration failed');
       }
@@ -65,7 +68,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <div className="form-group" style={{ position: 'relative' }}>
+          <div className="form-group">
             <label className="form-label">Username</label>
             <div style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
@@ -78,12 +81,12 @@ export default function RegisterPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 className="form-input"
                 style={{ paddingLeft: '40px' }}
-                placeholder="Enter new username"
+                placeholder="Choose a username"
               />
             </div>
           </div>
 
-          <div className="form-group" style={{ position: 'relative' }}>
+          <div className="form-group">
             <label className="form-label">Password</label>
             <div style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
@@ -96,25 +99,27 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="form-input"
                 style={{ paddingLeft: '40px' }}
-                placeholder="Create password"
+                placeholder="Choose a strong password"
               />
             </div>
           </div>
 
-          <div className="form-group" style={{ position: 'relative', marginBottom: '28px' }}>
+          {/* If registering via portal=admin, we lock role to Admin, else Dispatcher (or let them choose if no query) */}
+          <div className="form-group" style={{ marginBottom: '28px' }}>
             <label className="form-label">Role</label>
             <div style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                 <Shield size={18} />
               </div>
               <select
+                className="form-input form-select"
+                style={{ paddingLeft: '40px' }}
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="form-select"
-                style={{ paddingLeft: '40px' }}
+                disabled={portalParam !== ''}
               >
                 <option value="Dispatcher">Dispatcher</option>
-                <option value="Admin">Administrator</option>
+                <option value="Admin">Admin</option>
               </select>
             </div>
           </div>
@@ -139,12 +144,20 @@ export default function RegisterPage() {
         <div style={{ marginTop: '24px', textAlign: 'center' }}>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
             Already have an account?{' '}
-            <Link href="/login" style={{ color: 'var(--blue)', fontWeight: '600' }}>
+            <Link href={`/login${portalParam ? `?portal=${portalParam}` : ''}`} style={{ color: 'var(--blue)', fontWeight: '600' }}>
               Sign in here
             </Link>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="loading-container"><div className="spinner" /></div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
